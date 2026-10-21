@@ -1,0 +1,30 @@
+name: iPhone build and tests
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  simulator:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Prepare Xcode project
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          if ! command -v xcodegen >/dev/null; then brew install xcodegen; fi
+          mkdir -p Config build
+          xcodegen generate
+      - name: Build and test on iPhone Simulator
+        run: bash Scripts/test-ios.sh
+      - name: Keep build log and test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: iphone-test-results
+          path: |
+            build/xcodebuild.log
+            build/TestResults.xcresult
+            build/native-home.png
+          retention-days: 3
