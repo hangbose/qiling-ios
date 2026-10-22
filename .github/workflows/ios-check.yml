@@ -12,9 +12,12 @@ jobs:
       - name: Prepare Xcode project
         run: |
           set -euo pipefail
+          XCODE_PATH=$(python3 Scripts/select-xcode.py)
+          sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
           xcodebuild -version
           if ! command -v xcodegen >/dev/null; then brew install xcodegen; fi
           mkdir -p Config build
+          bash Scripts/prepare-assets.sh
           xcodegen generate
       - name: Build and test on iPhone Simulator
         run: bash Scripts/test-ios.sh
