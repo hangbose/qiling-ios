@@ -30,4 +30,5 @@ jobs:
             build/xcodebuild.log
             build/TestResults.xcresult
             build/native-home.png
+            Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png
           retention-days: 3

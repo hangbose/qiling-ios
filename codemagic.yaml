@@ -1,0 +1,39 @@
+workflows:
+  qiling-testflight:
+    name: Qiling - signed TestFlight build
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    integrations:
+      app_store_connect: qiling-appstore
+    environment:
+      xcode: latest
+      groups:
+        - qiling_release
+      ios_signing:
+        distribution_type: app_store
+        # Candidate ID: register it with Apple or replace both occurrences here.
+        bundle_identifier: com.hangbose.qiling
+      vars:
+        BUNDLE_ID: com.hangbose.qiling
+    scripts:
+      - name: Generate release project
+        script: |
+          set -euo pipefail
+          : "${APPLE_TEAM_ID:?Add APPLE_TEAM_ID to the qiling_release variable group}"
+          if ! command -v xcodegen >/dev/null; then brew install xcodegen; fi
+          python3 Scripts/configure-release.py --bundle-id "$BUNDLE_ID" --team-id "$APPLE_TEAM_ID" --build-number "$((BUILD_NUMBER + 1))"
+          mkdir -p Config
+          bash Scripts/prepare-assets.sh
+          xcodegen generate
+      - name: Apply distribution signing profiles
+        script: xcode-project use-profiles
+      - name: Archive and export signed IPA
+        script: xcode-project build-ipa --project Qiling.xcodeproj --scheme Qiling
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false

@@ -11,7 +11,7 @@
 - CloudKit 邀请码创建/加入小队、共享周积分与经验、一人对每位成员每周一次鼓励。
 - 独立演示模式，可不授权健康数据浏览；不影响真实账本、不上传模拟成绩。
 
-**本项目在 Windows 编写，未在 Xcode 编译，未完成真机验证。** XCTest 已提供但尚未运行。健康读取与 CloudKit 需要下述配置才能测试；不是可以直接安装的 IPA。
+**已通过云端 Xcode 原生编译与 10 项 XCTest，模拟器成功启动。** [构建记录](https://github.com/hangbose/qiling-ios/actions/runs/39709781737)。尚未完成真机健康数据与 CloudKit 验证，也尚未上传 TestFlight。无 Mac 发布流程见 [Docs/TESTFLIGHT.md](Docs/TESTFLIGHT.md)。
 
 ## 先体验交互预览
 
