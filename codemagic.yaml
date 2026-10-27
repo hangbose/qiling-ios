@@ -25,7 +25,10 @@ workflows:
           bash Scripts/prepare-assets.sh
           xcodegen generate
       - name: Apply distribution signing profiles
-        script: xcode-project use-profiles
+        script: |
+          set -euo pipefail
+          python3 Scripts/validate-profiles.py
+          xcode-project use-profiles
       - name: Archive and export signed IPA
         script: xcode-project build-ipa --project Qiling.xcodeproj --scheme Qiling
     artifacts:
