@@ -22,7 +22,8 @@ for path in folder.glob('*.mobileprovision'):
     problems = []
     if container not in containers:
         problems.append('missing ' + container)
-    if 'CloudKit' not in ent.get('com.apple.developer.icloud-services', []):
+    services = ent.get('com.apple.developer.icloud-services', [])
+    if services != '*' and 'CloudKit' not in services and '*' not in services:
         problems.append('missing CloudKit')
     if not ent.get('com.apple.developer.healthkit'):
         problems.append('missing HealthKit')
