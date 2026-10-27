@@ -23,7 +23,7 @@ GitHub Actions 的 `iPhone build and tests` 在云端 macOS 上生成 Xcode 工�
 3. 注册对应的 `iCloud.<正式 Bundle ID>` 容器，并为 App ID 启用 HealthKit（含后台交付）与 iCloud / CloudKit；按 README 配置数据库。
 4. 在 Codemagic Team integrations 添加 Apple API key，命名为 `qiling-appstore`。将 .p8 直接上传到服务，不提交到仓库或聊天。
 5. 在 Code signing identities 生成或上传 Apple Distribution 证书，并获取匹配此 Bundle ID、包含健康与 iCloud capabilities 的 App Store provisioning profile。
-6. 创建变量组 `qiling_release`，添加 `APPLE_TEAM_ID`（开发者账户的十位 Team ID，不是账号密码）。
+6. 已根据会员页面配置 `APPLE_TEAM_ID=2ZPUD5H6P8`。Team ID 不是密码；签名私钥仍只保存在云端凭据管理中。
 7. 在 App Store Connect 创建相同 Bundle ID 的 App 记录，完成 Beta 测试信息；手动启动 Codemagic 的 `qiling-testflight`。
 8. 上传成功后还需等待 Apple 处理；外部好友测试需通过 Beta App Review，再创建邀请链接。
 
@@ -41,7 +41,7 @@ GitHub Actions 的 `iPhone build and tests` 在云端 macOS 上生成 Xcode 工�
 
 ## 当前待办
 
-- 云端编译和 XCTest 通过。
+- 已完成：云端编译和 10 项 XCTest 通过。
 - 正式 App Icon、Bundle ID、签名与 provisioning profile。
 - 真机验证健康授权、睡眠/运动读取、延迟补同步。
 - 两个真实 iCloud 用户验证小队创建、加入和每周鼓励。

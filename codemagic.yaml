@@ -7,19 +7,18 @@ workflows:
       app_store_connect: qiling-appstore
     environment:
       xcode: latest
-      groups:
-        - qiling_release
       ios_signing:
         distribution_type: app_store
         # Candidate ID: register it with Apple or replace both occurrences here.
         bundle_identifier: com.hangbose.qiling
       vars:
         BUNDLE_ID: com.hangbose.qiling
+        APPLE_TEAM_ID: 2ZPUD5H6P8
     scripts:
       - name: Generate release project
         script: |
           set -euo pipefail
-          : "${APPLE_TEAM_ID:?Add APPLE_TEAM_ID to the qiling_release variable group}"
+          : "${APPLE_TEAM_ID:?APPLE_TEAM_ID must be configured}"
           if ! command -v xcodegen >/dev/null; then brew install xcodegen; fi
           python3 Scripts/configure-release.py --bundle-id "$BUNDLE_ID" --team-id "$APPLE_TEAM_ID" --build-number "$((BUILD_NUMBER + 1))"
           mkdir -p Config
