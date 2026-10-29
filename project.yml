@@ -19,6 +19,8 @@ targets:
       properties:
         CFBundleDisplayName: 栖灵
         UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSHealthUpdateUsageDescription: 栖灵当前仅读取睡眠和锻炼记录，不向 Apple 健康写入数据。
         NSHealthShareUsageDescription: 栖灵读取睡眠和锻炼记录，自动为你的精灵结算成长；无需手动打卡。
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
@@ -31,6 +33,7 @@ targets:
         com.apple.developer.icloud-services: [CloudKit]
     settings:
       base:
+        TARGETED_DEVICE_FAMILY: "1"
         PRODUCT_BUNDLE_IDENTIFIER: com.example.Qiling
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: false
