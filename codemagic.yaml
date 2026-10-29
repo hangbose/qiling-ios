@@ -8,9 +8,10 @@ workflows:
     environment:
       xcode: latest
       ios_signing:
-        distribution_type: app_store
-        # Candidate ID: register it with Apple or replace both occurrences here.
-        bundle_identifier: com.hangbose.qiling
+        provisioning_profiles:
+          - qiling-appstore-v3
+        certificates:
+          - qiling-appstore-v3
       vars:
         BUNDLE_ID: com.hangbose.qiling
         APPLE_TEAM_ID: 2ZPUD5H6P8
