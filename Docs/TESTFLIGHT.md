@@ -16,10 +16,10 @@ GitHub Actions 的 `iPhone build and tests` 在云端 macOS 上生成 Xcode 工�
 
 ## 已提供的 Codemagic 发布配置
 
-仓库根目录的 `codemagic.yaml` 提供手动启动的 `qiling-testflight` 流程。它只向 TestFlight 提交，不提交正式 App Store 审核。没有自动触发器，连接服务后需手动运行。
+仓库根目录的 `codemagic.yaml` 提供手动启动的 `qiling-testflight` 流程。它上传 IPA 到 App Store Connect，供内部 TestFlight 测试，不自动提交外部 Beta 审核或正式 App Store 审核。没有自动触发器，连接服务后需手动运行。
 
 1. 用你的 GitHub 登录 Codemagic，仅授权私有仓库 `hangbose/qiling-ios`。授权和协议由本人确认。
-2. 注册正式 App ID。配置中的候选值为 `com.hangbose.qiling`，尚未向 Apple 注册；若不可用，修改 YAML 内两个 Bundle ID 值。
+2. 已注册正式 App ID `com.hangbose.qiling`，对应 App Store Connect App ID `6827530890`；保留现有标识。
 3. 注册对应的 `iCloud.<正式 Bundle ID>` 容器，并为 App ID 启用 HealthKit（含后台交付）与 iCloud / CloudKit；按 README 配置数据库。
 4. 在 Codemagic Team integrations 添加 Apple API key，命名为 `qiling-appstore`。将 .p8 直接上传到服务，不提交到仓库或聊天。
 5. 在 Code signing identities 生成或上传 Apple Distribution 证书，并获取匹配此 Bundle ID、包含健康与 iCloud capabilities 的 App Store provisioning profile。
@@ -42,7 +42,7 @@ GitHub Actions 的 `iPhone build and tests` 在云端 macOS 上生成 Xcode 工�
 ## 当前待办
 
 - 已完成：云端编译和 10 项 XCTest 通过。
-- 正式 App Icon、Bundle ID、签名与 provisioning profile。
+- 已完成：正式 App Icon、Bundle ID、v3 签名配置，0.1.0 (10) 已上传并关联内部组。手机下载安装仍未通过验收。
 - 真机验证健康授权、睡眠/运动读取、延迟补同步。
 - 两个真实 iCloud 用户验证小队创建、加入和每周鼓励。
 - 外部 TestFlight 测试需要提交 Beta App Review；通过后再邀请朋友。
@@ -53,3 +53,13 @@ GitHub Actions 的 `iPhone build and tests` 在云端 macOS 上生成 Xcode 工�
 - https://developer.apple.com/help/app-store-connect/test-a-beta-version/testflight-overview/
 - https://docs.codemagic.io/yaml-code-signing/signing-ios/
 - https://docs.codemagic.io/yaml-publishing/app-store-connect/
+
+## 发布检查关卡
+
+Codemagic 在签名归档前执行 XCTest 和模拟器启动，失败即停止后续步骤。测试脚本从编译产物读取 Bundle ID，兼容占位及正式标识。保留测试日志、xcresult 和截图。
+
+`submit_to_testflight: false` 不禁止上传；它避免自动请求外部测试审核。上传处理完成后，将新构建关联“本人真机测试”，以手机实际安装和启动作为最终验收。
+
+TestFlight 使用 CloudKit Production 环境。须在 CloudKit Console 核对 README 中的三种记录类型、查询索引及权限，并部署 schema；仅创建 iCloud 容器不足以启用社交功能。当前尚未验证生产 schema 和真机社交。
+
+账号出现新版开发者许可协议提示时，先由账户持有人处理协议，再继续发布。协议更新不能通过重复生成签名证书解决。

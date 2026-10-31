@@ -2,7 +2,7 @@ workflows:
   qiling-testflight:
     name: Qiling - signed TestFlight build
     instance_type: mac_mini_m2
-    max_build_duration: 30
+    max_build_duration: 45
     integrations:
       app_store_connect: qiling-appstore
     environment:
@@ -25,6 +25,8 @@ workflows:
           mkdir -p Config
           bash Scripts/prepare-assets.sh
           xcodegen generate
+      - name: Test and launch on iPhone Simulator
+        script: bash Scripts/test-ios.sh
       - name: Apply distribution signing profiles
         script: |
           set -euo pipefail
@@ -35,8 +37,13 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
+      - build/xcodebuild.log
+      - build/TestResults.xcresult
+      - build/native-home.png
     publishing:
       app_store_connect:
         auth: integration
+        # Upload to App Store Connect; do not request external beta review.
+        # Assign the processed build to the internal group in App Store Connect.
         submit_to_testflight: false
         submit_to_app_store: false

@@ -25,6 +25,8 @@ xcodebuild -project Qiling.xcodeproj -scheme Qiling \
 xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
 xcrun simctl bootstatus "$DEVICE_ID" -b
 xcrun simctl install "$DEVICE_ID" build/DerivedData/Build/Products/Debug-iphonesimulator/Qiling.app
-xcrun simctl launch "$DEVICE_ID" com.example.Qiling --demo
+APP_PATH=build/DerivedData/Build/Products/Debug-iphonesimulator/Qiling.app
+APP_BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist")
+xcrun simctl launch "$DEVICE_ID" "$APP_BUNDLE_ID" --demo
 sleep 3
 xcrun simctl io "$DEVICE_ID" screenshot build/native-home.png
