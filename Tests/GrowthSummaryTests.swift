@@ -2,6 +2,21 @@ import XCTest
 @testable import Qiling
 
 final class GrowthSummaryTests: XCTestCase {
+    func testCelebrationDistinguishesRewardsLevelsAndEvolution() {
+        XCTAssertFalse(GrowthCelebration(previous: 100, current: 150).leveledUp)
+        XCTAssertTrue(GrowthCelebration(previous: 150, current: 200).leveledUp)
+        XCTAssertFalse(GrowthCelebration(previous: 150, current: 200).evolved)
+        XCTAssertTrue(GrowthCelebration(previous: 950, current: 1000).evolved)
+        XCTAssertTrue(GrowthCelebration(previous: 2950, current: 3000).evolved)
+    }
+
+    func testExistingSaveLoadsWithoutCelebrationField() throws {
+        let data = try JSONEncoder().encode(SavedState())
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object.removeValue(forKey: "celebratedXP")
+        let oldData = try JSONSerialization.data(withJSONObject: object)
+        XCTAssertNil(try JSONDecoder().decode(SavedState.self, from: oldData).celebratedXP)
+    }
     private var cal: Calendar {
         var c = Calendar(identifier: .gregorian)
         c.timeZone = TimeZone(secondsFromGMT: 8 * 3600)!

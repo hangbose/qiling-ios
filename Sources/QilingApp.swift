@@ -71,6 +71,9 @@ struct RootView: View {
             .padding(.horizontal, 15).padding(.bottom, 4)
         }
         .tint(Palette.green)
+        .sheet(item: Binding(get: { model.celebration }, set: { if $0 == nil { model.dismissCelebration() } })) { event in
+            GrowthCelebrationView(event: event, name: model.state.petName) { model.dismissCelebration() }
+        }
         .alert("栖灵", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {
             Button("知道了") { model.message = nil }
         } message: { Text(model.message ?? "") }

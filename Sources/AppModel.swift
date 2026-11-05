@@ -14,6 +14,7 @@ struct SavedState: Codable {
     var lastSync: Date?
     var squadCode = ""
     var sharing = false
+    var celebratedXP: Int?
 }
 
 @MainActor
@@ -25,6 +26,7 @@ final class AppModel: ObservableObject {
     @Published var message: String?
     @Published var status = "连接 Apple 健康，让成长自然发生"
     @Published var members: [SquadMember] = []
+    @Published var celebration: GrowthCelebration?
     private let health = HealthService()
     private let squad = SquadService()
     private let storageKey = "qiling.state.v1"
@@ -39,6 +41,10 @@ final class AppModel: ObservableObject {
            let saved = try? JSONDecoder().decode(SavedState.self, from: data) {
             state = saved
         } else { state = SavedState() }
+        // Older installations start at their earned total; do not replay past rewards.
+        if state.celebratedXP == nil {
+            state.celebratedXP = state.ledger.values.reduce(0) { $0 + $1.points }
+        }
         if state.requestedHealth { startObservers() }
     }
 
@@ -133,6 +139,8 @@ final class AppModel: ObservableObject {
                 date = cal.date(byAdding: .day, value: 1, to: date)!
             }
             state.lastSync = Date()
+            let previous = state.celebratedXP ?? xp
+            if xp > previous { celebration = GrowthCelebration(previous: previous, current: xp) }
             status = found ? "已自动结算 · 无需领取" : "暂未获取数据 · 请检查健康权限、佩戴与同步情况"
             save()
         } catch {
@@ -161,6 +169,7 @@ final class AppModel: ObservableObject {
     }
 
     func enterDemo() {
+        celebration = nil
         generation += 1
         demo = true
         demoLedger = [:]
@@ -180,11 +189,20 @@ final class AppModel: ObservableObject {
     }
 
     func leaveDemo() async {
+        celebration = nil
         generation += 1
         demo = false
         members = []
         status = "连接 Apple 健康，让成长自然发生"
         await sync()
+    }
+
+    func dismissCelebration() {
+        if let celebration, !demo {
+            state.celebratedXP = celebration.current
+            save()
+        }
+        celebration = nil
     }
 
     func connectSquad(code: String?) async {

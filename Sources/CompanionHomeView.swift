@@ -33,7 +33,7 @@ struct CompanionHomeView: View {
                         GeometryReader { proxy in
                             let width = proxy.size.width
                             ZStack(alignment: .bottomLeading) {
-                                PetView(stage: model.stage)
+                                InteractivePetView(stage: model.stage, name: model.state.petName)
                                     .frame(width: width * 0.69, height: 290).offset(x: -6, y: -6)
                                 VStack(alignment: .leading, spacing: 8) {
                                     HStack(spacing: 6) {
