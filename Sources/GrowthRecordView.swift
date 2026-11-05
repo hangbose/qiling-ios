@@ -4,6 +4,7 @@ struct GrowthRecordView: View {
     @EnvironmentObject private var model: AppModel
     @State private var detail: DetailContent?
     @State private var selectedStage: Int?
+    @State private var history = false
     private var summary: GrowthSummary {
         GrowthSummary(days: model.ledger, now: Date(), started: model.demo ? nil : model.state.started)
     }
@@ -90,6 +91,7 @@ struct GrowthRecordView: View {
                 }.padding(.horizontal, 17).padding(.bottom, 20)
             }
             .background(Palette.background).toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $history) { GrowthCalendarView() }
             .sheet(item: $detail) { DetailSheet(content: $0) }
             .sheet(isPresented: Binding(get: { selectedStage != nil }, set: { if !$0 { selectedStage = nil } })) {
                 if let stage = selectedStage {
@@ -122,9 +124,6 @@ struct GrowthRecordView: View {
         }.buttonStyle(.plain)
     }
     private func showHistory() {
-        let entries = model.ledger.prefix(30).map { day in
-            "\(day.date.formatted(date: .abbreviated, time: .omitted))  +\(day.points) 能量"
-        }.joined(separator: "\n")
-        detail = DetailContent(title: "成长日历", text: entries.isEmpty ? "暂未获取健康记录。连接 Apple 健康后自动同步，无需补打卡。" : entries)
+        history = true
     }
 }

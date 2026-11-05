@@ -5,6 +5,7 @@ struct CompanionHomeView: View {
     @Binding var tab: AppTab
     @State private var detail: DetailContent?
     @State private var renaming = false
+    @State private var sharingCard = false
     @State private var draftName = ""
     private var earned: Int { model.today?.points ?? 0 }
     private var greeting: String {
@@ -87,6 +88,18 @@ struct CompanionHomeView: View {
                     .padding(.horizontal, 17).padding(.top, -2)
 
                     HStack {
+                        let summary = GrowthSummary(days: model.ledger, now: Date(), started: model.state.started)
+                        Label("连续达标 \(summary.currentStreak) 天", systemImage: "flame.fill")
+                            .font(.subheadline).foregroundStyle(Palette.green)
+                        Spacer()
+                        Button { sharingCard = true } label: {
+                            Label("晒晒伙伴", systemImage: "square.and.arrow.up")
+                        }.buttonStyle(.bordered)
+                    }.padding(.horizontal, 24).padding(.top, 16)
+                    Text("任一目标达标即计入连续天数，今天尚未达标不影响昨天的连续记录。")
+                        .font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 24)
+
+                    HStack {
                         Label(model.demo ? "Apple Watch · 模拟连接" : (model.syncing ? "正在同步…" : model.status), systemImage: "applewatch")
                         Spacer()
                         Button("查看成长") { tab = .growth }
@@ -108,6 +121,7 @@ struct CompanionHomeView: View {
             }
             .background(Palette.background).toolbar(.hidden, for: .navigationBar)
             .refreshable { await model.sync() }
+            .sheet(isPresented: $sharingCard) { GrowthShareView() }
             .sheet(item: $detail) { DetailSheet(content: $0) }
             .alert("给伙伴起个名字", isPresented: $renaming) {
                 TextField("伙伴名字", text: $draftName)

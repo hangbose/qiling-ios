@@ -36,4 +36,14 @@ final class GrowthSummaryTests: XCTestCase {
         XCTAssertEqual(summary.workoutDays, 2)
         XCTAssertEqual(Growth.dayID(summary.week[0].date, calendar: cal), "2026-10-19")
     }
+    func testStreakAllowsUnfinishedTodayAndStopsAtMissingDay() {
+        let now = date("2026-10-20T12:00:00+08:00")
+        let yesterday = date("2026-10-19T08:00:00+08:00")
+        let before = date("2026-10-18T08:00:00+08:00")
+        let old = date("2026-10-16T08:00:00+08:00")
+        let days = [progress(now, sleep: 0, workout: 0), progress(yesterday, workout: 0), progress(before), progress(old)]
+        XCTAssertEqual(GrowthSummary(days: days, now: now, started: nil, calendar: cal).currentStreak, 2)
+        XCTAssertEqual(GrowthSummary(days: days + [progress(now)], now: now, started: nil, calendar: cal).currentStreak, 3)
+        XCTAssertEqual(GrowthSummary(days: [progress(before)], now: now, started: nil, calendar: cal).currentStreak, 0)
+    }
 }
