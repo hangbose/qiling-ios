@@ -38,28 +38,41 @@ final class HealthService {
         }
     }
 
-    func fetch(since start: Date) async throws -> (sleep: [HealthInterval], workouts: [HealthInterval]) {
-        let predicate = HKQuery.predicateForSamples(withStart: start, end: Date(), options: [])
-        async let sleepSamples = samples(type: sleepType, predicate: predicate)
-        async let workoutSamples = samples(type: workoutType, predicate: predicate)
-        let (sleep, workouts) = try await (sleepSamples, workoutSamples)
-        let asleepValues = Set([
-            HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
-            HKCategoryValueSleepAnalysis.asleepCore.rawValue,
-            HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
-            HKCategoryValueSleepAnalysis.asleepREM.rawValue
-        ])
-        func isAutomatic(_ sample: HKSample) -> Bool {
-            (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool) != true
+    struct Reading {
+        var intervals: [HealthInterval] = []
+        var sampleCount = 0
+        var error: String?
+        var diagnostic: String {
+            if let error { return "读取失败：" + error }
+            if sampleCount == 0 { return "未读到记录（也可能未获读取权限）" }
+            if intervals.isEmpty { return "读到记录，但没有符合结算规则的时段" }
+            return "已读到 \(intervals.count) 个可结算时段"
         }
-        return (
-            sleep.compactMap { sample in
-                guard let item = sample as? HKCategorySample,
-                      asleepValues.contains(item.value), isAutomatic(item) else { return nil }
-                return HealthInterval(start: item.startDate, end: item.endDate)
-            },
-            workouts.filter(isAutomatic).map { HealthInterval(start: $0.startDate, end: $0.endDate) }
-        )
+    }
+
+    func fetch(since start: Date) async -> (sleep: Reading, workouts: Reading) {
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: Date(), options: [])
+        async let sleep = read(type: sleepType, predicate: predicate, sleep: true)
+        async let workouts = read(type: workoutType, predicate: predicate, sleep: false)
+        return await (sleep, workouts)
+    }
+
+    private func read(type: HKSampleType, predicate: NSPredicate, sleep: Bool) async -> Reading {
+        do {
+            let all = try await samples(type: type, predicate: predicate)
+            let values = Set([HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
+                              HKCategoryValueSleepAnalysis.asleepCore.rawValue,
+                              HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
+                              HKCategoryValueSleepAnalysis.asleepREM.rawValue])
+            let intervals = all.compactMap { sample -> HealthInterval? in
+                guard (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool) != true else { return nil }
+                if sleep {
+                    guard let item = sample as? HKCategorySample, values.contains(item.value) else { return nil }
+                }
+                return HealthInterval(start: sample.startDate, end: sample.endDate)
+            }
+            return Reading(intervals: intervals, sampleCount: all.count)
+        } catch { return Reading(error: error.localizedDescription) }
     }
 
     private func samples(type: HKSampleType, predicate: NSPredicate) async throws -> [HKSample] {
