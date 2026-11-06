@@ -32,7 +32,7 @@ struct GrowthRecordView: View {
 
                     VStack(spacing: 15) {
                         SectionHeading(title: "进化历程", actionTitle: "成长规则") {
-                            detail = DetailContent(title: "成长规则", text: "睡眠和运动每项达标获得 50 能量，每日最多 100。\n\n1000 经验进入逐光成长体，3000 经验进入月辉守护体。长期成长保留，周赛每周一重置。\n\n不用手动打卡或领取奖励，晚到的数据自动补算。")
+                            detail = DetailContent(title: "成长规则", text: "睡眠和运动每项达标获得 50 能量，步数另计，每天每满 1000 步加 10 经验。\n\n1000 经验进入逐光成长体，3000 经验进入月辉守护体。长期成长保留，周赛每周一重置。\n\n不用手动打卡或领取奖励，晚到的数据自动补算。")
                         }
                         HStack(spacing: 4) {
                             ForEach(0..<3) { stage in
@@ -60,7 +60,7 @@ struct GrowthRecordView: View {
                         HStack {
                             Text("本周已获得 \(model.weekPoints) 能量").foregroundStyle(.secondary)
                             Spacer()
-                            Text("每日上限 100").foregroundStyle(Palette.green)
+                            Text("含步行经验").foregroundStyle(Palette.green)
                         }.font(.system(size: 10))
                         HStack(alignment: .bottom, spacing: 14) {
                             ForEach(Array(summary.week.enumerated()), id: \.offset) { index, day in
@@ -68,7 +68,7 @@ struct GrowthRecordView: View {
                                     Spacer(minLength: 0)
                                     RoundedRectangle(cornerRadius: 5)
                                         .fill(LinearGradient(colors: [Palette.green.opacity(0.58), Palette.lime], startPoint: .top, endPoint: .bottom))
-                                        .frame(width: 16, height: max(2, CGFloat(day.points) * 0.72))
+                                        .frame(width: 16, height: max(2, min(72, CGFloat(day.points) * 0.72)))
                                     Text("周\(["一", "二", "三", "四", "五", "六", "日"][index])")
                                         .font(.system(size: 9)).foregroundStyle(.secondary)
                                 }.frame(maxWidth: .infinity)

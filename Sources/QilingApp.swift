@@ -150,7 +150,7 @@ struct SettingsView: View {
                         Text(report).font(.caption).foregroundStyle(.secondary)
                     }
                     DisclosureGroup("华为手表有记录，栖灵没有？") {
-                        Text("请在 iPhone 自带的‘健康’里查看‘睡眠’或‘体能训练’，确认记录来自华为运动健康。栖灵只读取实际睡眠和已记录的训练，步数、心率、活动能量及仅卧床记录不计入这两项目标。再到健康头像 → 隐私 → App → 栖灵检查读取权限，返回这里重新同步。成长从领养当天起计算。")
+                        Text("请在 iPhone 自带的‘健康’里查看‘睡眠’、‘步数’或‘体能训练’，确认记录来自华为运动健康。睡眠、训练和步数分别结算。再到健康头像 → 隐私 → App → 栖灵检查读取权限，返回这里重新同步。成长从领养当天起计算。")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     Button("连接／检查健康授权") { Task { await model.connect() } }

@@ -49,6 +49,7 @@ struct GrowthCalendarView: View {
                         if let day = record(selected) {
                             LabeledContent("睡眠", value: "\(day.sleepHours.formatted(.number.precision(.fractionLength(1)))) / \(day.sleepGoal.formatted()) 小时")
                             LabeledContent("锻炼", value: "\(day.workoutMinutes.formatted(.number.precision(.fractionLength(0)))) / \(day.workoutGoal.formatted()) 分钟")
+                            LabeledContent("步行", value: "\(day.steps ?? 0) 步 · +\(day.walkingXP) 经验")
                             Label("已自动获得 \(day.points) 能量", systemImage: "sparkles").foregroundStyle(Palette.green)
                             if day.points == 0 { Text("暂未记录到达标数据，不代表没有努力。晚到的数据会自动补算。").font(.caption).foregroundStyle(.secondary) }
                         } else {

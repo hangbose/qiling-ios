@@ -2,6 +2,15 @@ import XCTest
 @testable import Qiling
 
 final class GrowthTests: XCTestCase {
+    func testWalkingRewardsUseCompletedThousandsInDailyTotal() {
+        var day = DailyProgress(id: "today", date: Date(), sleepHours: 8, workoutMinutes: 30, sleepGoal: 8, workoutGoal: 30)
+        XCTAssertEqual(day.points, 100)
+        for (steps, expected) in [(999, 100), (1000, 110), (2300, 120), (2300, 120)] {
+            day.steps = steps
+            XCTAssertEqual(day.points, expected)
+        }
+    }
+
     private var cal: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 8 * 3600)!

@@ -117,10 +117,13 @@ final class AppModel: ObservableObject {
         // Query from adoption date so a long absence still catches up.
         let queryStart = cal.date(byAdding: .day, value: -1, to: started)!
         do {
+            async let readSteps = try? health.dailySteps(since: started)
             let data = await health.fetch(since: queryStart)
+            let steps = await readSteps
             guard token == generation, !demo else { return }
             sensorReport = "本次读取范围：\(queryStart.formatted(date: .abbreviated, time: .omitted)) 至今\n睡眠：\(data.sleep.diagnostic)\n体能训练：\(data.workouts.diagnostic)"
-            if data.sleep.error != nil && data.workouts.error != nil {
+            sensorReport? += "\n步数：" + (steps == nil ? "读取失败" : (steps?.isEmpty == true ? "未读到记录，请检查步数权限" : "已读取每日步数"))
+            if steps == nil && data.sleep.error != nil && data.workouts.error != nil {
                 status = "健康读取失败 · 请在「我的」查看详情"
                 return
             }
@@ -136,7 +139,8 @@ final class AppModel: ObservableObject {
                     sleepGoal: old?.sleepGoal ?? (useNew ? state.sleepGoal : state.previousSleepGoal),
                     workoutGoal: old?.workoutGoal ?? (useNew ? state.workoutGoal : state.previousWorkoutGoal))
                 // Empty reads also occur when permission is denied; never revoke earned growth.
-                if progress.sleepHours > 0 || progress.workoutMinutes > 0 { found = true }
+                progress.steps = max(old?.steps ?? 0, steps?[key] ?? 0)
+                if (steps?[key] ?? 0) > 0 || progress.sleepHours > 0 || progress.workoutMinutes > 0 { found = true }
                 if let old {
                     progress.sleepHours = max(old.sleepHours, progress.sleepHours)
                     progress.workoutMinutes = max(old.workoutMinutes, progress.workoutMinutes)
@@ -149,7 +153,7 @@ final class AppModel: ObservableObject {
             let previous = state.celebratedXP ?? xp
             if xp > previous { celebration = GrowthCelebration(previous: previous, current: xp) }
             status = found ? "已自动结算 · 无需领取" : "暂未获取数据 · 请检查健康权限、佩戴与同步情况"
-            if data.sleep.error != nil || data.workouts.error != nil { status = "部分健康查询失败 · 请在「我的」查看详情" }
+            if steps == nil || data.sleep.error != nil || data.workouts.error != nil { status = "部分健康查询失败 · 请在「我的」查看详情" }
             save()
         }
         // Cloud upload is separate from the HealthKit observer completion.
@@ -181,7 +185,7 @@ final class AppModel: ObservableObject {
         for offset in 0..<9 {
             let date = Calendar.current.date(byAdding: .day, value: -offset, to: Date())!
             let p = DailyProgress(id: Growth.dayID(date), date: date, sleepHours: offset == 0 ? 8.2 : 8.5,
-                                  workoutMinutes: offset == 0 ? 18 : 35, sleepGoal: 8, workoutGoal: 30)
+                                  workoutMinutes: offset == 0 ? 18 : 35, sleepGoal: 8, workoutGoal: 30, steps: 3450)
             demoLedger[p.id] = p
         }
         status = "演示模式 · 所有数据均为示例"

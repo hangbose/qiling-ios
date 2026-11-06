@@ -74,6 +74,8 @@ struct CompanionHomeView: View {
                                 showHabit(sleep: false)
                             }
                         }
+                        Label("今日 \(model.today?.steps ?? 0) 步 · 每 1000 步 +10 经验", systemImage: "figure.walk")
+                            .font(.subheadline)
                         HStack(spacing: 9) {
                             Image(systemName: earned > 0 ? "checkmark" : "applewatch")
                             Text(earned > 0 ? "今日 \(earned) 能量已自动到账" : "等待手表数据同步")
@@ -108,7 +110,7 @@ struct CompanionHomeView: View {
                     if !model.state.requestedHealth && !model.demo {
                         VStack(alignment: .leading, spacing: 14) {
                             Text("让好习惯，自然变成成长").font(.headline)
-                            Text("连接 Apple 健康，睡眠和运动达标后自动获得能量。")
+                            Text("连接 Apple 健康，睡眠、运动和步行都能自动获得能量。")
                                 .font(.subheadline).foregroundStyle(.secondary)
                             Button { Task { await model.connect() } } label: {
                                 Label("连接 Apple 健康", systemImage: "heart.fill").frame(maxWidth: .infinity)
@@ -139,7 +141,7 @@ struct CompanionHomeView: View {
         detail = DetailContent(title: sleep ? "睡眠滋养" : "运动滋养",
             text: "当前记录：\(value.formatted(.number.precision(.fractionLength(1)))) \(unit)\n\n"
                 + (sleep ? "只计算实际睡眠时段，清醒与卧床时间不计入。跨夜睡眠归属起床日。" : "读取已记录的锻炼时段，合并重叠记录。")
-                + "\n\n每项达标获得 50 能量，每天最多 100。无记录时不能区分未佩戴、权限或同步延迟，不判为失败。"
+                + "\n\n每项达标获得 50 能量，步行每满 1000 步另加 10 经验。无记录时不能区分未佩戴、权限或同步延迟，不判为失败。"
                 + (model.demo ? "\n\n当前为演示数据。" : ""))
     }
 }

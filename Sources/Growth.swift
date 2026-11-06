@@ -14,7 +14,9 @@ struct DailyProgress: Codable, Identifiable, Equatable {
     var workoutGoal: Double
     var sleepComplete: Bool { sleepHours >= sleepGoal }
     var workoutComplete: Bool { workoutMinutes >= workoutGoal }
-    var points: Int { (sleepComplete ? 50 : 0) + (workoutComplete ? 50 : 0) }
+    var steps: Int? = nil
+    var walkingXP: Int { max(0, steps ?? 0) / 1000 * 10 }
+    var points: Int { walkingXP + (sleepComplete ? 50 : 0) + (workoutComplete ? 50 : 0) }
 }
 
 enum Growth {

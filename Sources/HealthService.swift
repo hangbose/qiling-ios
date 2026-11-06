@@ -6,18 +6,19 @@ final class HealthService {
     private var observers: [HKObserverQuery] = []
     private let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
     private let workoutType = HKObjectType.workoutType()
+    private let stepType = HKObjectType.quantityType(forIdentifier: .stepCount)!
     var available: Bool { HKHealthStore.isHealthDataAvailable() }
 
     func authorize() async throws {
         guard available else { throw HealthFailure.unavailable }
-        try await store.requestAuthorization(toShare: [], read: [sleepType, workoutType])
+        try await store.requestAuthorization(toShare: [], read: [sleepType, workoutType, stepType])
         // Successful request means the dialog finished, not that read access was granted.
     }
 
     func observe(onChange: @escaping (@escaping () -> Void) -> Void,
                  onError: @escaping (Error) -> Void) {
         guard observers.isEmpty, available else { return }
-        for type in [sleepType as HKSampleType, workoutType as HKSampleType] {
+        for type in [sleepType as HKSampleType, workoutType as HKSampleType, stepType] {
             let query = HKObserverQuery(sampleType: type, predicate: nil) { _, completion, error in
                 if let error { onError(error); completion(); return }
                 onChange(completion)
@@ -33,7 +34,7 @@ final class HealthService {
     func stop() {
         observers.forEach { store.stop($0) }
         observers.removeAll()
-        for type in [sleepType as HKObjectType, workoutType as HKObjectType] {
+        for type in [sleepType as HKObjectType, workoutType as HKObjectType, stepType] {
             store.disableBackgroundDelivery(for: type) { _, _ in }
         }
     }
@@ -73,6 +74,29 @@ final class HealthService {
             }
             return Reading(intervals: intervals, sampleCount: all.count)
         } catch { return Reading(error: error.localizedDescription) }
+    }
+
+    func dailySteps(since start: Date) async throws -> [String: Int] {
+        let end = Date()
+        let anchor = Calendar.current.startOfDay(for: start)
+        let dates = HKQuery.predicateForSamples(withStart: anchor, end: end)
+        let manual = HKQuery.predicateForObjects(withMetadataKey: HKMetadataKeyWasUserEntered, allowedValues: [NSNumber(value: true)])
+        let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [dates, NSCompoundPredicate(notPredicateWithSubpredicate: manual)])
+        return try await withCheckedThrowingContinuation { continuation in
+            let query = HKStatisticsCollectionQuery(quantityType: stepType, quantitySamplePredicate: predicate,
+                options: .cumulativeSum, anchorDate: anchor, intervalComponents: DateComponents(day: 1))
+            query.initialResultsHandler = { _, collection, error in
+                if let error { continuation.resume(throwing: error); return }
+                var totals: [String: Int] = [:]
+                collection?.enumerateStatistics(from: anchor, to: end) { statistic, _ in
+                    if let quantity = statistic.sumQuantity() {
+                        totals[Growth.dayID(statistic.startDate)] = Int(quantity.doubleValue(for: .count()))
+                    }
+                }
+                continuation.resume(returning: totals)
+            }
+            store.execute(query)
+        }
     }
 
     private func samples(type: HKSampleType, predicate: NSPredicate) async throws -> [HKSample] {
