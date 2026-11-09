@@ -4,13 +4,14 @@ struct GrowthCelebration: Identifiable {
     let previous: Int
     let current: Int
     var id: Int { current }
-    var evolved: Bool { Growth.stage(current) > Growth.stage(previous) }
+    var evolved: Bool { Growth.appearance(current) > Growth.appearance(previous) }
     var leveledUp: Bool { current / 100 > previous / 100 }
     var title: String { evolved ? "我们的新模样" : (leveledUp ? "伙伴升级啦" : "你的努力，我收到了") }
 }
 
 struct InteractivePetView: View {
     let stage: Int
+    let xp: Int
     let name: String
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var taps = 0
@@ -23,7 +24,7 @@ struct InteractivePetView: View {
             taps += 1
             withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.45)) { bouncing = true }
         } label: {
-            PetView(stage: stage)
+            PetView(stage: stage, xp: xp)
                 .scaleEffect(bouncing && !reduceMotion ? 1.06 : 1)
                 .rotationEffect(.degrees(bouncing && !reduceMotion ? -3 : 0))
                 .overlay(alignment: .top) {
@@ -59,10 +60,10 @@ struct GrowthCelebrationView: View {
             Image(systemName: event.evolved ? "sparkles" : "heart.fill")
                 .font(.largeTitle).foregroundStyle(Palette.green)
             Text(event.title).font(.title.bold())
-            PetView(stage: Growth.stage(event.current)).frame(height: 220)
+            PetView(stage: Growth.stage(event.current), xp: event.current).frame(height: 220)
             Text("\(name)获得了 \(event.current - event.previous) 成长能量")
                 .font(.headline).multilineTextAlignment(.center)
-            Text(event.evolved ? "已解锁\(Growth.stageName(event.current))" : "Lv.\(1 + event.current / 100) · 每一点坚持都有回应")
+            Text(event.evolved ? "已解锁\(Growth.appearanceName(event.current))" : "Lv.\(1 + event.current / 100) · 每一点坚持都有回应")
                 .foregroundStyle(Palette.green)
             Text("能量已自动保存，无需领取。")
                 .font(.caption).foregroundStyle(.secondary)

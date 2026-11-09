@@ -71,5 +71,12 @@ enum Growth {
 
     static func stage(_ xp: Int) -> Int { xp >= 3000 ? 2 : (xp >= 1000 ? 1 : 0) }
     static func stageName(_ xp: Int) -> String { ["星芽幼体", "逐光成长体", "月辉守护体"][stage(xp)] }
-    static func nextMilestone(_ xp: Int) -> Int { xp < 1000 ? 1000 : (xp < 3000 ? 3000 : ((xp / 1000) + 1) * 1000) }
+    static let milestones = [0, 50, 150, 300, 600, 1000, 1500, 2200, 3000]
+    static func appearance(_ xp: Int) -> Int {
+        milestones.filter { xp >= $0 }.count - 1
+    }
+    static func appearanceName(_ xp: Int) -> String {
+        ["初遇", "长大一点", "焕发新色", "星光初现", "星光环绕", "逐光成长体", "光芒渐盛", "星环绽放", "月辉守护体"][max(0, appearance(xp))]
+    }
+    static func nextMilestone(_ xp: Int) -> Int { milestones.first { $0 > xp } ?? ((xp / 1000) + 1) * 1000 }
 }

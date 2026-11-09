@@ -83,6 +83,8 @@ struct RootView: View {
 // Original generated creature art, shared with the interactive preview.
 struct PetView: View {
     var stage: Int = 0
+    var xp: Int? = nil
+    private var detailLevel: Int { xp.map { Growth.appearance($0) } ?? 0 }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var floating = false
     var body: some View {
@@ -94,6 +96,16 @@ struct PetView: View {
                 Image("PetStage\(min(2, max(0, stage)))")
                     .resizable().scaledToFit()
                     .padding(8)
+                    .scaleEffect(xp == nil ? 1 : (detailLevel == 0 ? 0.82 : 0.94))
+                    .saturation(detailLevel >= 2 ? 1.25 : 1)
+                    .overlay {
+                        if detailLevel >= 3 {
+                            Image(systemName: detailLevel >= 4 ? "sparkles" : "star.fill")
+                                .font(.system(size: detailLevel >= 6 ? 36 : 24))
+                                .foregroundStyle(Palette.green)
+                                .offset(x: proxy.size.width * 0.28, y: -proxy.size.height * 0.25)
+                        }
+                    }
                     .offset(y: floating && !reduceMotion ? -4 : 2)
                     .shadow(color: Palette.green.opacity(0.16), radius: 14, y: 8)
             }
@@ -117,7 +129,7 @@ struct SettingsView: View {
             Form {
                 Section {
                     HStack(spacing: 18) {
-                        PetView(stage: model.stage).frame(width: 96, height: 104)
+                        PetView(stage: model.stage, xp: model.xp).frame(width: 96, height: 104)
                         VStack(alignment: .leading, spacing: 8) {
                             Text(model.state.name).font(.title3.bold())
                             Text("与\(model.state.petName)一起成长").font(.subheadline).foregroundStyle(.secondary)

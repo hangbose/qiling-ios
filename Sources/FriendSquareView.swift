@@ -47,7 +47,7 @@ struct FriendSquareView: View {
                                 HStack(spacing: 10) {
                                     Text(String(format: "%02d", rank(member)))
                                         .font(.system(size: 12, weight: .medium)).foregroundStyle(.secondary)
-                                    PetView(stage: Growth.stage(member.xp)).frame(width: 54, height: 58)
+                                    PetView(stage: Growth.stage(member.xp), xp: member.xp).frame(width: 54, height: 58)
                                     VStack(alignment: .leading, spacing: 5) {
                                         Text(member.name).font(.system(size: 14, weight: .semibold))
                                         Text(Growth.stageName(member.xp)).font(.system(size: 10)).foregroundStyle(.secondary)
@@ -102,7 +102,7 @@ struct FriendSquareView: View {
                 let winner = member.id == first.first?.id
                 VStack(spacing: 2) {
                     Text(winner ? "👑" : (rank(member) == 2 ? "🥈" : "🥉")).font(.system(size: winner ? 30 : 23))
-                    PetView(stage: Growth.stage(member.xp)).frame(height: winner ? 158 : 115)
+                    PetView(stage: Growth.stage(member.xp), xp: member.xp).frame(height: winner ? 158 : 115)
                     VStack(spacing: 4) {
                         Text(member.name).font(.system(size: 12, weight: .medium)).lineLimit(1)
                         Text("Lv.\(1 + member.xp / 100)").font(.system(size: 11)).foregroundStyle(Palette.green)
@@ -136,6 +136,7 @@ struct FriendSquareView: View {
                     .font(.subheadline).onChange(of: model.state.sharing) { _, _ in model.save() }
                 Text("邀请测试版使用 iCloud 公共摘要。邀请码不提供成员级隐私隔离，不上传原始健康记录。")
                     .font(.caption).foregroundStyle(.secondary)
+                if !model.state.sharing { Text("开启上方共享开关后，即可创建或加入小队。").font(.caption).foregroundStyle(.secondary) }
                 Button("创建我的小队") { Task { await model.connectSquad(code: nil) } }
                     .buttonStyle(.borderedProminent).disabled(!model.state.sharing || model.socialBusy)
                 Divider()
@@ -168,7 +169,7 @@ struct FriendSquareView: View {
                 .font(.system(size: 12)).foregroundStyle(.secondary)
             ZStack(alignment: .bottom) {
                 RoomBackdrop().overlay(.white.opacity(0.30))
-                PetView(stage: Growth.stage(member.xp)).frame(height: 165)
+                PetView(stage: Growth.stage(member.xp), xp: member.xp).frame(height: 165)
             }.frame(height: 175).clipShape(RoundedRectangle(cornerRadius: 17))
             HStack {
                 Button { Task { await model.cheer(member) } } label: {

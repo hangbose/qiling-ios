@@ -17,7 +17,7 @@ struct GrowthRecordView: View {
                     }.padding(.horizontal, 7).padding(.top, 18)
 
                     HStack(spacing: 0) {
-                        PetView(stage: model.stage).frame(maxWidth: .infinity).frame(height: 185)
+                        PetView(stage: model.stage, xp: model.xp).frame(maxWidth: .infinity).frame(height: 185)
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(alignment: .firstTextBaseline, spacing: 3) {
                                 Text("陪伴的第").font(.system(size: 15, weight: .semibold))
@@ -32,7 +32,7 @@ struct GrowthRecordView: View {
 
                     VStack(spacing: 15) {
                         SectionHeading(title: "进化历程", actionTitle: "成长规则") {
-                            detail = DetailContent(title: "成长规则", text: "睡眠和运动每项达标获得 50 能量，步数另计，每天每满 1000 步加 10 经验。\n\n1000 经验进入逐光成长体，3000 经验进入月辉守护体。长期成长保留，周赛每周一重置。\n\n不用手动打卡或领取奖励，晚到的数据自动补算。")
+                            detail = DetailContent(title: "成长规则", text: "睡眠和运动每项达标获得 50 能量，步数另计，每天每满 1000 步加 10 经验。\n\n50 经验长大一点，150 经验焕发新色，300 经验出现星光，600 经验星光环绕。1000 经验进入逐光成长体，3000 经验进入月辉守护体。长期成长保留，周赛每周一重置。\n\n不用手动打卡或领取奖励，晚到的数据自动补算。")
                         }
                         HStack(spacing: 4) {
                             ForEach(0..<3) { stage in

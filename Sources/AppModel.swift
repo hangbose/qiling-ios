@@ -215,7 +215,8 @@ final class AppModel: ObservableObject {
     }
 
     func connectSquad(code: String?) async {
-        guard !demo, !socialBusy, state.sharing else { return }
+        guard !demo, !socialBusy else { return }
+        guard state.sharing else { message = "请先开启共享昵称、精灵经验和本周积分。"; return }
         socialBusy = true
         defer { socialBusy = false }
         do {
