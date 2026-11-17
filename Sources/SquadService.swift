@@ -40,18 +40,28 @@ actor SquadService {
     func publish(code: String, week: String, name: String, points: Int, xp: Int) async throws {
         let user = try await userID()
         let id = CKRecord.ID(recordName: "member-\(code)-\(week)-\(user.recordName)")
-        let record: CKRecord
+        var record: CKRecord
         do { record = try await database.record(for: id) }
         catch let error as CKError where error.code == .unknownItem {
             record = CKRecord(recordType: "MemberWeek", recordID: id)
         }
-        record["squad"] = code as CKRecordValue
-        record["week"] = week as CKRecordValue
-        record["nickname"] = name as CKRecordValue
-        record["points"] = points as CKRecordValue
-        record["xp"] = xp as CKRecordValue
-        record["updated"] = Date() as CKRecordValue
-        _ = try await database.save(record)
+        // Another refresh or device may have saved since our fetch. Retry using
+        // the server change tag instead of repeatedly saving the stale record.
+        for attempt in 0..<3 {
+            record["squad"] = code as CKRecordValue
+            record["week"] = week as CKRecordValue
+            record["nickname"] = name as CKRecordValue
+            record["points"] = max(record["points"] as? Int ?? 0, points) as CKRecordValue
+            record["xp"] = max(record["xp"] as? Int ?? 0, xp) as CKRecordValue
+            record["updated"] = Date() as CKRecordValue
+            do {
+                _ = try await database.save(record)
+                return
+            } catch let error as CKError where error.code == .serverRecordChanged && attempt < 2 {
+                if let latest = error.serverRecord { record = latest }
+                else { record = try await database.record(for: id) }
+            }
+        }
     }
 
     private func records(type: String, predicate: NSPredicate) async throws -> [CKRecord] {

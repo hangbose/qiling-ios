@@ -233,7 +233,20 @@ final class AppModel: ObservableObject {
         } catch { message = error.localizedDescription }
     }
 
+    private var squadRefreshRunning = false
+    private var squadRefreshAgain = false
+
     func refreshSquad() async {
+        if squadRefreshRunning { squadRefreshAgain = true; return }
+        squadRefreshRunning = true
+        defer { squadRefreshRunning = false }
+        repeat {
+            squadRefreshAgain = false
+            await performSquadRefresh()
+        } while squadRefreshAgain
+    }
+
+    private func performSquadRefresh() async {
         guard !demo, !state.squadCode.isEmpty else { return }
         let code = state.squadCode
         let week = Growth.weekID(Date())
@@ -245,7 +258,10 @@ final class AppModel: ObservableObject {
             let result = try await squad.members(code: code, week: week)
             guard !demo, state.squadCode == code else { return }
             members = result
-        } catch { message = "小队暂未同步：\(error.localizedDescription)" }
+        } catch {
+            guard !demo, state.squadCode == code else { return }
+            message = "小队暂未同步：\(error.localizedDescription)"
+        }
     }
 
     func cheer(_ member: SquadMember) async {

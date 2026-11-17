@@ -8,6 +8,9 @@ struct FriendSquareView: View {
     @State private var searching = false
     @State private var inviting = false
     @State private var detail: DetailContent?
+    @State private var joining = false
+    @State private var joinAfterDismiss = false
+    @FocusState private var invitationFocused: Bool
     private var filtered: [SquadMember] {
         model.members.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }
     }
@@ -26,6 +29,12 @@ struct FriendSquareView: View {
                         Text("本周榜").tag(1)
                     }.pickerStyle(.segmented).padding(.horizontal, 26)
 
+                    if !model.demo {
+                        Button { joining = true } label: {
+                            Label("输入邀请码，加入好友小队", systemImage: "person.2.badge.plus")
+                                .frame(maxWidth: .infinity).padding(.vertical, 8)
+                        }.buttonStyle(.borderedProminent)
+                    }
                     if !model.members.isEmpty { podium }
 
                     if model.demo {
@@ -75,8 +84,49 @@ struct FriendSquareView: View {
             .background(Palette.background).toolbar(.hidden, for: .navigationBar)
             .task { await model.refreshSquad() }
             .refreshable { await model.sync(); await model.refreshSquad() }
+            .sheet(isPresented: $joining) {
+                NavigationStack {
+                    Form {
+                        Section("好友的小队邀请码") {
+                            TextField("输入 10 位邀请码", text: $invitation)
+                                .textInputAutocapitalization(.characters).autocorrectionDisabled()
+                                .focused($invitationFocused).submitLabel(.go)
+                                .onSubmit { joinSquad() }
+                        }
+                        Section {
+                            TextField("你的昵称", text: $model.state.name)
+                            Toggle("共享昵称、精灵经验和本周积分", isOn: $model.state.sharing)
+                            Text("不上传原始健康记录。小队使用 iCloud 公共摘要，邀请码不提供成员级隐私隔离。")
+                                .font(.caption).foregroundStyle(.secondary)
+                            if !model.state.squadCode.isEmpty {
+                                Text("加入后将切换到好友的小队，个人成长记录会保留。")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .safeAreaInset(edge: .bottom) {
+                        VStack(spacing: 8) {
+                            if !model.state.sharing { Text("请先开启上方共享开关").font(.caption) }
+                            Button(action: joinSquad) {
+                                Text(model.socialBusy ? "正在加入…" : "加入好友小队")
+                                    .frame(maxWidth: .infinity).padding(.vertical, 8)
+                            }.buttonStyle(.borderedProminent)
+                                .disabled(!model.state.sharing || invitation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.socialBusy)
+                        }.padding().background(.regularMaterial)
+                    }
+                    .navigationTitle("加入好友小队").navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .cancellationAction) {
+                        Button("关闭") { joining = false }
+                    } }
+                    .alert("小队连接", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {
+                        Button("知道了") { model.message = nil }
+                    } message: { Text(model.message ?? "") }
+                }.presentationDetents([.large])
+            }
             .sheet(item: $detail) { DetailSheet(content: $0) }
-            .sheet(isPresented: $inviting) {
+            .sheet(isPresented: $inviting, onDismiss: {
+                if joinAfterDismiss { joinAfterDismiss = false; joining = true }
+            }) {
                 NavigationStack {
                     ScrollView { joinPanel.padding(24) }
                         .navigationTitle("邀请朋友一起长大").navigationBarTitleDisplayMode(.inline)
@@ -88,6 +138,17 @@ struct FriendSquareView: View {
                 Button("查看") { section = 1 }
                 Button("清除筛选") { search = "" }
                 Button("取消", role: .cancel) { }
+            }
+        }
+    }
+
+    private func joinSquad() {
+        guard model.state.sharing, !model.socialBusy else { return }
+        invitationFocused = false
+        Task {
+            await model.connectSquad(code: invitation)
+            if model.state.squadCode == invitation.trimmingCharacters(in: .whitespacesAndNewlines).uppercased(), model.message == nil {
+                joining = false
             }
         }
     }
@@ -140,10 +201,11 @@ struct FriendSquareView: View {
                 Button("创建我的小队") { Task { await model.connectSquad(code: nil) } }
                     .buttonStyle(.borderedProminent).disabled(!model.state.sharing || model.socialBusy)
                 Divider()
-                TextField("输入 10 位邀请码", text: $invitation).textFieldStyle(.roundedBorder)
-                    .textInputAutocapitalization(.characters).autocorrectionDisabled()
-                Button("加入好友小队") { Task { await model.connectSquad(code: invitation) } }
-                    .disabled(!model.state.sharing || invitation.isEmpty || model.socialBusy)
+                Button("输入邀请码，加入好友小队") {
+                    if inviting { joinAfterDismiss = true; inviting = false }
+                    else { joining = true }
+                }
+                    .buttonStyle(.borderedProminent)
                 if model.socialBusy { ProgressView("正在连接 iCloud…") }
             }
         }.softPanel()
