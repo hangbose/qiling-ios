@@ -6,6 +6,7 @@ struct CompanionHomeView: View {
     @State private var detail: DetailContent?
     @State private var renaming = false
     @State private var sharingCard = false
+    @State private var previewingCompanions = false
     @State private var draftName = ""
     private var earned: Int { model.today?.points ?? 0 }
     private var greeting: String {
@@ -62,6 +63,11 @@ struct CompanionHomeView: View {
                     .background { RoomBackdrop().overlay(alignment: .bottom) {
                         LinearGradient(colors: [.clear, Palette.background], startPoint: .top, endPoint: .bottom).frame(height: 50)
                     } }
+
+                    Button { previewingCompanions = true } label: {
+                        Label("认识新伙伴 · 芽芽与小影", systemImage: "pawprint.fill")
+                            .frame(maxWidth: .infinity).padding(.vertical, 10)
+                    }.buttonStyle(.bordered).padding(.horizontal, 24).padding(.bottom, 12)
 
                     VStack(spacing: 13) {
                         HStack(spacing: 12) {
@@ -123,6 +129,7 @@ struct CompanionHomeView: View {
             }
             .background(Palette.background).toolbar(.hidden, for: .navigationBar)
             .refreshable { await model.sync() }
+            .sheet(isPresented: $previewingCompanions) { NewCompanionPreview() }
             .sheet(isPresented: $sharingCard) { GrowthShareView() }
             .sheet(item: $detail) { DetailSheet(content: $0) }
             .alert("给伙伴起个名字", isPresented: $renaming) {
