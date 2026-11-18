@@ -17,7 +17,7 @@ struct GrowthRecordView: View {
                     }.padding(.horizontal, 7).padding(.top, 18)
 
                     HStack(spacing: 0) {
-                        PetView(stage: model.stage, xp: model.xp).frame(maxWidth: .infinity).frame(height: 185)
+                        PetView(stage: model.stage, xp: model.xp, companion: model.companion).frame(maxWidth: .infinity).frame(height: 185)
                         VStack(alignment: .leading, spacing: 12) {
                             HStack(alignment: .firstTextBaseline, spacing: 3) {
                                 Text("陪伴的第").font(.system(size: 15, weight: .semibold))

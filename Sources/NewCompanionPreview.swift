@@ -4,6 +4,8 @@ import UIKit
 // Static key poses from the approved concept atlas. This preview deliberately
 // does not change the user's existing pet or award growth for repeated taps.
 struct NewCompanionPreview: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var confirmingAdoption = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var species = 0
@@ -49,10 +51,15 @@ struct NewCompanionPreview: View {
                     }.pickerStyle(.segmented)
                     Text(pose == 0 ? "摸摸收到啦，今天也陪着你。" : pose == 1 ? "见到你就很开心！" : "休息一会儿，醒来再一起玩。")
                         .font(.headline).multilineTextAlignment(.center)
-                    Text("新伙伴外观预览 · 轻点精灵切换姿态\n当前伙伴和成长记录不会改变。")
+                    Button("选择\(names[species])作为主宠") { confirmingAdoption = true }
+                        .buttonStyle(.borderedProminent).disabled(model.demo)
+                    Text("轻点精灵切换姿态。选择主宠会更新伙伴名字，已有经验完整保留；可再次选择。")
                         .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
                 }.padding(24)
             }.background(Palette.background)
+                .confirmationDialog("选择\(names[species])？经验保留，伙伴名字将更新。", isPresented: $confirmingAdoption, titleVisibility: .visible) {
+                    Button("选择\(names[species])") { model.adopt(species == 0 ? .yaya : .xiaoying); dismiss() }
+                }
                 .navigationTitle("认识新伙伴").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
         }

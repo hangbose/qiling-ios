@@ -35,6 +35,7 @@ struct FriendSquareView: View {
                                 .frame(maxWidth: .infinity).padding(.vertical, 8)
                         }.buttonStyle(.borderedProminent)
                     }
+                    if !model.state.squadCode.isEmpty || model.demo { ExpeditionView() }
                     if !model.members.isEmpty { podium }
 
                     if model.demo {

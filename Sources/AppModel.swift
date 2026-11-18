@@ -3,6 +3,8 @@ import SwiftUI
 struct SavedState: Codable {
     var name = "同行者"
     var petName = "星澜"
+    var companion: String?
+    var expeditionMemories: [String]?
     var sleepGoal = 8.0
     var workoutGoal = 30.0
     var goalEffectiveDate = Date.distantPast
@@ -58,6 +60,26 @@ final class AppModel: ObservableObject {
     }
     var today: DailyProgress? { ledger.first { $0.id == Growth.dayID(Date()) } }
     var stage: Int { Growth.stage(xp) }
+    var companion: CompanionKind { CompanionKind(rawValue: state.companion ?? "") ?? .legacy }
+    var companionStageName: String {
+        companion == .legacy ? Growth.stageName(xp) : ["幼年", "初长", "成长", "成熟"][CompanionKind.phase(xp)]
+    }
+    var expedition: ExpeditionProgress { ExpeditionProgress(members: members) }
+    func adopt(_ kind: CompanionKind) {
+        guard !demo else { return }
+        state.companion = kind.rawValue
+        state.petName = kind.title
+        save()
+    }
+    private func rememberExpedition(code: String, week: String, result: [SquadMember]) {
+        guard state.sharing, weekPoints > 0, ExpeditionProgress(members: result).finished else { return }
+        let key = "\(week)|\(code)"
+        var memories = state.expeditionMemories ?? []
+        guard !memories.contains(key) else { return }
+        memories.append(key)
+        state.expeditionMemories = memories
+        save()
+    }
 
     func save() {
         do { UserDefaults.standard.set(try JSONEncoder().encode(state), forKey: storageKey) }
@@ -258,6 +280,7 @@ final class AppModel: ObservableObject {
             let result = try await squad.members(code: code, week: week)
             guard !demo, state.squadCode == code else { return }
             members = result
+            rememberExpedition(code: code, week: week, result: result)
         } catch {
             guard !demo, state.squadCode == code else { return }
             message = "小队暂未同步：\(error.localizedDescription)"

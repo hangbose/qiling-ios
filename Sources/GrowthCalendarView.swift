@@ -78,7 +78,7 @@ struct GrowthShareView: View {
             Text("栖灵 · 每一点坚持，都看得见").font(.subheadline).foregroundStyle(Palette.green)
             Image("PetStage\(model.stage)").resizable().scaledToFit().frame(height: 240)
             Text(model.state.petName).font(.largeTitle.bold())
-            Text("Lv.\(1 + model.xp / 100) · \(Growth.stageName(model.xp))").font(.title3)
+            Text("Lv.\(1 + model.xp / 100) · \(model.companionStageName)").font(.title3)
             Text("本周积累 \(model.weekPoints) 能量").font(.headline).foregroundStyle(Palette.green)
             Text("一起养成好习惯，一起长大").foregroundStyle(.secondary)
             if model.demo { Text("演示数据").font(.caption).foregroundStyle(.secondary) }

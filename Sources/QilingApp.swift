@@ -84,6 +84,7 @@ struct RootView: View {
 struct PetView: View {
     var stage: Int = 0
     var xp: Int? = nil
+    var companion: CompanionKind = .legacy
     private var detailLevel: Int { xp.map { Growth.appearance($0) } ?? 0 }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var floating = false
@@ -93,8 +94,13 @@ struct PetView: View {
                 Ellipse().fill(Palette.green.opacity(0.12))
                     .frame(width: proxy.size.width * 0.50, height: 12)
                     .offset(y: proxy.size.height * 0.43)
-                Image("PetStage\(min(2, max(0, stage)))")
-                    .resizable().scaledToFit()
+                Group {
+                    if companion == .legacy {
+                        Image("PetStage\(min(2, max(0, stage)))").resizable()
+                    } else {
+                        Image(uiImage: CompanionArt.image(kind: companion, xp: xp ?? 0)).resizable()
+                    }
+                }.scaledToFit()
                     .padding(8)
                     .scaleEffect(xp == nil ? 1 : (detailLevel == 0 ? 0.82 : 0.94))
                     .saturation(detailLevel >= 2 ? 1.25 : 1)
@@ -116,7 +122,7 @@ struct PetView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("星澜，\(stage == 0 ? "星芽幼体" : stage == 1 ? "逐光成长体" : "月辉守护体")")
+        .accessibilityLabel("\(companion.title)，成长中的伙伴")
     }
 }
 
@@ -129,7 +135,7 @@ struct SettingsView: View {
             Form {
                 Section {
                     HStack(spacing: 18) {
-                        PetView(stage: model.stage, xp: model.xp).frame(width: 96, height: 104)
+                        PetView(stage: model.stage, xp: model.xp, companion: model.companion).frame(width: 96, height: 104)
                         VStack(alignment: .leading, spacing: 8) {
                             Text(model.state.name).font(.title3.bold())
                             Text("与\(model.state.petName)一起成长").font(.subheadline).foregroundStyle(.secondary)

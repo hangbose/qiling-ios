@@ -53,7 +53,7 @@ struct CompanionHomeView: View {
                                 }
                                 .frame(width: width * 0.30, alignment: .leading)
                                 .position(x: width * 0.80, y: 112)
-                                Text("✦ \(Growth.stageName(model.xp))\(model.demo ? " · 演示" : "")")
+                                Text("✦ \(model.companionStageName)\(model.demo ? " · 演示" : "")")
                                     .font(.system(size: 10)).foregroundStyle(Palette.green)
                                     .padding(.horizontal, 11).padding(.vertical, 6)
                                     .background(.regularMaterial, in: Capsule()).padding(.leading, 24).padding(.bottom, 9)
