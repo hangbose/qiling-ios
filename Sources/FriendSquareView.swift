@@ -29,6 +29,11 @@ struct FriendSquareView: View {
                         Text("本周榜").tag(1)
                     }.pickerStyle(.segmented).padding(.horizontal, 26)
 
+                    NavigationLink { CampusMapView() } label: {
+                        Label("深大精灵领地 · 每日占地", systemImage: "map.fill")
+                            .frame(maxWidth: .infinity).padding(.vertical, 10)
+                    }.buttonStyle(.bordered)
+
                     if !model.demo {
                         Button { joining = true } label: {
                             Label("输入邀请码，加入好友小队", systemImage: "person.2.badge.plus")

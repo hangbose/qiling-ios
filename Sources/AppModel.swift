@@ -17,6 +17,10 @@ struct SavedState: Codable {
     var squadCode = ""
     var sharing = false
     var celebratedXP: Int?
+    var healthRulesStart: Date?
+    var habitRewards: [String: Int]?
+    var campusVisits: [String]?
+    var campusSharing: Bool?
 }
 
 @MainActor
@@ -30,6 +34,11 @@ final class AppModel: ObservableObject {
     @Published var status = "连接 Apple 健康，让成长自然发生"
     @Published var members: [SquadMember] = []
     @Published var celebration: GrowthCelebration?
+    @Published var campusBoard: CampusBoard?
+    @Published var campusUser = ""
+    @Published var campusBusy = false
+    @Published var campusError: String?
+    private let campus = CampusService()
     private let health = HealthService()
     private let squad = SquadService()
     private let storageKey = "qiling.state.v1"
@@ -48,17 +57,24 @@ final class AppModel: ObservableObject {
         if state.celebratedXP == nil {
             state.celebratedXP = state.ledger.values.reduce(0) { $0 + $1.points }
         }
+        if state.healthRulesStart == nil { state.healthRulesStart = Calendar.current.startOfDay(for: Date()); save() }
         if state.requestedHealth { startObservers() }
     }
 
     var ledger: [DailyProgress] {
         Array((demo ? demoLedger : state.ledger).values).sorted { $0.date > $1.date }
     }
-    var xp: Int { ledger.reduce(0) { $0 + $1.points } }
+    var xp: Int { ledger.reduce(0) { $0 + $1.points } + (demo ? 0 : (state.habitRewards ?? [:]).values.reduce(0, +)) }
     var weekPoints: Int {
-        ledger.filter { Growth.weekID($0.date) == Growth.weekID(Date()) }.reduce(0) { $0 + $1.points }
+        ledger.filter { Growth.weekID($0.date) == Growth.weekID(Date()) }.reduce(0) { $0 + $1.contribution }
     }
     var today: DailyProgress? { ledger.first { $0.id == Growth.dayID(Date()) } }
+    var campusScore: Int {
+        // The campus uses China civil days. Do not publish a score from a
+        // different local day when the user travels across time zones.
+        guard Growth.dayID(Date()) == CampusBoard.dayID(Date()) else { return 0 }
+        return today?.contribution ?? 0
+    }
     var stage: Int { Growth.stage(xp) }
     var companion: CompanionKind { CompanionKind(rawValue: state.companion ?? "") ?? .legacy }
     var companionStageName: String {
@@ -167,6 +183,18 @@ final class AppModel: ObservableObject {
                     progress.sleepHours = max(old.sleepHours, progress.sleepHours)
                     progress.workoutMinutes = max(old.workoutMinutes, progress.workoutMinutes)
                 }
+                if date >= (state.healthRulesStart ?? end) {
+                    progress.ruleVersion = 2
+                    progress.earnedFloor = old?.points
+                    progress.regularSleep = old?.regularSleep == true || HealthyRules.regularSleep(on: date, intervals: data.sleep.intervals)
+                }
+                let nextDay = cal.date(byAdding: .day, value: 1, to: date)!
+                let entries = data.workouts.workouts.compactMap { item -> WorkoutEntry? in
+                    let a = max(date, item.start), b = min(nextDay, item.end)
+                    guard b > a else { return nil }
+                    return WorkoutEntry(id: item.id, kind: item.kind, start: a, end: b)
+                }
+                progress.workouts = entries.isEmpty ? old?.workouts : entries
 
                 state.ledger[key] = progress
                 date = cal.date(byAdding: .day, value: 1, to: date)!
@@ -178,7 +206,46 @@ final class AppModel: ObservableObject {
             if steps == nil || data.sleep.error != nil || data.workouts.error != nil { status = "部分健康查询失败 · 请在「我的」查看详情" }
             save()
         }
-        // Cloud upload is separate from the HealthKit observer completion.
+        if state.sharing { await refreshSquad() }
+        if state.campusSharing == true { await refreshCampus() }
+    }
+
+    func refreshCampus(plot: Int? = nil) async {
+        guard !campusBusy, !demo, state.campusSharing == true else { return }
+        campusBusy = true
+        campusError = nil
+        defer { campusBusy = false }
+        let expected = campusBoard?.day ?? CampusBoard.dayID(Date())
+        do {
+            if plot == nil && expected != CampusBoard.dayID(Date()) { campusBoard = nil }
+            let result = try await campus.update(plot: plot, name: state.name, companion: companion.rawValue,
+                score: campusScore, expectedDay: plot == nil ? CampusBoard.dayID(Date()) : expected)
+            guard state.campusSharing == true, !demo else { return }
+            campusBoard = result.0
+            campusUser = result.1
+            var visits = Set(state.campusVisits ?? [])
+            for id in result.0.visits[result.1, default: []] { visits.insert("\(result.0.day)|\(id)") }
+            state.campusVisits = visits.sorted()
+            save()
+            if plot != nil { message = result.2 }
+        } catch {
+            campusError = (error as? CampusError)?.errorDescription ?? "校园地图暂未同步，请稍后刷新。若持续失败，请反馈给开发者；本地成长不会受影响。"
+            print("Campus sync failed: \(error)")
+        }
+    }
+
+    func rewardHabit(_ habit: String, date: Date = Date()) {
+        guard !demo, ["喝水", "阅读", "专注"].contains(habit) else { return }
+        let key = Growth.dayID(date) + "|" + habit
+        var rewards = state.habitRewards ?? [:]
+        guard rewards[key] == nil else { return }
+        rewards[key] = habit == "专注" ? 10 : 5
+        state.habitRewards = rewards
+        save()
+    }
+
+    func habitDone(_ habit: String, date: Date = Date()) -> Bool {
+        (state.habitRewards ?? [:])[Growth.dayID(date) + "|" + habit] != nil
     }
 
     func updateGoals(sleep: Double, workout: Double) {

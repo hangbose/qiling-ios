@@ -43,6 +43,7 @@ final class HealthService {
         var intervals: [HealthInterval] = []
         var sampleCount = 0
         var error: String?
+        var workouts: [WorkoutEntry] = []
         var diagnostic: String {
             if let error { return "读取失败：" + error }
             if sampleCount == 0 { return "未读到记录（也可能未获读取权限）" }
@@ -72,8 +73,34 @@ final class HealthService {
                 }
                 return HealthInterval(start: sample.startDate, end: sample.endDate)
             }
-            return Reading(intervals: intervals, sampleCount: all.count)
+            let entries = all.compactMap { sample -> WorkoutEntry? in
+                guard let workout = sample as? HKWorkout,
+                      (sample.metadata?[HKMetadataKeyWasUserEntered] as? Bool) != true else { return nil }
+                return WorkoutEntry(id: sample.uuid.uuidString, kind: Self.workoutName(workout.workoutActivityType), start: sample.startDate, end: sample.endDate)
+            }
+            return Reading(intervals: intervals, sampleCount: all.count, workouts: entries)
         } catch { return Reading(error: error.localizedDescription) }
+    }
+
+    private static func workoutName(_ type: HKWorkoutActivityType) -> String {
+        switch type {
+        case .walking: return "步行"
+        case .running: return "跑步"
+        case .cycling: return "骑行"
+        case .badminton: return "羽毛球"
+        case .basketball: return "篮球"
+        case .soccer: return "足球"
+        case .tennis: return "网球"
+        case .tableTennis: return "乒乓球"
+        case .traditionalStrengthTraining, .functionalStrengthTraining: return "力量训练"
+        case .yoga: return "瑜伽"
+        case .pilates: return "普拉提"
+        case .flexibility: return "拉伸"
+        case .swimming: return "游泳"
+        case .hiking: return "徒步"
+        case .dance, .cardioDance: return "舞蹈"
+        default: return "其他训练"
+        }
     }
 
     func dailySteps(since start: Date) async throws -> [String: Int] {

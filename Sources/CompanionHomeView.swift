@@ -69,6 +69,10 @@ struct CompanionHomeView: View {
                             .frame(maxWidth: .infinity).padding(.vertical, 10)
                     }.buttonStyle(.bordered).padding(.horizontal, 24).padding(.bottom, 12)
 
+                    NavigationLink { ContributionView() } label: {
+                        Label("今日贡献 · 运动明细与专注陪伴", systemImage: "heart.text.square")
+                    }.buttonStyle(.bordered).padding(.bottom, 12)
+
                     VStack(spacing: 13) {
                         HStack(spacing: 12) {
                             HabitTile(symbol: "moon.fill", title: "睡眠", value: model.today?.sleepHours ?? 0,
@@ -80,7 +84,7 @@ struct CompanionHomeView: View {
                                 showHabit(sleep: false)
                             }
                         }
-                        Label("今日 \(model.today?.steps ?? 0) 步 · 每 1000 步 +10 经验", systemImage: "figure.walk")
+                        Label("今日 \(model.today?.steps ?? 0) 步 · 步行与训练取高计分", systemImage: "figure.walk")
                             .font(.subheadline)
                         HStack(spacing: 9) {
                             Image(systemName: earned > 0 ? "checkmark" : "applewatch")
@@ -148,7 +152,7 @@ struct CompanionHomeView: View {
         detail = DetailContent(title: sleep ? "睡眠滋养" : "运动滋养",
             text: "当前记录：\(value.formatted(.number.precision(.fractionLength(1)))) \(unit)\n\n"
                 + (sleep ? "只计算实际睡眠时段，清醒与卧床时间不计入。跨夜睡眠归属起床日。" : "读取已记录的锻炼时段，合并重叠记录。")
-                + "\n\n每项达标获得 50 能量，步行每满 1000 步另加 10 经验。无记录时不能区分未佩戴、权限或同步延迟，不判为失败。"
+                + "\n\n新规则：睡眠达标 30 分，活动最多 70 分，规律作息 10 分。步行和训练取高值，已有经验保留。无记录时不能区分未佩戴、权限或同步延迟，不判为失败。"
                 + (model.demo ? "\n\n当前为演示数据。" : ""))
     }
 }
