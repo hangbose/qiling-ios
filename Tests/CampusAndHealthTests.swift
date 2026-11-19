@@ -49,6 +49,15 @@ final class CampusAndHealthTests: XCTestCase {
         XCTAssertThrowsError(try board.claim(plot: 0, user: "a", name: "A", companion: "yaya", score: 100, now: now.addingTimeInterval(24 * 3600)))
         XCTAssertEqual(CampusBoard(day: CampusBoard.dayID(now.addingTimeInterval(86400))).plots.count, 0)
     }
+    func testEmptyMovesCannotFarmAllFootprints() throws {
+        var board = CampusBoard(day: CampusBoard.dayID(now))
+        for id in 0..<4 {
+            _ = try board.claim(plot: id, user: "a", name: "A", companion: "yaya", score: 50, now: now)
+        }
+        XCTAssertThrowsError(try board.claim(plot: 4, user: "a", name: "A", companion: "yaya", score: 50, now: now))
+        XCTAssertEqual(board.visits["a"]?.count, 4)
+        XCTAssertEqual(board.plots.count, 1)
+    }
     func testRegularSleepAcrossMidnightAndMissingNight() {
         let formatter = ISO8601DateFormatter()
         let intervals = [("2026-11-16T23:40:00+08:00", "2026-11-17T07:40:00+08:00"),

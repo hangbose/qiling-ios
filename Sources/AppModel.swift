@@ -239,8 +239,10 @@ final class AppModel: ObservableObject {
         let key = Growth.dayID(date) + "|" + habit
         var rewards = state.habitRewards ?? [:]
         guard rewards[key] == nil else { return }
+        let previous = xp
         rewards[key] = habit == "专注" ? 10 : 5
         state.habitRewards = rewards
+        celebration = GrowthCelebration(previous: previous, current: xp)
         save()
     }
 

@@ -34,7 +34,8 @@ actor CampusService {
             if let plot {
                 message = try board.claim(plot: plot, user: user, name: name, companion: companion, score: score, now: now)
             } else {
-                guard board.plots.contains(where: { $0.owner == user }) else { return (board, user, message) }
+                guard let current = board.plots.first(where: { $0.owner == user }),
+                      current.score < min(110, max(0, score)) else { return (board, user, message) }
                 board.contribute(user: user, score: score)
             }
             record["payload"] = try JSONEncoder().encode(board) as CKRecordValue

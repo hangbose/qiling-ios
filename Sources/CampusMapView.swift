@@ -39,7 +39,7 @@ struct CampusMapView: View {
                         Button("刷新地图") { Task { await model.sync(); await model.refreshCampus() } }
                         Spacer()
                         if model.campusBusy { ProgressView() }
-                        Text("已挑战 \(model.campusBoard?.challenges[model.campusUser] ?? 0)/3")
+                        Text("挑战/换地 \(model.campusBoard?.challenges[model.campusUser] ?? 0)/3")
                     }
                 }
                 if let error = model.campusError {
@@ -88,7 +88,7 @@ struct CampusMapView: View {
                     ContentUnavailableView("等待校园地图", systemImage: "map", description: Text("连接后显示真实领地；不会用示例占领者代替其他用户。"))
                 }
                 GroupBox("守护约定") {
-                    Text("20 分即可占空地，每人同时拥有一块地。首次占领保护 2 小时，换地不刷新保护。挑战需比对方最近同步的分数高至少 10 分，每天最多 3 次，失败也计次数。保护期内不可挑战。分数最高 110，同分原主人守住。丢地不扣经验；地图和挑战次数次日重置。")
+                    Text("20 分即可占空地，每人同时拥有一块地。首次占领保护 2 小时，换地不刷新保护。挑战需比对方最近同步的分数高至少 10 分，每天最多 3 次挑战或换地，失败也计次数；首次占空地免费。保护期内不可挑战。分数最高 110，同分原主人守住。丢地不扣经验；地图和挑战次数次日重置。")
                         .font(.caption).frame(maxWidth: .infinity, alignment: .leading)
                 }
                 let explored = Set((model.state.campusVisits ?? []).compactMap { $0.split(separator: "|").last.map(String.init) }).count

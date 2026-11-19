@@ -33,12 +33,17 @@ struct CampusBoard: Codable {
         guard Self.open(now) else { throw CampusError.rule("22:00 后停止抢夺，今晚安心休息。") }
         let value = min(110, max(0, score))
         guard value >= 20 else { throw CampusError.rule("今日健康贡献达到 20 分后可以占地。") }
-        if let target = plots.first(where: { $0.id == plot }) {
-            if target.owner == user { contribute(user: user, score: value); return "守护值已同步" }
-            guard now >= target.protectedUntil else { throw CampusError.rule("这块地还在保护期，先选其他地方吧。") }
+        let target = plots.first(where: { $0.id == plot })
+        if target?.owner == user { contribute(user: user, score: value); return "守护值已同步" }
+        if let target, now < target.protectedUntil { throw CampusError.rule("这块地还在保护期，先选其他地方吧。") }
+        // First empty claim is free. Subsequent moves also consume quota so
+        // repeatedly visiting empty plots cannot farm the collection in seconds.
+        if target != nil || !visits[user, default: []].isEmpty {
             let used = challenges[user, default: 0]
-            guard used < 3 else { throw CampusError.rule("今天已挑战 3 次，明天再来。") }
+            guard used < 3 else { throw CampusError.rule("今天已挑战或换地 3 次，明天再来。") }
             challenges[user] = used + 1
+        }
+        if let target {
             guard value >= target.score + 10 else { return "挑战未成功：需要比守护值至少高 10 分。本次已计入挑战次数，不扣经验。" }
         }
         // Switching cannot be used to renew shields indefinitely.
