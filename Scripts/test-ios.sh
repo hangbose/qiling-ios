@@ -30,3 +30,10 @@ APP_BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PAT
 xcrun simctl launch "$DEVICE_ID" "$APP_BUNDLE_ID" --demo
 sleep 3
 xcrun simctl io "$DEVICE_ID" screenshot build/native-home.png
+
+for SCREEN in contributions campus; do
+  xcrun simctl terminate "$DEVICE_ID" "$APP_BUNDLE_ID" || true
+  xcrun simctl launch "$DEVICE_ID" "$APP_BUNDLE_ID" --demo "--preview-$SCREEN"
+  sleep 3
+  xcrun simctl io "$DEVICE_ID" screenshot "build/native-$SCREEN.png"
+done

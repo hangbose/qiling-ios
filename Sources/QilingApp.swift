@@ -42,11 +42,17 @@ struct RootView: View {
     @State private var tab: AppTab = .companion
     var body: some View {
         Group {
+            if ProcessInfo.processInfo.arguments.contains("--preview-contributions") {
+                NavigationStack { ContributionView() }
+            } else if ProcessInfo.processInfo.arguments.contains("--preview-campus") {
+                NavigationStack { CampusMapView() }
+            } else {
             switch tab {
             case .companion: CompanionHomeView(tab: $tab)
             case .square: FriendSquareView()
             case .growth: GrowthRecordView()
             case .profile: SettingsView()
+            }
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -168,7 +174,7 @@ struct SettingsView: View {
                         Text(report).font(.caption).foregroundStyle(.secondary)
                     }
                     DisclosureGroup("华为手表有记录，栖灵没有？") {
-                        Text("请在 iPhone 自带的‘健康’里查看‘睡眠’、‘步数’或‘体能训练’，确认记录来自华为运动健康。睡眠、训练和步数分别结算。再到健康头像 → 隐私 → App → 栖灵检查读取权限，返回这里重新同步。成长从领养当天起计算。")
+                        Text("请在 iPhone 自带的‘健康’里查看‘睡眠’、‘步数’或‘体能训练’，确认记录来自华为运动健康。步行与训练取高计分，睡眠单独结算。再到健康头像 → 隐私 → App → 栖灵检查读取权限，返回这里重新同步。成长从领养当天起计算。")
                             .font(.footnote).foregroundStyle(.secondary)
                     }
                     Button("连接／检查健康授权") { Task { await model.connect() } }

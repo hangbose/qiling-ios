@@ -32,7 +32,7 @@ struct GrowthRecordView: View {
 
                     VStack(spacing: 15) {
                         SectionHeading(title: "进化历程", actionTitle: "成长规则") {
-                            detail = DetailContent(title: "成长规则", text: "睡眠和运动每项达标获得 50 能量，步数另计，每天每满 1000 步加 10 经验。\n\n50 经验长大一点，150 经验焕发新色，300 经验出现星光，600 经验星光环绕。1000 经验进入逐光成长体，3000 经验进入月辉守护体。长期成长保留，周赛每周一重置。\n\n不用手动打卡或领取奖励，晚到的数据自动补算。")
+                            detail = DetailContent(title: "成长规则", text: "升级后的健康贡献：睡眠达标 30 分，步行与训练取高值，活动最多 70 分，规律作息 10 分。已获得的经验保留，轻习惯只增加宠物经验。\n\n50 经验长大一点，150 经验焕发新色，300 经验出现星光，600 经验星光环绕。1000 经验进入逐光成长体，3000 经验进入月辉守护体。长期成长保留，周赛每周一重置。\n\n不用手动打卡或领取奖励，晚到的数据自动补算。")
                         }
                         HStack(spacing: 4) {
                             ForEach(0..<3) { stage in
@@ -58,9 +58,9 @@ struct GrowthRecordView: View {
                     VStack(spacing: 14) {
                         SectionHeading(title: "本周成长", actionTitle: "查看记录") { showHistory() }
                         HStack {
-                            Text("本周已获得 \(model.weekPoints) 能量").foregroundStyle(.secondary)
+                            Text("本周健康贡献 \(model.weekPoints) 分").foregroundStyle(.secondary)
                             Spacer()
-                            Text("含步行经验").foregroundStyle(Palette.green)
+                            Text("图表为健康成长经验").foregroundStyle(Palette.green)
                         }.font(.system(size: 10))
                         HStack(alignment: .bottom, spacing: 14) {
                             ForEach(Array(summary.week.enumerated()), id: \.offset) { index, day in

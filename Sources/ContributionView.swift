@@ -43,6 +43,7 @@ struct ContributionView: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
+                HabitCollectionView()
                 GroupBox("轻习惯 · 只增加宠物经验") {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("自愿记录，每项每天一次，不影响抢地和小队排名。")

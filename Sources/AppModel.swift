@@ -277,6 +277,12 @@ final class AppModel: ObservableObject {
                                   workoutMinutes: offset == 0 ? 18 : 35, sleepGoal: 8, workoutGoal: 30, steps: 3450)
             demoLedger[p.id] = p
         }
+        campusUser = "demo-me"
+        campusBoard = CampusBoard(day: CampusBoard.dayID(Date()), plots: [
+            CampusPlot(id: 2, owner: "demo-me", name: "我", companion: "yaya", score: 60, protectedUntil: Date().addingTimeInterval(3600)),
+            CampusPlot(id: 6, owner: "demo-friend", name: "小雨", companion: "xiaoying", score: 50, protectedUntil: Date()),
+            CampusPlot(id: 11, owner: "demo-other", name: "阿森", companion: "yaya", score: 80, protectedUntil: Date())
+        ])
         status = "演示模式 · 所有数据均为示例"
         demoCheered = []
         members = [
@@ -290,6 +296,8 @@ final class AppModel: ObservableObject {
         celebration = nil
         generation += 1
         demo = false
+        campusBoard = nil
+        campusUser = ""
         members = []
         status = "连接 Apple 健康，让成长自然发生"
         await sync()
