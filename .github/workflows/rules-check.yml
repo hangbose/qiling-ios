@@ -1,6 +1,15 @@
 name: Health and territory rules
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - 'Sources/Growth.swift'
+      - 'Sources/HealthyRules.swift'
+      - 'Sources/CampusRules.swift'
+      - 'Tests/CampusAndHealthTests.swift'
+      - 'Tests/GrowthTests.swift'
+      - 'Scripts/test-rules.sh'
+      - '.github/workflows/rules-check.yml'
 permissions:
   contents: read
 jobs:
