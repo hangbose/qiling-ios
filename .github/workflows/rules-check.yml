@@ -1,0 +1,14 @@
+name: Health and territory rules
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    container: swift:6.0
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Test pure Swift rules without an iPhone runtime
+        run: bash Scripts/test-rules.sh
