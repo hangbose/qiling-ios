@@ -37,3 +37,8 @@ for SCREEN in contributions campus; do
   sleep 3
   xcrun simctl io "$DEVICE_ID" screenshot "build/native-$SCREEN.png"
 done
+
+xcrun simctl terminate "$DEVICE_ID" "$APP_BUNDLE_ID" || true
+xcrun simctl launch "$DEVICE_ID" "$APP_BUNDLE_ID" --demo --preview-campus --preview-campus-selection
+sleep 3
+xcrun simctl io "$DEVICE_ID" screenshot build/native-campus-selection.png
