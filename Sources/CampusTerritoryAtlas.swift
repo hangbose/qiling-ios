@@ -5,8 +5,6 @@ struct CampusTerritoryAtlas: View {
     let plots: [CampusPlot]
     let user: String
     @Binding var selected: Int?
-    var zoom: CGFloat
-    private let mint = Color(red: 0.65, green: 0.96, blue: 0.72)
 
     static func tint(_ plot: CampusPlot?, user: String) -> Color {
         guard let plot else { return Color(red: 0.26, green: 0.34, blue: 0.33) }
@@ -80,7 +78,7 @@ struct CampusTerritoryAtlas: View {
                     Text("深大 · 校园主题示意图 · 非实景地图")
                         .font(.system(size: 10)).tracking(1)
                 }.foregroundStyle(.white.opacity(0.45)).padding(18).allowsHitTesting(false)
-            }.scaleEffect(zoom)
+            }
         }.clipped()
     }
 }

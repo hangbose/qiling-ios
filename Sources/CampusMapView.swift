@@ -7,6 +7,7 @@ struct CampusMapView: View {
     @State private var confirming = false
     @State private var sharingCard = false
     @State private var showingGuide = false
+    @State private var now = Date()
     private let dayTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
     private let mint = Color(red: 0.65, green: 0.96, blue: 0.72)
     private let night = Color(red: 0.07, green: 0.10, blue: 0.10)
@@ -15,22 +16,27 @@ struct CampusMapView: View {
     }
     private var board: CampusBoard? {
         guard model.demo || model.state.campusSharing == true,
-              let board = model.campusBoard, board.day == CampusBoard.dayID(Date()) else { return nil }
+              let board = model.campusBoard, board.day == CampusBoard.dayID(now) else { return nil }
         return board
     }
     private var ownPlot: CampusPlot? { board?.plots.first { $0.owner == model.campusUser } }
     private var chosenPlot: CampusPlot? { board?.plots.first { $0.id == selected } }
     private var protected: Bool {
         guard let plot = chosenPlot else { return false }
-        return plot.owner != model.campusUser && plot.protectedUntil > Date()
+        return plot.owner != model.campusUser && plot.protectedUntil > now
     }
 
     var body: some View {
         VStack(spacing: 0) {
             header
             ZStack(alignment: .bottomTrailing) {
-                CampusTerritoryAtlas(plots: board?.plots ?? [], user: model.campusUser, selected: $selected, zoom: 1)
-                    .allowsHitTesting(board != nil)
+                GeometryReader { geometry in
+                    ScrollView(.vertical) {
+                        CampusTerritoryAtlas(plots: board?.plots ?? [], user: model.campusUser, selected: $selected)
+                            .frame(height: max(400, geometry.size.height))
+                    }.scrollBounceBehavior(.basedOnSize)
+                        .allowsHitTesting(board != nil)
+                }
                 if board == nil {
                     VStack(spacing: 8) {
                         Image(systemName: "map").font(.title)
@@ -60,15 +66,18 @@ struct CampusMapView: View {
         .sheet(isPresented: $sharingCard) { CampusShareView() }
         .task {
             await model.refreshCampus()
-            if model.demo && ProcessInfo.processInfo.arguments.contains("--preview-campus-selection") { selected = 2 }
+            if ProcessInfo.processInfo.arguments.contains("--demo") && ProcessInfo.processInfo.arguments.contains("--preview-campus-selection") { selected = 2 }
         }
-        .onReceive(dayTimer) { _ in
+        .onReceive(dayTimer) { date in
+            now = date
             if model.campusBoard?.day != CampusBoard.dayID(Date()) {
                 selected = nil
                 Task { await model.refreshCampus() }
             }
         }
-        .onChange(of: phase) { _, value in if value == .active { Task { await model.refreshCampus() } } }
+        .onChange(of: phase) { _, value in
+            if value == .active { now = Date(); Task { await model.refreshCampus() } }
+        }
         .confirmationDialog("确认占领或挑战？成功后原有领地会释放；有效挑战会使用一次机会。", isPresented: $confirming, titleVisibility: .visible) {
             Button("确认") { if let selected { Task { await model.refreshCampus(plot: selected) } } }
             Button("取消", role: .cancel) { }
@@ -97,7 +106,7 @@ struct CampusMapView: View {
                 Text("\(model.campusScore)").font(.system(size: 36, weight: .bold, design: .rounded)).foregroundStyle(mint)
                 Text("/ 110 今日贡献").font(.caption).foregroundStyle(.white.opacity(0.65))
                 Spacer()
-                Label(CampusBoard.open(Date()) ? "22:00 休战" : "今日已休战", systemImage: "moon")
+                Label(CampusBoard.open(now) ? "22:00 休战" : "今日已休战", systemImage: "moon")
                     .font(.caption2).foregroundStyle(.white.opacity(0.65))
             }
         }.padding(.horizontal, 20).padding(.vertical, 12)
@@ -164,7 +173,7 @@ struct CampusMapView: View {
                 Button { selected = nil } label: { Image(systemName: "xmark").frame(width: 36, height: 36) }
                     .accessibilityLabel("收起地块详情")
             }
-            if let plot = chosenPlot, plot.protectedUntil > Date() {
+            if let plot = chosenPlot, plot.protectedUntil > now {
                 Label("保护至 \(plot.protectedUntil.formatted(date: .omitted, time: .shortened))", systemImage: "shield.fill")
                     .font(.caption).foregroundStyle(mint)
             } else {
@@ -173,7 +182,7 @@ struct CampusMapView: View {
             }
             HStack {
                 action(protected ? "领地保护中" : chosenPlot?.owner == model.campusUser ? "更新守护值" : chosenPlot == nil ? "占领这里" : "挑战这块地", icon: protected ? "lock.fill" : "flag.fill") { confirming = true }
-                    .disabled(model.demo || model.campusBusy || protected || !CampusBoard.open(Date()))
+                    .disabled(model.demo || model.campusBusy || protected || !CampusBoard.open(now))
                 Button { sharingCard = true } label: {
                     Image(systemName: "square.and.arrow.up").frame(width: 48, height: 48)
                 }.background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
