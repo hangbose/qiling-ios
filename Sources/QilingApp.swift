@@ -58,6 +58,20 @@ struct RootView: View {
             }
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
+            if tab == .journey {
+                HStack(spacing: 0) {
+                    ForEach(AppTab.allCases, id: \.self) { item in
+                        Button { tab = item } label: {
+                            VStack(spacing: 3) {
+                                Image(systemName: item.symbol).font(.system(size: 15))
+                                Text(item.rawValue).font(BayUI.type(13))
+                            }.frame(maxWidth: .infinity, minHeight: 47)
+                        }.foregroundStyle(tab == item ? BayUI.honey : BayUI.cream)
+                            .accessibilityAddTraits(tab == item ? .isSelected : [])
+                    }
+                }.padding(.horizontal, 9).background(BayUI.pine)
+                    .overlay(alignment: .top) { Rectangle().fill(BayUI.rim).frame(height: 1) }
+            } else {
             HStack(spacing: 4) {
                 ForEach(AppTab.allCases, id: \.self) { item in
                     Button { tab = item } label: {
@@ -77,6 +91,7 @@ struct RootView: View {
             .overlay(RoundedRectangle(cornerRadius: 30).stroke(.white.opacity(0.9), lineWidth: 1))
             .shadow(color: .black.opacity(0.04), radius: 15, y: -3)
             .padding(.horizontal, 15).padding(.bottom, 4)
+            }
         }
         .tint(Palette.green)
         .sheet(item: Binding(get: { tab == .journey ? nil : model.celebration }, set: { if $0 == nil { model.dismissCelebration() } })) { event in

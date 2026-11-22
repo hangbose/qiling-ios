@@ -40,67 +40,58 @@ struct BayJourneyView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Label("栖灵旅行手记", systemImage: "book.pages").font(.subheadline.weight(.semibold))
-                        Spacer()
-                        Button { sheet = .journal } label: {
-                            HStack(spacing: 6) {
-                                Image(systemName: "fossil.shell.fill").foregroundStyle(BayInk.coral)
-                                Text("\(shells)").monospacedDigit().bold()
-                            }.padding(.horizontal, 13).padding(.vertical, 8)
-                                .background(.white.opacity(0.68), in: Capsule())
-                        }.accessibilityLabel("贝壳 \(shells) 枚，查看旅行手记")
-                    }.padding(.horizontal, 22).padding(.top, 12)
-                    HStack(alignment: .bottom) {
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("深圳  /  第一站" + (model.demo ? "  ·  演示" : ""))
-                                .font(.caption.weight(.semibold)).foregroundStyle(BayInk.coral)
-                            Text("深圳湾").font(.system(size: 42, weight: .semibold, design: .serif))
-                        }
-                        Spacer()
-                        Button { sheet = .travel } label: {
-                            Label(relay ? "小队接力" : "结伴同行", systemImage: "person.2")
-                                .font(.subheadline).padding(.vertical, 10)
-                        }
-                    }.padding(.horizontal, 22).padding(.top, 12).padding(.bottom, 14)
-                    BayScene(stop: shown, kind: actor, together: second, walking: walking)
-                    VStack(alignment: .leading, spacing: 14) {
-                        HStack {
-                            Label("海堤漫步", systemImage: "map").font(.headline)
+                VStack(spacing: 0) {
+                    ZStack(alignment: .top) {
+                        BayScene(stop: shown, kind: actor, together: second, walking: walking, follows: true)
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(model.demo ? "第一站 · 演示" : "第一站").font(BayUI.type(13)).foregroundStyle(BayUI.honey)
+                                Text("深圳湾").font(BayUI.type(30)).foregroundStyle(BayUI.cream)
+                            }.padding(.horizontal, 13).padding(.vertical, 8).fieldPlate()
                             Spacer()
-                            Text("亮灯 \(shown) / 3").font(.caption.monospacedDigit()).foregroundStyle(BayInk.sea)
-                        }
-                        HStack(spacing: 0) {
+                            Button { sheet = .journal } label: {
+                                Label("\(shells)", systemImage: "fossil.shell.fill")
+                            }.buttonStyle(BayKey()).accessibilityLabel("贝壳 \(shells) 枚，查看手记")
+                        }.padding(12)
+                    }
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(spacing: 6) {
                             ForEach(0..<3) { i in
-                                VStack(alignment: .leading, spacing: 7) {
-                                    HStack(spacing: 0) {
-                                        Image(systemName: i < shown ? "sun.max.fill" : "circle")
-                                            .font(.caption).foregroundStyle(i < shown ? BayInk.coral : BayInk.sea)
-                                        Rectangle().fill(i < shown ? BayInk.coral.opacity(0.65) : BayInk.sea.opacity(0.22)).frame(height: 1)
-                                    }
-                                    Text(names[i]).font(.caption.weight(i < shown ? .semibold : .regular))
-                                }.frame(maxWidth: .infinity, alignment: .leading)
+                                HStack(spacing: 5) {
+                                    Image(systemName: i < shown ? "diamond.fill" : "diamond").font(.system(size: 8))
+                                    Text(names[i]).font(BayUI.type(14))
+                                }.foregroundStyle(i < shown ? BayUI.honey : BayUI.cream.opacity(0.72))
+                                if i < 2 { Rectangle().fill(BayUI.rim.opacity(0.5)).frame(maxWidth: .infinity).frame(height: 1) }
                             }
-                        }.accessibilityElement(children: .combine)
-                        Divider()
-                        Text(lastEntry).font(.title3.weight(.semibold))
-                        if shown == 3 {
-                            Button { makeCard(); sheet = .card } label: { Label("收下深圳湾明信片", systemImage: "photo") }
-                                .buttonStyle(.borderedProminent)
-                        } else if !model.state.requestedHealth && !model.demo {
-                            Text("连接健康后，精灵会随着你的睡眠和运动记录自动出发。").font(.subheadline)
-                            Button { Task { await model.connect() } } label: { Label("连接 Apple 健康", systemImage: "heart") }
-                                .buttonStyle(.borderedProminent)
-                        } else {
-                            Text(note).font(.subheadline).foregroundStyle(BayInk.sea)
+                        }.accessibilityLabel("亮灯 \(shown) / 3")
+                        HStack(alignment: .top, spacing: 13) {
+                            BaySprite(kind: actor, walking: false)
+                                .frame(width: 50, height: 50).padding(4)
+                                .background(BayUI.rim.opacity(0.52)).overlay(BayCut().stroke(BayUI.rim))
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(lastEntry).font(BayUI.type(20))
+                                Text(voice).font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                                if let issue = model.bayIssue, relay { Text(issue).font(.caption) }
+                            }
+                        }.padding(13).frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundStyle(BayUI.ink).fieldPlate(BayUI.cream, edge: BayUI.rim)
+                        HStack {
+                            if shown == 3 {
+                                Button { makeCard(); sheet = .card } label: { Label("收下明信片", systemImage: "envelope") }
+                                    .buttonStyle(BayKey(light: true))
+                            } else if !model.state.requestedHealth && !model.demo {
+                                Button { Task { await model.connect() } } label: { Label("连接健康", systemImage: "heart") }
+                                    .buttonStyle(BayKey(light: true))
+                            } else {
+                                Button { sheet = .journal } label: { Label("翻开手记", systemImage: "book") }
+                                    .buttonStyle(BayKey(light: true))
+                            }
+                            Button { sheet = .travel } label: { Label(relay ? "小队接力" : "结伴同行", systemImage: "person.2") }
+                                .buttonStyle(BayKey())
                         }
-                        if let issue = model.bayIssue, relay { Text(issue).font(.caption).foregroundStyle(BayInk.coral) }
-                        Button("作息目标与旅行手记") { sheet = .journal }.font(.subheadline)
-                    }.padding(20).background(Color.white.opacity(0.58), in: RoundedRectangle(cornerRadius: 18))
-                        .padding(.horizontal, 16).padding(.vertical, 15)
+                    }.padding(15).frame(maxWidth: .infinity, alignment: .leading).background(BayUI.ink)
                 }
-            }.background(BayInk.paper.ignoresSafeArea()).foregroundStyle(BayInk.text)
+            }.background(BayUI.ink.ignoresSafeArea()).foregroundStyle(BayUI.cream)
                 .toolbar(.hidden, for: .navigationBar)
                 .tint(BayInk.sea)
                 .refreshable { await model.sync(); await model.refreshBay() }
@@ -119,16 +110,23 @@ struct BayJourneyView: View {
                                         image.resizable().scaledToFit()
                                         ShareLink(item: image, preview: SharePreview("深圳湾明信片", image: image)) {
                                             Label("分享明信片", systemImage: "square.and.arrow.up")
-                                        }.buttonStyle(.borderedProminent)
+                                        }.buttonStyle(BayKey(light: true))
                                     }.padding(20)
                                 }
                             }
                         }.navigationTitle(item == .journal ? "旅行手记" : item == .travel ? "结伴同行" : "深圳湾明信片")
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { sheet = nil } } }
-                    }.tint(BayInk.sea).presentationDragIndicator(.visible)
+                    }.foregroundStyle(BayUI.ink).tint(BayInk.sea).presentationBackground(BayUI.cream).presentationDragIndicator(.visible)
                 }
         }
+    }
+
+    private var voice: String {
+        if shown == 0 { return "先在树荫下坐一会儿。下一次好习惯同步后，我们就沿海堤出发。" }
+        if shown == 3 { return "从这里能看见整座海湾。把这一刻收进明信片吧。" }
+        if relay { return "伙伴走过的路，现在也为你亮着灯。" }
+        return note
     }
 
     private var note: String {
@@ -148,8 +146,9 @@ struct BayJourneyView: View {
             while shown < destination {
                 do { try await Task.sleep(for: .milliseconds(400)) } catch { return }
                 walking = true
-                withAnimation(.easeInOut(duration: 1.1)) { shown += 1 }
-                do { try await Task.sleep(for: .milliseconds(1150)) } catch { return }
+                withAnimation(.easeInOut(duration: 1.45)) { shown += 1 }
+                do { try await Task.sleep(for: .milliseconds(1480)) } catch { return }
+                walking = false
                 model.markBaySeen(shown, route: key)
             }
         }
@@ -180,7 +179,7 @@ struct BayJourneyView: View {
                     }
                 }
             }
-        }
+        }.scrollContentBackground(.hidden).background(BayUI.cream)
     }
     private var travel: some View {
         List {
@@ -201,7 +200,7 @@ struct BayJourneyView: View {
                     }
                 }
             }
-        }
+        }.scrollContentBackground(.hidden).background(BayUI.cream)
     }
     @MainActor private func makeCard() {
         let card = VStack(alignment: .leading, spacing: 0) {
