@@ -21,6 +21,7 @@ struct SavedState: Codable {
     var habitRewards: [String: Int]?
     var campusVisits: [String]?
     var campusSharing: Bool?
+    var bay: BayJournal?
 }
 
 @MainActor
@@ -38,7 +39,10 @@ final class AppModel: ObservableObject {
     @Published var campusUser = ""
     @Published var campusBusy = false
     @Published var campusError: String?
-    private let campus = CampusService()
+    let campus = CampusService()
+    @Published var bayIssue: String?
+    var demoBay = BayJournal()
+    var bay: BayJournal { demo ? demoBay : (state.bay ?? BayJournal()) }
     private let health = HealthService()
     private let squad = SquadService()
     private let storageKey = "qiling.state.v1"
@@ -59,6 +63,7 @@ final class AppModel: ObservableObject {
         }
         if state.healthRulesStart == nil { state.healthRulesStart = Calendar.current.startOfDay(for: Date()); save() }
         if state.requestedHealth { startObservers() }
+        if state.bay == nil { state.bay = BayJournal(); save() }
     }
 
     var ledger: [DailyProgress] {
@@ -197,6 +202,14 @@ final class AppModel: ObservableObject {
                 progress.workouts = entries.isEmpty ? old?.workouts : entries
 
                 state.ledger[key] = progress
+                if let journal = state.bay, key >= journal.start, journal.days[key] == nil {
+                    if BayJournal.bedtimeMet(on: date, goal: journal.goal(on: key), samples: data.sleep.intervals) {
+                        state.bay?.record(day: key, reason: "按时入睡")
+                    } else if progress.sleepComplete || progress.workoutComplete || (progress.steps ?? 0) >= 1000 {
+                        let reason = progress.sleepComplete ? "睡眠达标" : progress.workoutComplete ? "运动达标" : "步行千步"
+                        state.bay?.record(day: key, reason: reason)
+                    }
+                }
                 date = cal.date(byAdding: .day, value: 1, to: date)!
             }
             state.lastSync = Date()
@@ -207,6 +220,7 @@ final class AppModel: ObservableObject {
             save()
         }
         if state.sharing { await refreshSquad() }
+        await refreshBay()
         if state.campusSharing == true { await refreshCampus() }
     }
 
@@ -242,6 +256,8 @@ final class AppModel: ObservableObject {
         let previous = xp
         rewards[key] = habit == "专注" ? 10 : 5
         state.habitRewards = rewards
+        state.bay?.record(day: Growth.dayID(date), reason: habit)
+        Task { await refreshBay() }
         celebration = GrowthCelebration(previous: previous, current: xp)
         save()
     }
@@ -273,6 +289,11 @@ final class AppModel: ObservableObject {
         generation += 1
         demo = true
         demoLedger = [:]
+        demoBay = BayJournal()
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
+        demoBay.start = Growth.dayID(yesterday)
+        demoBay.record(day: demoBay.start, reason: "步行千步")
+        demoBay.record(day: Growth.dayID(Date()), reason: "按时入睡")
         for offset in 0..<9 {
             let date = Calendar.current.date(byAdding: .day, value: -offset, to: Date())!
             let p = DailyProgress(id: Growth.dayID(date), date: date, sleepHours: offset == 0 ? 8.2 : 8.5,

@@ -45,3 +45,32 @@ actor CampusService {
         throw CampusError.rule("这块地正在变化，请刷新后重试。")
     }
 }
+
+
+extension CampusService {
+    func advanceBay(code: String, days: [String], name: String, companion: String) async throws -> [BayRelayStep] {
+        let user = try await identity()
+        let id = CKRecord.ID(recordName: "journey-bay-v1-\(code)")
+        for attempt in 0..<3 {
+            let record: CKRecord
+            do { record = try await database.record(for: id) }
+            catch let error as CKError where error.code == .unknownItem {
+                record = CKRecord(recordType: "CampusDay", recordID: id)
+            }
+            let data = record["payload"] as? Data
+            var steps = try data.map { try JSONDecoder().decode([BayRelayStep].self, from: $0) } ?? []
+            let before = steps.count
+            for day in days.sorted() where steps.count < 3 {
+                let key = user + "|" + day
+                guard !steps.contains(where: { $0.key == key }) else { continue }
+                steps.append(BayRelayStep(key: key, name: name, companion: companion))
+            }
+            if before == steps.count { return steps }
+            record["payload"] = try JSONEncoder().encode(steps) as CKRecordValue
+            do { _ = try await database.save(record); return steps }
+            catch let error as CKError where error.code == .serverRecordChanged && attempt < 2 { continue }
+        }
+        throw CampusError.rule("接力正在更新，稍后会重试。")
+    }
+}
+

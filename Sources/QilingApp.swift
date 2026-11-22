@@ -19,9 +19,10 @@ struct QilingApp: App {
 }
 
 enum AppTab: String, CaseIterable {
-    case companion = "伙伴", square = "广场", growth = "成长", profile = "我的"
+    case journey = "旅途", companion = "伙伴", square = "广场", growth = "成长", profile = "我的"
     var symbol: String {
         switch self {
+        case .journey: return "map.fill"
         case .companion: return "pawprint.fill"
         case .square: return "person.2.fill"
         case .growth: return "chart.bar.fill"
@@ -39,7 +40,7 @@ enum Palette {
 
 struct RootView: View {
     @EnvironmentObject private var model: AppModel
-    @State private var tab: AppTab = .companion
+    @State private var tab: AppTab = .journey
     var body: some View {
         Group {
             if ProcessInfo.processInfo.arguments.contains("--preview-contributions") {
@@ -48,6 +49,7 @@ struct RootView: View {
                 NavigationStack { CampusMapView() }
             } else {
             switch tab {
+            case .journey: BayJourneyView(tab: $tab)
             case .companion: CompanionHomeView(tab: $tab)
             case .square: FriendSquareView()
             case .growth: GrowthRecordView()
