@@ -28,7 +28,7 @@ xcrun simctl install "$DEVICE_ID" build/DerivedData/Build/Products/Debug-iphones
 APP_PATH=build/DerivedData/Build/Products/Debug-iphonesimulator/Qiling.app
 APP_BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist")
 xcrun simctl launch "$DEVICE_ID" "$APP_BUNDLE_ID" --demo
-sleep 3
+sleep 6
 xcrun simctl io "$DEVICE_ID" screenshot build/native-home.png
 
 for SCREEN in contributions campus; do

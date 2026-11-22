@@ -59,6 +59,9 @@ extension CampusService {
             }
             let data = record["payload"] as? Data
             var steps = try data.map { try JSONDecoder().decode([BayRelayStep].self, from: $0) } ?? []
+            guard steps.count <= 3, Set(steps.map(\.key)).count == steps.count else {
+                throw CampusError.rule("这段接力记录暂时无法读取。")
+            }
             let before = steps.count
             for day in days.sorted() where steps.count < 3 {
                 let key = user + "|" + day

@@ -54,10 +54,17 @@ struct BaySprite: View {
         "     ddccddccd      ", "     dccd dccd      ", "     ddd   ddd      "
     ]
     var body: some View {
-        TimelineView(.animation(minimumInterval: 0.16, paused: !walking)) { timeline in
+        if walking {
+            TimelineView(.animation(minimumInterval: 0.16)) { timeline in
+                sprite(pulse: Int(timeline.date.timeIntervalSinceReferenceDate * 5) % 2 == 0)
+            }
+        } else {
+            sprite(pulse: false)
+        }
+    }
+    private func sprite(pulse: Bool) -> some View {
             Canvas { ctx, size in
                 let unit = floor(size.width * 3 / 20) / 3
-                let pulse = walking && Int(timeline.date.timeIntervalSinceReferenceDate * 5) % 2 == 0
                 let fur = kind == "yaya" ? Color(red: 0.64, green: 0.80, blue: 0.49) :
                     kind == "xiaoying" ? Color(red: 0.54, green: 0.58, blue: 0.85) : Color(red: 0.65, green: 0.79, blue: 0.89)
                 let inks: [Character: Color] = ["d": BayInk.text, "f": fur, "c": .init(white: 0.98),
@@ -70,7 +77,6 @@ struct BaySprite: View {
                         ctx.fill(Path(CGRect(x: CGFloat(x + shift)*unit, y: CGFloat(y + (pulse ? 1 : 2))*unit, width: unit, height: unit)), with: .color(ink))
                     }
                 }
-            }
-        }.accessibilityHidden(true)
+            }.accessibilityHidden(true)
     }
 }
