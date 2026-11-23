@@ -43,54 +43,14 @@ struct RootView: View {
     @State private var tab: AppTab = .journey
     var body: some View {
         Group {
-            if ProcessInfo.processInfo.arguments.contains("--preview-contributions") {
-                NavigationStack { ContributionView() }
-            } else if ProcessInfo.processInfo.arguments.contains("--preview-campus") {
-                NavigationStack { CampusMapView() }
-            } else {
-            switch tab {
-            case .journey: BayJourneyView(tab: $tab)
-            case .companion: CompanionHomeView(tab: $tab)
-            case .square: FriendSquareView()
-            case .growth: GrowthRecordView()
-            case .profile: SettingsView()
-            }
-            }
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
             if tab == .journey {
-                HStack(spacing: 0) {
-                    ForEach(AppTab.allCases, id: \.self) { item in
-                        Button { tab = item } label: {
-                            VStack(spacing: 3) {
-                                Image(systemName: item.symbol).font(.system(size: 15))
-                                Text(item.rawValue).font(BayUI.type(13))
-                            }.frame(maxWidth: .infinity, minHeight: 47)
-                        }.foregroundStyle(tab == item ? BayUI.rust : BayUI.muted)
-                            .accessibilityAddTraits(tab == item ? .isSelected : [])
-                    }
-                }.padding(.horizontal, 9).background(BayUI.cream)
-                    .overlay(alignment: .top) { Rectangle().fill(BayUI.rim).frame(height: 1) }
-            } else {
-            HStack(spacing: 4) {
-                ForEach(AppTab.allCases, id: \.self) { item in
-                    Button { tab = item } label: {
-                        VStack(spacing: 5) {
-                            Image(systemName: item.symbol).font(.system(size: 21, weight: .semibold))
-                            Text(item.rawValue).font(.system(size: 10, weight: tab == item ? .semibold : .regular))
-                        }
-                        .frame(maxWidth: .infinity).padding(.vertical, 10)
-                        .background(tab == item ? Palette.lime.opacity(0.30) : .clear,
-                                    in: RoundedRectangle(cornerRadius: 25))
-                        .foregroundStyle(tab == item ? Palette.green : .gray)
-                    }
-                    .accessibilityAddTraits(tab == item ? .isSelected : [])
+                // Reserve real layout space for the controls beneath the map.
+                VStack(spacing: 0) {
+                    content
+                    journeyTabs.fixedSize(horizontal: false, vertical: true)
                 }
-            }
-            .padding(5).background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 30))
-            .overlay(RoundedRectangle(cornerRadius: 30).stroke(.white.opacity(0.9), lineWidth: 1))
-            .shadow(color: .black.opacity(0.04), radius: 15, y: -3)
-            .padding(.horizontal, 15).padding(.bottom, 4)
+            } else {
+                content.safeAreaInset(edge: .bottom, spacing: 0) { regularTabs }
             }
         }
         .tint(Palette.green)
@@ -100,6 +60,61 @@ struct RootView: View {
         .alert("栖灵", isPresented: Binding(get: { model.message != nil }, set: { if !$0 { model.message = nil } })) {
             Button("知道了") { model.message = nil }
         } message: { Text(model.message ?? "") }
+    }
+
+    private var content: some View {
+        Group {
+            if ProcessInfo.processInfo.arguments.contains("--preview-contributions") {
+                NavigationStack { ContributionView() }
+            } else if ProcessInfo.processInfo.arguments.contains("--preview-campus") {
+                NavigationStack { CampusMapView() }
+            } else {
+                switch tab {
+                case .journey: BayJourneyView(tab: $tab)
+                case .companion: CompanionHomeView(tab: $tab)
+                case .square: FriendSquareView()
+                case .growth: GrowthRecordView()
+                case .profile: SettingsView()
+                }
+            }
+        }
+    }
+
+    private var journeyTabs: some View {
+        HStack(spacing: 0) {
+            ForEach(AppTab.allCases, id: \.self) { item in
+                Button { tab = item } label: {
+                    VStack(spacing: 3) {
+                        Image(systemName: item.symbol).font(.system(size: 15))
+                        Text(item.rawValue).font(BayUI.type(13))
+                    }.frame(maxWidth: .infinity, minHeight: 47)
+                }.foregroundStyle(tab == item ? BayUI.rust : BayUI.muted)
+                    .accessibilityAddTraits(tab == item ? .isSelected : [])
+            }
+        }.padding(.horizontal, 9).background(BayUI.cream)
+            .overlay(alignment: .top) { Rectangle().fill(BayUI.rim).frame(height: 1) }
+    }
+
+    private var regularTabs: some View {
+        HStack(spacing: 4) {
+            ForEach(AppTab.allCases, id: \.self) { item in
+                Button { tab = item } label: {
+                    VStack(spacing: 5) {
+                        Image(systemName: item.symbol).font(.system(size: 21, weight: .semibold))
+                        Text(item.rawValue).font(.system(size: 10, weight: tab == item ? .semibold : .regular))
+                    }
+                    .frame(maxWidth: .infinity).padding(.vertical, 10)
+                    .background(tab == item ? Palette.lime.opacity(0.30) : .clear,
+                                in: RoundedRectangle(cornerRadius: 25))
+                    .foregroundStyle(tab == item ? Palette.green : .gray)
+                }
+                .accessibilityAddTraits(tab == item ? .isSelected : [])
+            }
+        }
+        .padding(5).background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 30))
+        .overlay(RoundedRectangle(cornerRadius: 30).stroke(.white.opacity(0.9), lineWidth: 1))
+        .shadow(color: .black.opacity(0.04), radius: 15, y: -3)
+        .padding(.horizontal, 15).padding(.bottom, 4)
     }
 }
 
