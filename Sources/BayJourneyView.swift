@@ -78,7 +78,10 @@ struct BayJourneyView: View {
             GeometryReader { viewport in
                 ScrollView {
                     let height = viewport.size.height
-                    journey(sceneHeight: max(height * 0.705, min(height * 0.765, height - 155)))
+                    let needsHealthInvite = !model.demo && !model.state.requestedHealth
+                    let controlHeight: CGFloat = needsHealthInvite ? 220 : 167
+                    let sceneHeight = min(height * 0.765, max(height * 0.56, height - controlHeight))
+                    journey(sceneHeight: sceneHeight)
                 }
                 .refreshable { await model.sync(); await model.refreshBay() }
             }.background(BayUI.paper.ignoresSafeArea()).foregroundStyle(BayUI.ink)
