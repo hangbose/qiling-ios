@@ -52,12 +52,7 @@ extension AppModel {
     func setBayRelay(_ enabled: Bool) async {
         guard !demo, !enabled || !state.squadCode.isEmpty else { return }
         let code = state.squadCode
-        if enabled && state.bay?.relayCode != code {
-            state.bay?.relayCode = code
-            state.bay?.relayFrom = Growth.dayID(Date())
-            state.bay?.relaySteps = []
-        }
-        state.bay?.relayPaused = !enabled
+        state.bay?.setRelay(enabled, code: code, today: Growth.dayID(Date()))
         bayIssue = nil
         save()
         await refreshBay()
@@ -67,7 +62,7 @@ extension AppModel {
         guard !demo, let journal = state.bay, journal.relayPaused != true, let code = journal.relayCode,
               code == state.squadCode, let from = journal.relayFrom else { return }
         do {
-            let update = try await campus.advanceBay(code: code, days: journal.days.keys.filter { $0 >= from },
+            let update = try await campus.advanceBay(code: code, days: journal.eligibleRelayDays,
                 name: String(state.name.prefix(20)), companion: companion.rawValue)
             guard !demo, state.bay?.relayPaused != true, state.bay?.relayCode == code, state.bay?.relayFrom == from, state.squadCode == code else { return }
             if update.steps.count >= (state.bay?.relaySteps.count ?? 0), update.steps != state.bay?.relaySteps || state.bay?.relayUser != update.user {
@@ -77,7 +72,7 @@ extension AppModel {
             }
             bayIssue = nil
         } catch {
-            if !demo && state.bay?.relayCode == code { bayIssue = "接力暂未同步，下拉可以重试。" }
+            if !demo && state.bay?.relayPaused != true && state.squadCode == code && state.bay?.relayFrom == from { bayIssue = "接力暂未同步，下拉可以重试。" }
         }
     }
 }

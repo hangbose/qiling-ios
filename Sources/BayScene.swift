@@ -174,12 +174,18 @@ struct BaySprite: View {
         let species = kind == "yaya" ? "Bun" : kind == "xiaoying" ? "Cat" : "Fox"
         return "Trail" + species + (grown ? "1" : "0")
     }
+    private var sprite: some View {
+        Image(art).resizable().interpolation(.none).scaledToFit().accessibilityHidden(true)
+    }
     var body: some View {
-        TimelineView(.animation(minimumInterval: 0.15, paused: !walking)) { time in
-            let high = walking && Int(time.date.timeIntervalSinceReferenceDate * 6) % 2 == 0
-            Image(art).resizable().interpolation(.none).scaledToFit()
-                .rotationEffect(.degrees(high ? 3 : 0), anchor: .bottom)
-                .offset(y: high ? -3 : 0)
-        }.accessibilityHidden(true)
+        if walking {
+            TimelineView(.animation(minimumInterval: 0.15)) { time in
+                let high = Int(time.date.timeIntervalSinceReferenceDate * 6) % 2 == 0
+                sprite.rotationEffect(.degrees(high ? 3 : 0), anchor: .bottom)
+                    .offset(y: high ? -3 : 0)
+            }
+        } else {
+            sprite
+        }
     }
 }

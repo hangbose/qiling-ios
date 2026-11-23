@@ -38,6 +38,7 @@ struct BayJournal: Codable {
     var relayCode: String?
     var relayFrom: String?
     var relayPaused: Bool?
+    var relayBacklog: Set<String>?
     var relayUser: String?
     var placements: [String: BayPlacement]?
     var quickHabit: String?
@@ -65,6 +66,29 @@ struct BayJournal: Codable {
     mutating func record(day: String, reason: String) {
         guard day >= start, days[day] == nil else { return }
         days[day] = reason
+    }
+
+    mutating func setRelay(_ enabled: Bool, code: String, today: String) {
+        if enabled {
+            if relayCode != code {
+                relayCode = code
+                relayUser = nil
+                relaySteps = []
+                relayBacklog = []
+                relayFrom = today
+            } else if relayPaused == true || relayFrom == nil {
+                relayFrom = today
+            }
+        } else if let from = relayFrom, relayPaused != true {
+            relayBacklog = (relayBacklog ?? []).union(days.keys.filter { $0 >= from })
+            relayFrom = nil
+        }
+        relayPaused = !enabled
+    }
+
+    var eligibleRelayDays: [String] {
+        guard relayPaused != true, let from = relayFrom else { return [] }
+        return (relayBacklog ?? []).union(days.keys.filter { $0 >= from }).sorted()
     }
 
     func goal(on day: String) -> Int {

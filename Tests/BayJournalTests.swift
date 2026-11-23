@@ -2,6 +2,21 @@ import XCTest
 @testable import Qiling
 
 final class BayJournalTests: XCTestCase {
+    func testSoloDaysStayPersonalAfterResumingOrChangingTeam() {
+        var book = BayJournal()
+        book.start = "2026-11-01"
+        book.setRelay(true, code: "A", today: "2026-11-01")
+        book.record(day: "2026-11-01", reason: "阅读")
+        book.setRelay(false, code: "A", today: "2026-11-02")
+        book.record(day: "2026-11-02", reason: "喝水")
+        XCTAssertTrue(book.eligibleRelayDays.isEmpty)
+        book.setRelay(true, code: "A", today: "2026-11-03")
+        book.record(day: "2026-11-03", reason: "阅读")
+        XCTAssertEqual(book.eligibleRelayDays, ["2026-11-01", "2026-11-03"])
+        book.setRelay(true, code: "B", today: "2026-11-03")
+        XCTAssertEqual(book.eligibleRelayDays, ["2026-11-03"])
+    }
+
     func testDelayedSyncDoesNotDuplicateRewardsOrReplayBeforeArrival() {
         var book = BayJournal()
         book.start = "2026-11-19"
