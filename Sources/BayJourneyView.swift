@@ -1,7 +1,7 @@
 import SwiftUI
 
 private enum BaySheet: String, Identifiable {
-    case journal, travel, card
+    case journal, travel, card, shop
     var id: Self { self }
 }
 
@@ -19,7 +19,8 @@ struct BayJourneyView: View {
     private var relay: Bool { !model.demo && model.bay.relayCode != nil && model.bay.relayCode == model.state.squadCode }
     private var route: String { relay ? "team-" + model.state.squadCode : "solo" }
     private var count: Int { min(3, relay ? model.bay.relaySteps.count : model.bay.days.count) }
-    private var shells: Int { model.bay.payments.reduce(0) { $0 + $1.amount } }
+    private var shells: Int { model.bay.balance }
+    private var souvenirs: [BaySouvenir] { BaySouvenir.allCases.filter { model.bay.owns($0) } }
     private var actor: String {
         if relay, shown > 0, let step = model.bay.relaySteps.prefix(shown).last { return step.companion }
         return model.companion.rawValue
@@ -41,68 +42,14 @@ struct BayJourneyView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    ZStack(alignment: .top) {
-                        BayScene(stop: shown, kind: actor, together: second, walking: walking, follows: true)
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(model.demo ? "第一站 · 演示" : "第一站").font(BayUI.type(13)).foregroundStyle(BayUI.blush)
-                                Text("深圳湾").font(BayUI.type(30)).foregroundStyle(BayUI.cream)
-                            }.padding(.horizontal, 13).padding(.vertical, 8).fieldPlate()
-                            Spacer()
-                            Button { sheet = .journal } label: {
-                                Label("\(shells)", systemImage: "fossil.shell.fill")
-                            }.buttonStyle(BayKey()).accessibilityLabel("贝壳 \(shells) 枚，查看手记")
-                        }.padding(12)
-                    }
-                    BayPostmarkEdge()
-                    VStack(alignment: .leading, spacing: 13) {
-                        HStack(spacing: 6) {
-                            ForEach(0..<3) { i in
-                                HStack(spacing: 5) {
-                                    Image(systemName: i < litCount ? "diamond.fill" : "diamond").font(.system(size: 8))
-                                    Text(names[i]).font(BayUI.type(14))
-                                }.layoutPriority(1).foregroundStyle(i < litCount ? BayUI.rust : BayUI.muted)
-                                if i < 2 { Rectangle().fill(BayUI.rim).frame(minWidth: 2, maxWidth: .infinity).frame(height: 1) }
-                            }
-                        }.accessibilityLabel("亮灯 \(litCount) / 3")
-                        HStack(alignment: .center, spacing: 13) {
-                            BaySprite(kind: actor, walking: false)
-                                .frame(width: 50, height: 50).padding(4)
-                                .background(BayUI.blush)
-                                .overlay {
-                                    Rectangle().inset(by: 3).stroke(BayUI.rust.opacity(0.65),
-                                        style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
-                                }
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(lastEntry).font(.headline.weight(.semibold))
-                                Text(voice).font(.subheadline).foregroundStyle(BayUI.muted).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
-                                if let issue = model.bayIssue, relay { Text(issue).font(.caption) }
-                            }
-                        }.padding(13).frame(maxWidth: .infinity, alignment: .leading)
-                            .foregroundStyle(BayUI.ink).background(BayUI.cream)
-                            .overlay(alignment: .leading) { Rectangle().fill(BayUI.rust).frame(width: 3) }
-                        HStack {
-                            if shown == 3 {
-                                Button { makeCard(); sheet = .card } label: { Label("收下明信片", systemImage: "envelope") }
-                                    .buttonStyle(BayKey(primary: true))
-                            } else if !model.state.requestedHealth && !model.demo {
-                                Button { Task { await model.connect() } } label: { Label("连接健康", systemImage: "heart") }
-                                    .buttonStyle(BayKey(primary: true))
-                            } else {
-                                Button { sheet = .journal } label: { Label("翻开手记", systemImage: "book") }
-                                    .buttonStyle(BayKey(primary: true))
-                            }
-                            Button { sheet = .travel } label: { Label(relay ? "小队接力" : "结伴同行", systemImage: "person.2") }
-                                .buttonStyle(BayKey())
-                        }
-                    }.padding(15).frame(maxWidth: .infinity, alignment: .leading).background(BayUI.paper)
+            GeometryReader { viewport in
+                ScrollView {
+                    journey(sceneHeight: max(240, viewport.size.height * 0.765))
                 }
+                .refreshable { await model.sync(); await model.refreshBay() }
             }.background(BayUI.paper.ignoresSafeArea()).foregroundStyle(BayUI.ink)
                 .toolbar(.hidden, for: .navigationBar)
                 .tint(BayUI.rust)
-                .refreshable { await model.sync(); await model.refreshBay() }
                 .task { await model.refreshBay() }
                 .onChange(of: phase) { _, value in if value == .active { Task { await model.refreshBay() } } }
                 .task(id: "\(model.demo)|\(route)|\(count)") { await playArrival() }
@@ -110,6 +57,7 @@ struct BayJourneyView: View {
                     NavigationStack {
                         Group {
                             switch item {
+                            case .shop: shop
                             case .journal: journal
                             case .travel: travel
                             case .card:
@@ -122,11 +70,79 @@ struct BayJourneyView: View {
                                     }.padding(20)
                                 }
                             }
-                        }.navigationTitle(item == .journal ? "旅行手记" : item == .travel ? "结伴同行" : "深圳湾明信片")
+                        }.navigationTitle(item == .shop ? "海湾小铺" : item == .journal ? "旅行手记" : item == .travel ? "结伴同行" : "深圳湾明信片")
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { sheet = nil } } }
                     }.foregroundStyle(BayUI.ink).tint(BayUI.rust).presentationBackground(BayUI.cream).presentationDragIndicator(.visible)
                 }
+        }
+    }
+
+    private func journey(sceneHeight: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            ZStack(alignment: .top) {
+                BayScene(stop: shown, kind: actor, together: second, walking: walking, follows: true, souvenirs: souvenirs)
+                    .frame(height: sceneHeight)
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(model.demo ? "第一站 · 演示" : "第一站").font(BayUI.type(13)).foregroundStyle(BayUI.blush)
+                        Text("深圳湾").font(BayUI.type(30)).foregroundStyle(BayUI.cream)
+                    }.padding(.horizontal, 13).padding(.vertical, 8).fieldPlate()
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Button { sheet = .shop } label: {
+                            Label("小铺 · \(shells)", systemImage: "fossil.shell.fill")
+                        }.buttonStyle(BayKey()).accessibilityLabel("贝壳 \(shells) 枚，打开海湾小铺")
+                        if !walking, let last = model.bay.payments.last, last.day == Growth.dayID(Date()) {
+                            Text("今日 +\(last.amount)").font(.caption.monospacedDigit())
+                                .foregroundStyle(BayUI.cream).padding(.horizontal, 7).padding(.vertical, 3).fieldPlate()
+                                .accessibilityLabel("今天的好习惯赚了 \(last.amount) 枚贝壳")
+                        }
+                    }
+                }.padding(12)
+            }
+            BayPostmarkEdge()
+            VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 6) {
+                    ForEach(0..<3) { i in
+                        HStack(spacing: 5) {
+                            Image(systemName: i < litCount ? "diamond.fill" : "diamond").font(.system(size: 8))
+                            Text(names[i]).font(BayUI.type(14))
+                        }.layoutPriority(1).foregroundStyle(i < litCount ? BayUI.rust : BayUI.muted)
+                        if i < 2 { Rectangle().fill(BayUI.rim).frame(minWidth: 2, maxWidth: .infinity).frame(height: 1) }
+                    }
+                }.accessibilityLabel("亮灯 \(litCount) / 3")
+                HStack(alignment: .center, spacing: 9) {
+                    BaySprite(kind: actor, walking: false)
+                        .frame(width: 36, height: 36).padding(4)
+                        .background(BayUI.blush)
+                        .overlay {
+                            Rectangle().inset(by: 3).stroke(BayUI.rust.opacity(0.65),
+                                style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
+                        }
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(lastEntry).font(.headline.weight(.semibold))
+                        Text(voice).font(.subheadline).foregroundStyle(BayUI.muted).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
+                        if let issue = model.bayIssue, relay { Text(issue).font(.caption) }
+                    }
+                }.padding(8).frame(maxWidth: .infinity, alignment: .leading)
+                    .foregroundStyle(BayUI.ink).background(BayUI.cream)
+                    .overlay(alignment: .leading) { Rectangle().fill(BayUI.rust).frame(width: 3) }
+                HStack {
+                    if shown == 3 {
+                        Button { makeCard(); sheet = .card } label: { Label("收下明信片", systemImage: "envelope") }
+                            .buttonStyle(BayKey(primary: true))
+                    } else if !model.state.requestedHealth && !model.demo {
+                        Button { Task { await model.connect() } } label: { Label("连接健康", systemImage: "heart") }
+                            .buttonStyle(BayKey(primary: true))
+                    } else {
+                        Button { sheet = .journal } label: { Label("翻开手记", systemImage: "book") }
+                            .buttonStyle(BayKey(primary: true))
+                    }
+                    Button { sheet = .travel } label: { Label(relay ? "小队接力" : "结伴同行", systemImage: "person.2") }
+                        .buttonStyle(BayKey())
+                }
+            }.padding(.horizontal, 14).padding(.vertical, 8).frame(maxWidth: .infinity, alignment: .leading).background(BayUI.paper)
         }
     }
 
@@ -165,6 +181,54 @@ struct BayJourneyView: View {
         model.markBaySeen(destination, route: key)
     }
 
+    private var shop: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                BayScene(stop: shown, kind: actor, together: second, souvenirs: souvenirs)
+                    .accessibilityLabel("海堤全景，已经摆放 \(souvenirs.count) 件纪念品")
+                HStack {
+                    Label("\(shells) 枚贝壳", systemImage: "fossil.shell.fill").font(.headline)
+                    Spacer()
+                    Button("收支手记") { sheet = .journal }
+                }
+                if let last = model.bay.payments.last {
+                    Text("最近入账　\(model.bay.days[last.day] ?? "好习惯") +\(last.amount)")
+                        .font(.subheadline).foregroundStyle(BayUI.muted)
+                } else {
+                    Text("完成今天的第一项好习惯，收下 50 枚贝壳。").font(.subheadline)
+                }
+                ForEach(BaySouvenir.allCases, id: \.rawValue) { item in
+                    let owned = model.bay.owns(item)
+                    HStack(spacing: 12) {
+                        Image(item.asset).resizable().interpolation(.none).frame(width: 44, height: 44)
+                            .padding(6).background(BayUI.paper).accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.title).font(.headline)
+                            Text(owned ? "已摆在" + item.place : item.detail)
+                                .font(.footnote).foregroundStyle(BayUI.muted)
+                        }
+                        Spacer(minLength: 0)
+                        if owned {
+                            Image(systemName: "checkmark.seal.fill").foregroundStyle(BayUI.rust).accessibilityHidden(true)
+                        } else {
+                            VStack(spacing: 4) {
+                                Button { model.buyBaySouvenir(item) } label: {
+                                    Text("\(item.price) 枚").monospacedDigit()
+                                }.buttonStyle(BayKey(primary: shells >= item.price))
+                                    .disabled(shells < item.price)
+                                    .accessibilityLabel("花 \(item.price) 枚贝壳买\(item.title)")
+                                if shells < item.price {
+                                    Text("还差 \(item.price - shells) 枚").font(.caption).foregroundStyle(BayUI.muted)
+                                }
+                            }
+                        }
+                    }
+                    Divider()
+                }
+            }.padding(16)
+        }.background(BayUI.cream)
+    }
+
     private var journal: some View {
         List {
             Section("我的作息") {
@@ -180,6 +244,13 @@ struct BayJourneyView: View {
             }
             Section("贝壳 · \(shells) 枚") {
                 Text("每天结算一次，从 50 枚起，连续达成每天多 10 枚，最多 80 枚。间隔一天少一档，已存贝壳一直保留。").font(.footnote)
+                ForEach(souvenirs, id: \.rawValue) { item in
+                    HStack {
+                        Text(item.title)
+                        Spacer()
+                        Text("−\(model.bay.purchases?[item.rawValue] ?? item.price)").monospacedDigit()
+                    }
+                }
                 ForEach(model.bay.payments.reversed(), id: \.day) { payment in
                     HStack {
                         VStack(alignment: .leading) { Text(model.bay.days[payment.day] ?? "旅途"); Text(payment.day).font(.caption).foregroundStyle(.secondary) }
@@ -213,7 +284,7 @@ struct BayJourneyView: View {
     }
     @MainActor private func makeCard() {
         let card = VStack(alignment: .leading, spacing: 0) {
-            BayScene(stop: 3, kind: actor, together: second)
+            BayScene(stop: 3, kind: actor, together: second, souvenirs: souvenirs)
             VStack(alignment: .leading, spacing: 9) {
                 Text("深圳湾").font(.largeTitle.bold())
                 Text(relay ? model.bay.relaySteps.map(\.name).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }.joined(separator: "、") + " · 一起点亮海堤" : model.state.petName + " · 海堤漫步纪念")

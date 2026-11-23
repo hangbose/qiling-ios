@@ -12,6 +12,27 @@ final class BayJournalTests: XCTestCase {
         XCTAssertEqual(book.days.count, 5)
     }
 
+    func testShopUsesEarnedBalanceOnceAndSurvivesReload() throws {
+        var archived = BayJournal()
+        archived.start = "2026-11-19"
+        let data = try JSONEncoder().encode(archived)
+        XCTAssertFalse(String(decoding: data, as: UTF8.self).contains("purchases"))
+        var book = try JSONDecoder().decode(BayJournal.self, from: data)
+        XCTAssertFalse(book.buy(.planter))
+        book.record(day: "2026-11-19", reason: "按时入睡")
+        XCTAssertTrue(book.buy(.planter))
+        XCTAssertFalse(book.buy(.planter))
+        XCTAssertFalse(book.buy(.pennant))
+        XCTAssertEqual(book.balance, 15)
+        book.record(day: "2026-11-20", reason: "阅读")
+        XCTAssertEqual(book.balance, 75)
+        XCTAssertTrue(book.buy(.pennant))
+        let restored = try JSONDecoder().decode(BayJournal.self, from: JSONEncoder().encode(book))
+        XCTAssertTrue(restored.owns(.planter))
+        XCTAssertTrue(restored.owns(.pennant))
+        XCTAssertEqual(restored.balance, 0)
+    }
+
     func testBedtimeUsesMainSleepAndNextMorningForAfterMidnightTargets() {
         let cal = Calendar(identifier: .gregorian)
         let day = cal.date(from: DateComponents(year: 2026, month: 11, day: 21))!

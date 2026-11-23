@@ -1,6 +1,14 @@
 import Foundation
 
 extension AppModel {
+    func buyBaySouvenir(_ item: BaySouvenir) {
+        if demo {
+            _ = demoBay.buy(item)
+        } else if state.bay?.buy(item) == true {
+            save()
+        }
+    }
+
     func markBaySeen(_ count: Int, route: String) {
         if demo { demoBay.seen[route] = count; return }
         if state.bay?.seen[route] != count { state.bay?.seen[route] = count; save() }

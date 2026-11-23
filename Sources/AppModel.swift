@@ -41,7 +41,7 @@ final class AppModel: ObservableObject {
     @Published var campusError: String?
     let campus = CampusService()
     @Published var bayIssue: String?
-    var demoBay = BayJournal()
+    @Published var demoBay = BayJournal()
     var bay: BayJournal { demo ? demoBay : (state.bay ?? BayJournal()) }
     private let health = HealthService()
     private let squad = SquadService()

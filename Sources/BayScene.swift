@@ -14,6 +14,7 @@ struct BayScene: View {
     var together: String?
     var walking = false
     var follows = false
+    var souvenirs: [BaySouvenir] = []
     @Environment(\.accessibilityReduceMotion) private var reduced
     private let walkerX = [0.11, 0.25, 0.51, 0.86]
     private let walkerY = [0.745, 0.738, 0.727, 0.624]
@@ -22,6 +23,14 @@ struct BayScene: View {
     private var litCount: Int { walking ? max(0, stop - 1) : stop }
 
     var body: some View {
+        if follows {
+            landscape
+        } else {
+            landscape.aspectRatio(4.0 / 3.0, contentMode: .fit)
+        }
+    }
+
+    private var landscape: some View {
         GeometryReader { geo in
             let frame = geo.size
             let w = follows ? max(frame.width * 1.78, frame.height * 4 / 3) : frame.width
@@ -48,6 +57,13 @@ struct BayScene: View {
                     }.frame(width: w * 0.066, height: w * 0.066)
                         .position(x: w * lamps[i].x, y: h * lamps[i].y)
                 }
+                ForEach(souvenirs, id: \.rawValue) { item in
+                    let size = w * (item == .planter ? 0.053 : 0.073)
+                    Image(item.asset).resizable().interpolation(.none)
+                        .frame(width: size, height: size)
+                        .position(x: w * (item == .planter ? 0.30 : 0.92),
+                                  y: h * (item == .planter ? 0.748 : 0.596) - size / 2)
+                }
                 if let together {
                     BaySprite(kind: together, walking: false).frame(width: w * 0.075, height: w * 0.075)
                         .position(x: w * (walkerX[stop] - 0.073), y: h * (walkerY[stop] + 0.018))
@@ -55,7 +71,7 @@ struct BayScene: View {
                 BaySprite(kind: kind, walking: walking && !reduced).frame(width: w * 0.09, height: w * 0.09)
                     .position(x: w * walkerX[stop], y: h * walkerY[stop])
             }.frame(width: w, height: h).offset(x: -cameraX, y: -cameraY)
-        }.aspectRatio(follows ? 0.98 : 4.0 / 3.0, contentMode: .fit)
+        }
             .clipped().accessibilityLabel("深圳湾海堤，已点亮 \(litCount) 盏路灯")
     }
 }

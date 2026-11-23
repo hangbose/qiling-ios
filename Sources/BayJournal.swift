@@ -6,6 +6,15 @@ struct BayRelayStep: Codable, Hashable {
     let companion: String
 }
 
+enum BaySouvenir: String, CaseIterable {
+    case planter, pennant
+    var title: String { self == .planter ? "簕杜鹃花盆" : "海风信号旗" }
+    var price: Int { self == .planter ? 35 : 75 }
+    var asset: String { self == .planter ? "BayPlanter" : "BayPennant" }
+    var place: String { self == .planter ? "海边长椅" : "观景平台" }
+    var detail: String { self == .planter ? "给长椅添一丛深圳的市花。" : "在观景平台升起一面海湾的小旗。" }
+}
+
 struct BayJournal: Codable {
     var start = Growth.dayID(Date())
     var bedtime = 23 * 60
@@ -15,6 +24,24 @@ struct BayJournal: Codable {
     var relayFrom: String?
     var relaySteps: [BayRelayStep] = []
     var seen: [String: Int] = [:]
+
+    // Older journals have no purchases. Store the paid price with each souvenir.
+    private(set) var purchases: [String: Int]?
+
+    var balance: Int {
+        let earned = payments.reduce(0) { $0 + $1.amount }
+        return earned - (purchases ?? [:]).values.reduce(0, +)
+    }
+
+    func owns(_ item: BaySouvenir) -> Bool { purchases?[item.rawValue] != nil }
+
+    mutating func buy(_ item: BaySouvenir) -> Bool {
+        guard !owns(item), balance >= item.price else { return false }
+        var updated = purchases ?? [:]
+        updated[item.rawValue] = item.price
+        purchases = updated
+        return true
+    }
 
     mutating func record(day: String, reason: String) {
         guard day >= start, days[day] == nil else { return }
