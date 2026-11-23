@@ -205,8 +205,7 @@ final class AppModel: ObservableObject {
                 if let journal = state.bay, key >= journal.start, journal.days[key] == nil {
                     if BayJournal.bedtimeMet(on: date, goal: journal.goal(on: key), samples: data.sleep.intervals) {
                         state.bay?.record(day: key, reason: "按时入睡")
-                    } else if progress.sleepComplete || progress.workoutComplete || (progress.steps ?? 0) >= 1000 {
-                        let reason = progress.sleepComplete ? "睡眠达标" : progress.workoutComplete ? "运动达标" : "步行千步"
+                    } else if let reason = BayJournal.automaticReason(progress) {
                         state.bay?.record(day: key, reason: reason)
                     }
                 }

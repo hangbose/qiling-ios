@@ -48,9 +48,28 @@ actor CampusService {
 
 
 extension CampusService {
-    func advanceBay(code: String, days: [String], name: String, companion: String) async throws -> [BayRelayStep] {
+    func advanceBay(code: String, days: [String], name: String, companion: String) async throws -> (steps: [BayRelayStep], user: String) {
         let user = try await identity()
-        let id = CKRecord.ID(recordName: "journey-bay-v1-\(code)")
+        var result: [BayRelayStep] = []
+        var contributed = Set<String>()
+        let candidates = Set(days).sorted().map { BayRelayStep(key: user + "|" + $0, name: name, companion: companion) }
+        var page = 0
+        while true {
+            // Keep the original three-entry record readable by older clients.
+            let suffix = page == 0 ? "" : "-page-\(page)"
+            let id = CKRecord.ID(recordName: "journey-bay-v1-\(code)" + suffix)
+            let capacity = page == 0 ? 3 : 96
+            let steps = try await appendBayPage(id, capacity: capacity,
+                candidates: candidates.filter { !contributed.contains($0.key) })
+            result.append(contentsOf: steps)
+            contributed.formUnion(steps.map(\.key))
+            if steps.count < capacity { return (result, user) }
+            page += 1
+        }
+    }
+
+    private func appendBayPage(_ id: CKRecord.ID, capacity: Int,
+                               candidates: [BayRelayStep]) async throws -> [BayRelayStep] {
         for attempt in 0..<3 {
             let record: CKRecord
             do { record = try await database.record(for: id) }
@@ -59,14 +78,13 @@ extension CampusService {
             }
             let data = record["payload"] as? Data
             var steps = try data.map { try JSONDecoder().decode([BayRelayStep].self, from: $0) } ?? []
-            guard steps.count <= 3, Set(steps.map(\.key)).count == steps.count else {
+            guard steps.count <= capacity, Set(steps.map(\.key)).count == steps.count else {
                 throw CampusError.rule("这段接力记录暂时无法读取。")
             }
             let before = steps.count
-            for day in days.sorted() where steps.count < 3 {
-                let key = user + "|" + day
-                guard !steps.contains(where: { $0.key == key }) else { continue }
-                steps.append(BayRelayStep(key: key, name: name, companion: companion))
+            var keys = Set(steps.map(\.key))
+            for step in candidates where steps.count < capacity {
+                if keys.insert(step.key).inserted { steps.append(step) }
             }
             if before == steps.count { return steps }
             record["payload"] = try JSONEncoder().encode(steps) as CKRecordValue

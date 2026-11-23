@@ -25,7 +25,7 @@ final class HealthService {
             }
             observers.append(query)
             store.execute(query)
-            store.enableBackgroundDelivery(for: type, frequency: .hourly) { _, error in
+            store.enableBackgroundDelivery(for: type, frequency: type == stepType ? .hourly : .immediate) { _, error in
                 if let error { onError(error) }
             }
         }

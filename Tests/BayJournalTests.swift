@@ -46,6 +46,44 @@ final class BayJournalTests: XCTestCase {
         XCTAssertEqual(book.balance, 0)
     }
 
+    func testRouteBoundariesAndRevisits() {
+        XCTAssertEqual(BayDistrict.lapLength, 27)
+        XCTAssertEqual(BayTrail(3).district, 0)
+        XCTAssertEqual(BayTrail(4).ticks(in: 1), 1)
+        XCTAssertEqual(BayTrail(9).ticks(in: 1), 6)
+        XCTAssertFalse(BayTrail(9).canVisit(2))
+        XCTAssertEqual(BayTrail(27).district, 4)
+        XCTAssertEqual(BayTrail(28).lap, 2)
+        XCTAssertEqual(BayTrail(28).visitTicks(4), 6)
+    }
+
+    func testPlacementSurvivesReloadAndDoesNotChargeAgain() throws {
+        var book = BayJournal()
+        book.start = "2026-11-01"
+        book.record(day: book.start, reason: "阅读")
+        XCTAssertTrue(book.buy(.planter))
+        book.place(.planter, in: 1, at: 0.8, progress: BayTrail(1))
+        XCTAssertEqual(book.position(of: .planter).district, 0)
+        book.place(.planter, in: 1, at: 1.5, progress: BayTrail(4))
+        let copy = try JSONDecoder().decode(BayJournal.self, from: JSONEncoder().encode(book))
+        XCTAssertEqual(copy.position(of: .planter).district, 1)
+        XCTAssertEqual(copy.position(of: .planter).x, 0.94)
+        XCTAssertEqual(copy.balance, 15)
+    }
+
+    func testWatchAndManualRecordSettleSameDayOnce() {
+        var day = DailyProgress(id: "2026-11-20", date: Date(), sleepHours: 0, workoutMinutes: 9.5, sleepGoal: 8, workoutGoal: 30, steps: 999)
+        XCTAssertNil(BayJournal.automaticReason(day))
+        day.workoutMinutes = 10
+        XCTAssertEqual(BayJournal.automaticReason(day), "运动达标")
+        var book = BayJournal()
+        book.start = day.id
+        book.record(day: day.id, reason: "阅读")
+        book.record(day: day.id, reason: BayJournal.automaticReason(day)!)
+        XCTAssertEqual(book.days[day.id], "阅读")
+        XCTAssertEqual(book.balance, 50)
+    }
+
     func testBedtimeUsesMainSleepAndNextMorningForAfterMidnightTargets() {
         let cal = Calendar(identifier: .gregorian)
         let day = cal.date(from: DateComponents(year: 2026, month: 11, day: 21))!

@@ -1,7 +1,7 @@
 import SwiftUI
 
 private enum BaySheet: String, Identifiable {
-    case journal, travel, card, shop
+    case journal, travel, card, shop, atlas
     var id: Self { self }
 }
 
@@ -15,29 +15,44 @@ struct BayJourneyView: View {
     @State private var walking = false
     @State private var goal = Date()
     @State private var cardImage: Image?
-    private let names = ["海边长椅", "海湾转角", "观景平台"]
-    private var relay: Bool { !model.demo && model.bay.relayCode != nil && model.bay.relayCode == model.state.squadCode }
-    private var route: String { relay ? "team-" + model.state.squadCode : "solo" }
-    private var count: Int { min(3, relay ? model.bay.relaySteps.count : model.bay.days.count) }
+    @State private var visiting: Int?
+    @State private var editing: BaySouvenir?
+    @State private var editDistrict = 0
+    @State private var demoPet = "legacy"
+    private var relay: Bool {
+        guard model.bay.relayPaused != true, let code = model.bay.relayCode else { return false }
+        return model.demo ? code == "demo" : code == model.state.squadCode
+    }
+    private var route: String { relay ? "team-" + (model.bay.relayCode ?? "") : "solo" }
+    private var count: Int { relay ? model.bay.relaySteps.count : model.bay.days.count }
+    private var trail: BayTrail { BayTrail(shown) }
+    private var region: Int { visiting.flatMap { BayTrail(count).canVisit($0) ? $0 : nil } ?? trail.district }
+    private var area: BayDistrict { BayDistrict.all[region] }
+    private var ticks: Int { visiting == nil ? trail.ticks(in: region) : BayTrail(count).visitTicks(region) }
+    private var fraction: Double { Double(ticks * 3) / Double(area.length) }
+    private var litCount: Int { Int(fraction) }
     private var shells: Int { model.bay.balance }
     private var souvenirs: [BaySouvenir] { BaySouvenir.catalog.filter { model.bay.owns($0) } }
-    private var actor: String {
-        if relay, shown > 0, let step = model.bay.relaySteps.prefix(shown).last { return step.companion }
-        return model.companion.rawValue
+    private var actor: String { model.demo ? demoPet : model.companion.rawValue }
+    private var grown: Bool { model.bay.days.count >= 5 }
+    private var friend: BayRelayStep? {
+        guard relay else { return nil }
+        return model.bay.relaySteps.last(where: { !$0.key.hasPrefix((model.demo ? "me" : model.bay.relayUser ?? "") + "|") })
     }
-    private var second: String? {
-        guard relay, shown >= 2 else { return nil }
-        let steps = Array(model.bay.relaySteps.prefix(shown))
-        guard let last = steps.last else { return nil }
-        let user = last.key.split(separator: "|").first
-        return steps.dropLast().last(where: { $0.key.split(separator: "|").first != user })?.companion
-    }
-    private var litCount: Int { walking ? max(0, shown - 1) : shown }
     private var lastEntry: String {
-        if walking { return "正在走向" + names[max(0, shown - 1)] }
-        if relay, let step = model.bay.relaySteps.prefix(shown).last { return step.name + "点亮了" + names[shown-1] }
-        if shown == 0 { return model.state.petName + "在海边等你" }
-        return model.state.petName + "走到了" + names[shown-1]
+        if visiting != nil { return "重游" + area.title }
+        if walking { return "正走向" + area.stops[min(2, litCount)] }
+        if shown == 0 { return "从海边长椅出发" }
+        if relay, let step = model.bay.relaySteps.prefix(shown).last { return step.name + "接上了一程" }
+        return litCount > 0 && fraction == Double(litCount) ? "点亮了" + area.stops[litCount-1] : "走向" + area.stops[min(2,litCount)]
+    }
+
+    private func scene(_ region: Int, ticks: Int, follows: Bool = false) -> BayScene {
+        let progress = Double(ticks * 3) / Double(BayDistrict.all[region].length)
+        return BayScene(stop: Int(progress), kind: actor, together: friend?.companion,
+            walking: follows && walking, follows: follows, souvenirs: souvenirs,
+            district: region, fraction: progress, placements: model.bay.placements ?? [:], grown: grown,
+            buddyGrown: friend.map { f in model.bay.relaySteps.filter { $0.key.split(separator: "|").first == f.key.split(separator: "|").first }.count >= 5 } ?? false)
     }
 
     var body: some View {
@@ -58,6 +73,7 @@ struct BayJourneyView: View {
                     NavigationStack {
                         Group {
                             switch item {
+                            case .atlas: atlas
                             case .shop: shop
                             case .journal: journal
                             case .travel: travel
@@ -65,13 +81,13 @@ struct BayJourneyView: View {
                                 if let image = cardImage {
                                     VStack(spacing: 22) {
                                         image.resizable().scaledToFit()
-                                        ShareLink(item: image, preview: SharePreview("深圳湾明信片", image: image)) {
+                                        ShareLink(item: image, preview: SharePreview("深圳漫步明信片", image: image)) {
                                             Label("分享明信片", systemImage: "square.and.arrow.up")
                                         }.buttonStyle(BayKey(primary: true))
                                     }.padding(20)
                                 }
                             }
-                        }.navigationTitle(item == .shop ? "海湾小铺" : item == .journal ? "旅行手记" : item == .travel ? "结伴同行" : "深圳湾明信片")
+                        }.navigationTitle(item == .atlas ? "深圳旅图" : item == .shop ? "旅途小铺" : item == .journal ? "旅行手记" : item == .travel ? "结伴同行" : "深圳漫步明信片")
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { sheet = nil } } }
                     }.foregroundStyle(BayUI.ink).tint(BayUI.rust).presentationBackground(BayUI.cream).presentationDragIndicator(.visible)
@@ -82,13 +98,15 @@ struct BayJourneyView: View {
     private func journey(sceneHeight: CGFloat) -> some View {
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
-                BayScene(stop: shown, kind: actor, together: second, walking: walking, follows: true, souvenirs: souvenirs)
+                scene(region, ticks: ticks, follows: true)
                     .frame(height: sceneHeight)
                 HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(model.demo ? "第一站 · 演示" : "第一站").font(BayUI.type(13)).foregroundStyle(BayUI.blush)
-                        Text("深圳湾").font(BayUI.type(30)).foregroundStyle(BayUI.cream)
-                    }.padding(.horizontal, 13).padding(.vertical, 8).fieldPlate()
+                    Button { sheet = .atlas } label: {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("深圳旅图  \(region+1)/5 ›").font(BayUI.type(13)).foregroundStyle(BayUI.blush)
+                            Text(area.title).font(BayUI.type(area.title.count > 4 ? 22 : 28)).foregroundStyle(BayUI.cream)
+                        }.padding(.horizontal, 11).padding(.vertical, 7).fieldPlate()
+                    }.buttonStyle(.plain).accessibilityLabel("打开深圳旅图，当前在" + area.title)
                     Spacer()
                     VStack(alignment: .trailing, spacing: 4) {
                         Button { sheet = .shop } label: {
@@ -108,13 +126,13 @@ struct BayJourneyView: View {
                     ForEach(0..<3) { i in
                         HStack(spacing: 5) {
                             Image(systemName: i < litCount ? "diamond.fill" : "diamond").font(.system(size: 8))
-                            Text(names[i]).font(BayUI.type(14))
+                            Text(area.stops[i]).font(BayUI.type(14))
                         }.layoutPriority(1).foregroundStyle(i < litCount ? BayUI.rust : BayUI.muted)
                         if i < 2 { Rectangle().fill(BayUI.rim).frame(minWidth: 2, maxWidth: .infinity).frame(height: 1) }
                     }
                 }.accessibilityLabel("亮灯 \(litCount) / 3")
                 HStack(alignment: .center, spacing: 9) {
-                    BaySprite(kind: actor, walking: false)
+                    BaySprite(kind: actor, walking: false, grown: grown)
                         .frame(width: 36, height: 36).padding(4)
                         .background(BayUI.blush)
                         .overlay {
@@ -130,16 +148,15 @@ struct BayJourneyView: View {
                     .foregroundStyle(BayUI.ink).background(BayUI.cream)
                     .overlay(alignment: .leading) { Rectangle().fill(BayUI.rust).frame(width: 3) }
                 HStack {
-                    if shown == 3 {
-                        Button { makeCard(); sheet = .card } label: { Label("收下明信片", systemImage: "envelope") }
-                            .buttonStyle(BayKey(primary: true))
-                    } else if !model.state.requestedHealth && !model.demo {
-                        Button { Task { await model.connect() } } label: { Label("连接健康", systemImage: "heart") }
-                            .buttonStyle(BayKey(primary: true))
+                    if model.demo {
+                        Button { model.demoBayDay(kind: actor, relay: relay) } label: { Label("试玩下一天", systemImage: "sunrise") }.buttonStyle(BayKey(primary: true))
                     } else {
-                        Button { sheet = .journal } label: { Label("翻开手记", systemImage: "book") }
-                            .buttonStyle(BayKey(primary: true))
+                        let habit = model.bay.quickHabit ?? "阅读"
+                        Button { model.rewardHabit(habit) } label: {
+                            Label(model.habitDone(habit) ? "已记" + habit : habit + "打卡", systemImage: model.habitDone(habit) ? "checkmark" : "plus")
+                        }.buttonStyle(BayKey(primary: true)).disabled(model.habitDone(habit))
                     }
+                    Button { sheet = .journal } label: { Text("手记") }.buttonStyle(BayKey())
                     Button { sheet = .travel } label: { Label(relay ? "小队接力" : "结伴同行", systemImage: "person.2") }
                         .buttonStyle(BayKey())
                 }
@@ -148,25 +165,19 @@ struct BayJourneyView: View {
     }
 
     private var voice: String {
-        if walking { return ["树影慢慢从脚边滑过去。", "海风吹过弯道，前面的路灯越来越近。", "沿着栏杆再走一会儿，就能看见整座海湾。"][max(0, shown - 1)] }
-        if shown == 0 { return "先在树荫下坐一会儿。下一次好习惯同步后，我们就沿海堤出发。" }
-        if shown == 3 { return "从这里能看见整座海湾。把这一刻收进明信片吧。" }
-        if relay { return "伙伴走过的路，现在也为你亮着灯。" }
-        return note
-    }
-
-    private var note: String {
-        if let payment = model.bay.payments.last, payment.day == Growth.dayID(Date()) {
-            return "今天\(model.bay.days[payment.day] ?? "完成习惯")，\(payment.amount) 枚贝壳已经收进背包。"
-        }
-        return "下一段路，会在好习惯记录同步后亮起。"
+        if !model.demo && !model.state.requestedHealth && count == 0 { return "手记里连接健康，手表记录就能替你走路。也可以点一下阅读打卡。" }
+        if shown == 0 { return "从树荫下出发，点亮深圳的第一盏灯。" }
+        if visiting != nil || litCount == 3 { return area.notes[max(0, litCount-1)] }
+        if fraction != Double(litCount) { return "再走一程，就到" + area.stops[litCount] + "了。" }
+        return area.notes[max(0,litCount-1)]
     }
 
     @MainActor private func playArrival() async {
         walking = false
         let destination = count, key = route
         let last = min(destination, model.bay.seen[key] ?? 0)
-        shown = last
+        visiting = nil
+        shown = max(last, destination - 2)
         if reduceMotion { shown = destination }
         else {
             while shown < destination {
@@ -185,8 +196,27 @@ struct BayJourneyView: View {
     private var shop: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                BayScene(stop: shown, kind: actor, together: second, souvenirs: souvenirs)
-                    .accessibilityLabel("海堤全景，已经摆放 \(souvenirs.count) 件纪念品")
+                if let editing {
+                    Picker("放在哪一站", selection: $editDistrict) {
+                        ForEach(BayDistrict.all.indices.filter { BayTrail(count).canVisit($0) }, id: \.self) { i in Text(BayDistrict.all[i].title).tag(i) }
+                    }
+                    Text("点步道上的位置，摆放" + editing.title + "。").font(.subheadline)
+                    scene(editDistrict, ticks: BayTrail(count).visitTicks(editDistrict))
+                        .overlay { GeometryReader { g in
+                            Color.clear.contentShape(Rectangle()).onTapGesture { point in
+                                place(editing, at: point.x / max(1,g.size.width))
+                            }
+                        } }
+                    HStack {
+                        ForEach([0.16,0.50,0.84], id: \.self) { x in
+                            Button(x < 0.2 ? "路左" : x > 0.8 ? "路右" : "路中") { place(editing, at: x) }
+                        }
+                        Spacer()
+                        Button("取消") { self.editing = nil }
+                    }
+                } else {
+                    scene(region, ticks: ticks)
+                }
                 HStack {
                     Label("\(shells) 枚贝壳", systemImage: "fossil.shell.fill").font(.headline)
                     Spacer()
@@ -205,7 +235,7 @@ struct BayJourneyView: View {
                             .padding(6).background(BayUI.paper).accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(item.title).font(.headline)
-                            Text(owned ? "已摆在" + item.place : item.detail)
+                            Text(owned ? "已摆在" + BayDistrict.all[model.bay.position(of: item).district].title : item.detail)
                                 .font(.footnote).foregroundStyle(BayUI.muted)
                             if item == .cottage && !owned {
                                 ProgressView(value: Double(min(shells, item.price)), total: Double(item.price))
@@ -214,10 +244,10 @@ struct BayJourneyView: View {
                         }
                         Spacer(minLength: 0)
                         if owned {
-                            Image(systemName: "checkmark.seal.fill").foregroundStyle(BayUI.rust).accessibilityHidden(true)
+                            Button("换位置") { editDistrict = region; editing = item }.buttonStyle(BayKey())
                         } else {
                             VStack(spacing: 4) {
-                                Button { model.buyBaySouvenir(item) } label: {
+                                Button { model.buyBaySouvenir(item); editDistrict = region; editing = item } label: {
                                     Text("\(item.price) 枚").monospacedDigit()
                                 }.buttonStyle(BayKey(primary: shells >= item.price))
                                     .disabled(shells < item.price)
@@ -234,8 +264,67 @@ struct BayJourneyView: View {
         }.background(BayUI.cream)
     }
 
+    private func place(_ item: BaySouvenir, at x: Double) {
+        model.placeBayItem(item, district: editDistrict, x: x, trail: BayTrail(count))
+        visiting = editDistrict
+        editing = nil
+    }
+
+    private var atlas: some View {
+        List {
+            Section("第 \(trail.lap) 圈 · \(BayTrail(count).local)/\(BayDistrict.lapLength) 程") {
+                ForEach(BayDistrict.all.indices, id: \.self) { i in
+                    let d = BayDistrict.all[i]
+                    Button {
+                        visiting = i; sheet = nil
+                    } label: {
+                        HStack {
+                            Image(d.art).resizable().scaledToFill().frame(width: 62,height: 46).clipped()
+                            VStack(alignment: .leading) {
+                                Text(d.title).font(.headline)
+                                Text(d.stops.joined(separator: " · ")).font(.caption)
+                            }
+                            Spacer()
+                            Image(systemName: BayTrail(count).canVisit(i) ? "chevron.right" : "lock")
+                        }
+                    }.disabled(!BayTrail(count).canVisit(i))
+                }
+                Button("回到当前进度") { visiting = nil; sheet = nil }
+                if ticks == area.length { Button("收藏这站的明信片") { makeCard(); sheet = .card } }
+            }
+            Section(grown ? "同行的精灵 · 已长大" : "同行的精灵 · 再走 \(5-model.bay.days.count) 个习惯日长大") {
+                ForEach([CompanionKind.legacy, .yaya, .xiaoying], id: \.rawValue) { kind in
+                    Button {
+                        if model.demo { demoPet = kind.rawValue } else { model.adopt(kind) }
+                    } label: {
+                        HStack {
+                            BaySprite(kind: kind.rawValue, walking: false, grown: grown).frame(width: 42,height: 42)
+                            Text(kind.title)
+                            Spacer()
+                            if actor == kind.rawValue { Image(systemName: "checkmark") }
+                        }
+                    }
+                }
+            }
+        }.scrollContentBackground(.hidden).background(BayUI.cream)
+    }
+
     private var journal: some View {
         List {
+            Section("今日记录") {
+                if let today = model.bay.days[Growth.dayID(Date())] { Label(today + "已结算", systemImage: "checkmark.circle.fill") }
+                if !model.demo {
+                    if !model.state.requestedHealth {
+                        Button("连接 Apple 健康，自动点亮路线") { Task { await model.connect() } }
+                    } else {
+                        Text(model.status).font(.footnote)
+                        if let last = model.state.lastSync { Text("上次读取 " + last.formatted()).font(.caption) }
+                    }
+                    Picker("首页一键打卡", selection: Binding(get: { model.bay.quickHabit ?? "阅读" }, set: { model.state.bay?.quickHabit = $0; model.save() })) {
+                        ForEach(["阅读","喝水","专注"], id: \.self) { Text($0).tag($0) }
+                    }
+                }
+            }
             Section("我的作息") {
                 DatePicker("希望几点入睡", selection: $goal, displayedComponents: .hourAndMinute)
                     .disabled(model.demo)
@@ -245,7 +334,7 @@ struct BayJourneyView: View {
                         let minutes = (c.hour ?? 23) * 60 + (c.minute ?? 0)
                         if minutes != model.bay.bedtime { model.setBayBedtime(minutes) }
                     }
-                Text("新目标从下一晚生效。按时入睡、睡眠或训练达标、走满一千步，或在伙伴页记下一项习惯，都能前进一步。").font(.footnote)
+                Text("新目标从下一晚生效。按时入睡、睡够目标、当天累计训练 10 分钟（目标更低时按你的目标）或走满 1000 步，会自动前进。每天第一项好习惯结算一次。").font(.footnote)
             }
             Section("贝壳 · \(shells) 枚") {
                 Text("每天结算一次，从 50 枚起，连续达成每天多 10 枚，最多 80 枚。间隔一天少一档，已存贝壳一直保留。").font(.footnote)
@@ -269,9 +358,11 @@ struct BayJourneyView: View {
     private var travel: some View {
         List {
             Section {
-                Text("加入同一个小队后，可以一起点亮这三盏灯。每人每天的第一次进步都能接上一段路。贝壳记在各自的背包里。")
+                Text("加入同一个小队后，可以一起走完深圳五站。每人每天的第一次进步都能接上一段路。贝壳记在各自的背包里。")
                 Text("开启后会把昵称、精灵和完成日期同步到小队旅程。睡眠、步数和具体习惯留在自己的手记里。").font(.footnote)
-                if model.demo { Text("演示使用本机示例。").foregroundStyle(.secondary) }
+                if model.demo {
+                    Button(relay ? "回到单人旅程" : "和示例伙伴接力") { model.switchDemoRelay(!relay) }
+                }
                 else if model.state.squadCode.isEmpty {
                     Button("去广场创建或加入小队") { sheet = nil; tab = .square }
                 } else {
@@ -280,8 +371,8 @@ struct BayJourneyView: View {
             }
             if relay {
                 Section("这一程的同行者") {
-                    ForEach(Array(model.bay.relaySteps.enumerated()), id: \.element.key) { i, step in
-                        Label(step.name + " · " + names[i], systemImage: "flag.fill")
+                    ForEach(Array(model.bay.relaySteps.suffix(12).reversed()), id: \.key) { step in
+                        Label(step.name + " · " + String(step.key.split(separator: "|").last ?? ""), systemImage: "flag.fill")
                     }
                 }
             }
@@ -289,10 +380,10 @@ struct BayJourneyView: View {
     }
     @MainActor private func makeCard() {
         let card = VStack(alignment: .leading, spacing: 0) {
-            BayScene(stop: 3, kind: actor, together: second, souvenirs: souvenirs)
+            scene(region, ticks: ticks)
             VStack(alignment: .leading, spacing: 9) {
-                Text("深圳湾").font(.largeTitle.bold())
-                Text(relay ? model.bay.relaySteps.map(\.name).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }.joined(separator: "、") + " · 一起点亮海堤" : model.state.petName + " · 海堤漫步纪念")
+                Text(area.title).font(.largeTitle.bold())
+                Text(relay ? model.bay.relaySteps.map(\.name).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }.joined(separator: "、") + " · 一起走过深圳" : model.state.petName + " · 深圳漫步纪念")
                     .font(.subheadline)
             }.padding(20)
         }.frame(width: 360).background(BayUI.cream).foregroundStyle(BayUI.ink)

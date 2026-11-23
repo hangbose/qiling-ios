@@ -37,6 +37,10 @@ struct BayJournal: Codable {
     var days: [String: String] = [:]
     var relayCode: String?
     var relayFrom: String?
+    var relayPaused: Bool?
+    var relayUser: String?
+    var placements: [String: BayPlacement]?
+    var quickHabit: String?
     var relaySteps: [BayRelayStep] = []
     var seen: [String: Int] = [:]
 
@@ -82,6 +86,14 @@ struct BayJournal: Codable {
             return (key, amount)
         }
     }
+    static func automaticReason(_ day: DailyProgress) -> String? {
+        if day.sleepComplete { return "睡眠达标" }
+        if day.workoutMinutes >= min(10, day.workoutGoal), day.workoutMinutes > 0 {
+            return day.workouts?.max(by: { $0.end.timeIntervalSince($0.start) < $1.end.timeIntervalSince($1.start) })?.kind ?? "运动达标"
+        }
+        return (day.steps ?? 0) >= 1000 ? "步行千步" : nil
+    }
+
     static func bedtimeMet(on day: Date, goal: Int, samples: [HealthInterval], calendar: Calendar = .current) -> Bool {
         // Choose the principal overnight sleep, ignoring isolated naps and daytime sleep.
         let midnight = calendar.startOfDay(for: day)
