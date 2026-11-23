@@ -2,10 +2,6 @@ import SwiftUI
 
 struct ContributionView: View {
     @EnvironmentObject private var model: AppModel
-    @Environment(\.scenePhase) private var phase
-    @State private var focusSeconds = 0
-    @State private var focusing = false
-    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
@@ -44,30 +40,79 @@ struct ContributionView: View {
                     }
                 }
                 HabitCollectionView()
-                GroupBox("轻习惯 · 只增加宠物经验") {
+                GroupBox("轻习惯") {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("自愿记录，每项每天一次，不影响抢地和小队排名。")
                         ForEach(["喝水", "阅读"], id: \.self) { habit in
                             Button(model.habitDone(habit) ? "\(habit) · 已记录" : "\(habit)了 · +5 经验") { model.rewardHabit(habit) }
                                 .disabled(model.demo || model.habitDone(habit))
                         }
-                        Text("专注陪伴 · \(focusSeconds / 60):\(String(format: "%02d", focusSeconds % 60)) / 15:00")
-                        Text("保持此页在前台，离开或锁屏暂停。离开页面会结束本次计时。")
-                            .font(.caption).foregroundStyle(.secondary)
-                        Button(model.habitDone("专注") ? "今日专注奖励已获得" : (focusing ? "暂停" : "和精灵一起专注")) { focusing.toggle() }
-                            .disabled(model.demo || model.habitDone("专注"))
-                        PetView(stage: model.stage, xp: model.xp, companion: model.companion).frame(height: 140)
+                        FocusHabitView()
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }
             }.padding()
         }
         .background(Palette.background)
-        .onReceive(timer) { _ in
-            guard focusing, phase == .active, !model.habitDone("专注") else { return }
-            focusSeconds += 1
-            if focusSeconds >= 900 { model.rewardHabit("专注"); focusing = false }
-        }
-        .onChange(of: phase) { _, value in if value != .active { focusing = false } }
         .refreshable { await model.sync(); await model.refreshSquad() }
+    }
+}
+
+struct FocusSession {
+    static let target = 15 * 60
+    private var accumulated: TimeInterval = 0
+    private(set) var started: TimeInterval?
+
+    mutating func start(at now: TimeInterval) {
+        if started == nil { started = now }
+    }
+    mutating func pause(at now: TimeInterval) {
+        guard let started else { return }
+        accumulated += max(0, now - started)
+        self.started = nil
+    }
+    func seconds(at now: TimeInterval) -> Int {
+        min(Self.target, Int(accumulated + (started.map { max(0, now - $0) } ?? 0)))
+    }
+}
+
+struct FocusHabitView: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.scenePhase) private var phase
+    var startOnAppear = false
+    @State private var session = FocusSession()
+    @State private var elapsed = 0
+    private var now: TimeInterval { ProcessInfo.processInfo.systemUptime }
+    private var done: Bool { model.habitDone("专注") }
+
+    private func update() {
+        let time = now
+        elapsed = session.seconds(at: time)
+        if elapsed == FocusSession.target {
+            session.pause(at: time)
+            model.rewardHabit("专注", focusedSeconds: elapsed)
+        }
+    }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            PetView(stage: model.stage, xp: model.xp, companion: model.companion).frame(height: 140)
+            Text(done ? "今天的专注已完成" : String(format: "%02d:%02d / 15:00", elapsed / 60, elapsed % 60))
+                .font(.title2.monospacedDigit())
+            Text("和精灵专注 15 分钟可得 10 经验。锁屏会暂停，关闭此页会结束本次计时。")
+                .font(.footnote).foregroundStyle(.secondary)
+            if !done {
+                Button(session.started != nil ? "暂停" : elapsed > 0 ? "继续专注" : "开始专注") {
+                    if session.started != nil { update(); session.pause(at: now) }
+                    else { session.start(at: now) }
+                }.disabled(model.demo)
+            }
+        }
+        .onAppear { if startOnAppear && !done && !model.demo && phase == .active { session.start(at: now) } }
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
+            if session.started != nil && phase == .active { update() }
+        }
+        .onChange(of: phase) { _, value in
+            if value != .active && session.started != nil { update(); session.pause(at: now) }
+        }
+        .onDisappear { if session.started != nil { update(); session.pause(at: now) } }
     }
 }

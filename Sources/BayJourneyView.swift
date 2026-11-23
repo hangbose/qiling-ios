@@ -1,8 +1,18 @@
 import SwiftUI
 
 private enum BaySheet: String, Identifiable {
-    case journal, travel, card, shop, atlas
+    case journal, travel, card, shop, atlas, focus
     var id: Self { self }
+    var title: String {
+        switch self {
+        case .journal: return "旅行手记"
+        case .travel: return "结伴同行"
+        case .card: return "深圳漫步明信片"
+        case .shop: return "旅途小铺"
+        case .atlas: return "深圳旅图"
+        case .focus: return "和精灵专注"
+        }
+    }
 }
 
 struct BayJourneyView: View {
@@ -85,6 +95,7 @@ struct BayJourneyView: View {
                             case .shop: shop
                             case .journal: journal
                             case .travel: travel
+                            case .focus: FocusHabitView(startOnAppear: true).padding(24)
                             case .card:
                                 if let image = cardImage {
                                     VStack(spacing: 22) {
@@ -95,7 +106,7 @@ struct BayJourneyView: View {
                                     }.padding(20)
                                 }
                             }
-                        }.navigationTitle(item == .atlas ? "深圳旅图" : item == .shop ? "旅途小铺" : item == .journal ? "旅行手记" : item == .travel ? "结伴同行" : "深圳漫步明信片")
+                        }.navigationTitle(item.title)
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { sheet = nil } } }
                     }.foregroundStyle(BayUI.ink).tint(BayUI.rust).presentationBackground(BayUI.cream).presentationDragIndicator(.visible)
@@ -127,10 +138,11 @@ struct BayJourneyView: View {
                         Button { sheet = .shop } label: {
                             Label("小铺 · \(shells)", systemImage: "fossil.shell.fill")
                         }.buttonStyle(BayKey()).accessibilityLabel("贝壳 \(shells) 枚，打开海湾小铺")
-                        if !walking, let last = model.bay.payments.last, last.day == Growth.dayID(Date()) {
-                            Text("今日 +\(last.amount)").font(.caption.monospacedDigit())
+                        if !walking, let last = model.bay.payments.last, last.day == Growth.dayID(Date()),
+                           let reason = model.bay.days[last.day] {
+                            Text("\(reason) · +\(last.amount) 贝壳").font(.caption.monospacedDigit())
                                 .foregroundStyle(BayUI.cream).padding(.horizontal, 7).padding(.vertical, 3).fieldPlate()
-                                .accessibilityLabel("今天的好习惯赚了 \(last.amount) 枚贝壳")
+                                .accessibilityLabel("今天通过\(reason)获得 \(last.amount) 枚贝壳")
                         }
                     }
                 }.padding(12)
@@ -157,6 +169,12 @@ struct BayJourneyView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(lastEntry).font(.headline.weight(.semibold))
                         Text(voice).font(.subheadline).foregroundStyle(BayUI.muted).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
+                        if !model.demo && !model.state.requestedHealth {
+                            Button { Task { await model.connect() } } label: {
+                                Label(model.connectingHealth ? "正在连接…" : "连接 Apple 健康", systemImage: "heart")
+                            }.buttonStyle(.plain).font(.subheadline.bold()).foregroundStyle(BayUI.rust)
+                                .disabled(model.connectingHealth)
+                        }
                         if let issue = model.bayIssue, relay { Text(issue).font(.caption) }
                     }
                 }.padding(8).frame(maxWidth: .infinity, alignment: .leading)
@@ -167,8 +185,11 @@ struct BayJourneyView: View {
                         Button { model.demoBayDay(kind: actor, relay: relay) } label: { Label("试玩下一天", systemImage: "sunrise") }.buttonStyle(BayKey(primary: true))
                     } else {
                         let habit = model.bay.quickHabit ?? "阅读"
-                        Button { model.rewardHabit(habit) } label: {
-                            Label(model.habitDone(habit) ? "已记" + habit : habit + "打卡", systemImage: model.habitDone(habit) ? "checkmark" : "plus")
+                        Button {
+                            if habit == "专注" { sheet = .focus } else { model.rewardHabit(habit) }
+                        } label: {
+                            Label(model.habitDone(habit) ? "已记" + habit : habit == "专注" ? "开始专注" : habit + "打卡",
+                                  systemImage: model.habitDone(habit) ? "checkmark" : habit == "专注" ? "timer" : "plus")
                         }.buttonStyle(BayKey(primary: true)).disabled(model.habitDone(habit))
                     }
                     Button { sheet = .journal } label: { Text("手记") }.buttonStyle(BayKey())
@@ -180,7 +201,7 @@ struct BayJourneyView: View {
     }
 
     private var voice: String {
-        if !model.demo && !model.state.requestedHealth && count == 0 { return "手记里连接健康，手表记录就能替你走路。也可以点一下阅读打卡。" }
+        if !model.demo && !model.state.requestedHealth && count == 0 { return "记下一件好习惯，精灵就会出发。连接健康后，步数、睡眠和训练也能自动点亮路程。" }
         if shown == 0 { return "从树荫下出发，点亮深圳的第一盏灯。" }
         if visiting != nil || litCount == 3 { return area.notes[max(0, litCount-1)] }
         if fraction != Double(litCount) { return "再走 \((litCount + 1) * area.length / 3 - ticks) 程，到" + area.stops[litCount] + "。" }
@@ -342,6 +363,7 @@ struct BayJourneyView: View {
                 if !model.demo {
                     if !model.state.requestedHealth {
                         Button("连接 Apple 健康，自动点亮路线") { Task { await model.connect() } }
+                            .disabled(model.connectingHealth)
                     } else {
                         Text(model.status).font(.footnote)
                         if let last = model.state.lastSync { Text("上次读取 " + last.formatted()).font(.caption) }

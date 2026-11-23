@@ -131,6 +131,26 @@ final class BayJournalTests: XCTestCase {
         XCTAssertEqual(book.balance, 50)
     }
 
+    func testFocusCountsOnlyActiveSecondsAndCreditsOneReward() {
+        var session = FocusSession()
+        session.start(at: 100)
+        session.start(at: 200)
+        session.pause(at: 500)
+        XCTAssertEqual(session.seconds(at: 2000), 400)
+        session.start(at: 2000)
+        var state = SavedState()
+        let day = Growth.dayID(Date())
+        state.bay = BayJournal()
+        XCTAssertFalse(state.creditHabit("专注", day: day, focusedSeconds: 0))
+        XCTAssertFalse(state.creditHabit("专注", day: day, focusedSeconds: session.seconds(at: 2499)))
+        XCTAssertTrue(state.creditHabit("专注", day: day, focusedSeconds: session.seconds(at: 2500)))
+        XCTAssertFalse(state.creditHabit("专注", day: day, focusedSeconds: session.seconds(at: 2501)))
+        XCTAssertEqual(state.habitRewards?[day + "|专注"], 10)
+        XCTAssertTrue(state.creditHabit("阅读", day: day, focusedSeconds: 0))
+        XCTAssertEqual(state.bay?.days[day], "专注")
+        XCTAssertEqual(state.bay?.balance, 50)
+    }
+
     func testBedtimeUsesMainSleepAndNextMorningForAfterMidnightTargets() {
         let cal = Calendar(identifier: .gregorian)
         let day = cal.date(from: DateComponents(year: 2026, month: 11, day: 21))!

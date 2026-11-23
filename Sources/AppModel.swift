@@ -22,6 +22,22 @@ struct SavedState: Codable {
     var campusVisits: [String]?
     var campusSharing: Bool?
     var bay: BayJournal?
+
+    mutating func creditHabit(_ habit: String, day: String, focusedSeconds: Int) -> Bool {
+        let points: Int
+        switch habit {
+        case "专注" where focusedSeconds >= FocusSession.target: points = 10
+        case "阅读", "喝水": points = 5
+        default: return false
+        }
+        let key = day + "|" + habit
+        var rewards = habitRewards ?? [:]
+        guard rewards[key] == nil else { return false }
+        rewards[key] = points
+        habitRewards = rewards
+        bay?.record(day: day, reason: habit)
+        return true
+    }
 }
 
 @MainActor
@@ -29,6 +45,7 @@ final class AppModel: ObservableObject {
     @Published var state: SavedState
     @Published var demo = false
     @Published var syncing = false
+    @Published private(set) var connectingHealth = false
     @Published var sensorReport: String?
     @Published var socialBusy = false
     @Published var message: String?
@@ -112,7 +129,9 @@ final class AppModel: ObservableObject {
     }
 
     func connect() async {
-        guard !syncing else { return }
+        guard !syncing, !connectingHealth else { return }
+        connectingHealth = true
+        defer { connectingHealth = false }
         do {
             try await health.authorize()
             generation += 1
@@ -251,15 +270,10 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func rewardHabit(_ habit: String, date: Date = Date()) {
-        guard !demo, ["喝水", "阅读", "专注"].contains(habit) else { return }
-        let key = Growth.dayID(date) + "|" + habit
-        var rewards = state.habitRewards ?? [:]
-        guard rewards[key] == nil else { return }
+    func rewardHabit(_ habit: String, date: Date = Date(), focusedSeconds: Int = 0) {
+        guard !demo else { return }
         let previous = xp
-        rewards[key] = habit == "专注" ? 10 : 5
-        state.habitRewards = rewards
-        state.bay?.record(day: Growth.dayID(date), reason: habit)
+        guard state.creditHabit(habit, day: Growth.dayID(date), focusedSeconds: focusedSeconds) else { return }
         Task { await refreshBay() }
         celebration = GrowthCelebration(previous: previous, current: xp)
         save()

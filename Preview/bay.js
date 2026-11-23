@@ -291,9 +291,13 @@ function render() {
           ? name + "正走向" + d.stops[lit]
           : name + "抵达" + d.stops[lit - 1];
   const next = d.stops[Math.min(lit, 2)];
+  const receipt = ledger().at(-1);
+  const summary = visit === null && !book.team && receipt?.day === book.day
+    ? receipt.reason + " · +" + receipt.amount + " 贝壳。"
+    : "";
   byId("voice").textContent =
     notice ||
-    (ticks === 0
+    summary + (ticks === 0
       ? "试一次手表同步，或记下今天的阅读，向第一盏灯出发。"
       : between
         ? "再走 " + (((lit + 1) * d.length) / 3 - ticks) + " 程，到" + next + "。"
