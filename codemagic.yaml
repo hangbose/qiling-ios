@@ -1,4 +1,13 @@
 workflows:
+  qiling-testflight-status:
+    name: Qiling - TestFlight distribution status
+    instance_type: mac_mini_m2
+    max_build_duration: 10
+    integrations:
+      app_store_connect: qiling-appstore
+    scripts:
+      - name: Read tester groups and the five most recent Apple builds
+        script: ruby Scripts/testflight-status.rb
   qiling-testflight:
     name: Qiling - signed TestFlight build
     instance_type: mac_mini_m2
