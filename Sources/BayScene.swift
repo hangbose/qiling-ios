@@ -62,8 +62,8 @@ struct BayScene: View {
                 if follows && [0,1,4].contains(district) {
                     BayWeather(quiet: reduced)
                 }
-                BayLamplight(lamps: lamps, litCount: litCount)
-                    .animation(reduced ? nil : .easeOut(duration: 0.95), value: litCount)
+                BayLamplight(lamps: lamps, progress: fraction ?? Double(stop))
+                    .animation(reduced ? nil : .easeOut(duration: 0.95), value: fraction)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
                 ForEach(lamps.indices, id: \.self) { i in
@@ -90,7 +90,7 @@ struct BayScene: View {
                     }
                 }
                 if let together {
-                    BaySprite(kind: together, walking: false, grown: buddyGrown).frame(width: w * 0.092, height: w * 0.092)
+                    BaySprite(kind: together, walking: walking && !reduced, grown: buddyGrown, phaseOffset: 0.19).frame(width: w * 0.092, height: w * 0.092)
                         .position(x: w * (track.x - 0.073), y: h * (track.y + 0.018))
                 }
                 BaySprite(kind: kind, walking: walking && !reduced, grown: grown).frame(width: w * 0.108, height: w * 0.108)
@@ -115,7 +115,7 @@ struct BayScene: View {
 /// The light pools live on the map so the illuminated stretch stays put as the camera pans.
 private struct BayLamplight: View {
     let lamps: [CGPoint]
-    let litCount: Int
+    let progress: Double
 
     var body: some View {
         GeometryReader { geo in
@@ -136,20 +136,20 @@ private struct BayLamplight: View {
                                 .init(color: .clear, location: 1)
                             ], center: .center, startRadiusFraction: 0, endRadiusFraction: 0.5)
                             .frame(width: w * 0.60, height: h * 0.80)
-                            .opacity(i < litCount ? 1 : 0)
+                            .opacity(min(1, max(0, progress - Double(i))))
                             .position(x: w * lamps[i].x, y: h * (lamps[i].y + 0.055))
                             .blendMode(.destinationOut)
                         }
                     }.compositingGroup()
                 }
-                .opacity(litCount == lamps.count ? 0 : 1)
+                .opacity(progress >= Double(lamps.count) ? 0 : 1)
 
                 ForEach(lamps.indices, id: \.self) { i in
                     EllipticalGradient(colors: [
                         Color(red: 1, green: 0.77, blue: 0.40).opacity(0.20), .clear
                     ], center: .center, startRadiusFraction: 0, endRadiusFraction: 0.5)
                     .frame(width: w * 0.30, height: h * 0.30)
-                    .opacity(i < litCount ? 1 : 0)
+                    .opacity(min(1, max(0, progress - Double(i))))
                     .position(x: w * lamps[i].x, y: h * (lamps[i].y + 0.055))
                 }
             }
@@ -187,6 +187,7 @@ struct BaySprite: View {
     let kind: String
     let walking: Bool
     var grown = false
+    var phaseOffset = 0.0
     private var art: String {
         let species = kind == "yaya" ? "Bun" : kind == "xiaoying" ? "Cat" : "Fox"
         return "Trail" + species + (grown ? "1" : "0")
@@ -196,11 +197,20 @@ struct BaySprite: View {
     }
     var body: some View {
         if walking {
-            TimelineView(.animation(minimumInterval: 0.15)) { time in
-                let high = Int(time.date.timeIntervalSinceReferenceDate * 6) % 2 == 0
-                sprite.rotationEffect(.degrees(high ? 3 : 0), anchor: .bottom)
-                    .offset(y: high ? -3 : 0)
-            }
+            TimelineView(.animation(minimumInterval: 1.0 / 24.0)) { time in
+                let cycle = kind == "yaya" ? 0.84 : kind == "xiaoying" ? 0.70 : 0.62
+                let phase = (time.date.timeIntervalSinceReferenceDate + phaseOffset).truncatingRemainder(dividingBy: cycle) / cycle
+                let frame = min(3, Int(phase * 4))
+                GeometryReader { geo in
+                    let side = min(geo.size.width, geo.size.height)
+                    Image(art + "Walk").resizable().interpolation(.none)
+                        .frame(width: side * 4, height: side)
+                        .offset(x: -CGFloat(frame) * side)
+                        .frame(width: side, height: side, alignment: .leading)
+                        .clipped()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }.accessibilityHidden(true)
         } else {
             sprite
         }

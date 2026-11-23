@@ -65,7 +65,8 @@ extension AppModel {
             let update = try await campus.advanceBay(code: code, days: journal.eligibleRelayDays,
                 name: String(state.name.prefix(20)), companion: companion.rawValue)
             guard !demo, state.bay?.relayPaused != true, state.bay?.relayCode == code, state.bay?.relayFrom == from, state.squadCode == code else { return }
-            if update.steps.count >= (state.bay?.relaySteps.count ?? 0), update.steps != state.bay?.relaySteps || state.bay?.relayUser != update.user {
+            if update.steps.count >= (state.bay?.relaySteps.count ?? 0), update.steps != state.bay?.relaySteps || state.bay?.relayUser != update.user || state.bay?.shortRelaySteps != update.anchor {
+                state.bay?.shortRelaySteps = update.anchor
                 state.bay?.relaySteps = update.steps
                 state.bay?.relayUser = update.user
                 save()

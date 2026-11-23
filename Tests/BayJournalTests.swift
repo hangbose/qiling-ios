@@ -62,14 +62,23 @@ final class BayJournalTests: XCTestCase {
     }
 
     func testRouteBoundariesAndRevisits() {
-        XCTAssertEqual(BayDistrict.lapLength, 27)
-        XCTAssertEqual(BayTrail(3).district, 0)
-        XCTAssertEqual(BayTrail(4).ticks(in: 1), 1)
-        XCTAssertEqual(BayTrail(9).ticks(in: 1), 6)
-        XCTAssertFalse(BayTrail(9).canVisit(2))
-        XCTAssertEqual(BayTrail(27).district, 4)
-        XCTAssertEqual(BayTrail(28).lap, 2)
-        XCTAssertEqual(BayTrail(28).visitTicks(4), 6)
+        XCTAssertEqual(BayDistrict.lapLength, 78)
+        XCTAssertEqual(BayTrail(12).district, 0)
+        XCTAssertEqual(BayTrail(13).ticks(in: 1), 1)
+        XCTAssertEqual(BayTrail(27).ticks(in: 1), 15)
+        XCTAssertFalse(BayTrail(27).canVisit(2))
+        XCTAssertEqual(BayTrail(78).district, 4)
+        XCTAssertEqual(BayTrail(79).lap, 2)
+        XCTAssertEqual(BayTrail(79).visitTicks(4), 18)
+    }
+
+    func testOldPlayersKeepTheirLandmarksAndFutureStepsCostOne() {
+        XCTAssertEqual(BayTrail(3, legacyCount: 3).total, 12)
+        XCTAssertEqual(BayTrail(4, legacyCount: 3).total, 13)
+        XCTAssertEqual(BayTrail(9, legacyCount: 9).ticks(in: 1), 15)
+        XCTAssertEqual(BayTrail(27, legacyCount: 28).total, 78)
+        XCTAssertEqual(BayTrail(28, legacyCount: 28).lap, 2)
+        XCTAssertEqual(BayTrail(29, legacyCount: 28).total, 83)
     }
 
     func testPlacementSurvivesReloadAndDoesNotChargeAgain() throws {
@@ -79,7 +88,7 @@ final class BayJournalTests: XCTestCase {
         XCTAssertTrue(book.buy(.planter))
         book.place(.planter, in: 1, at: 0.8, progress: BayTrail(1))
         XCTAssertEqual(book.position(of: .planter).district, 0)
-        book.place(.planter, in: 1, at: 1.5, progress: BayTrail(4))
+        book.place(.planter, in: 1, at: 1.5, progress: BayTrail(13))
         let copy = try JSONDecoder().decode(BayJournal.self, from: JSONEncoder().encode(book))
         XCTAssertEqual(copy.position(of: .planter).district, 1)
         XCTAssertEqual(copy.position(of: .planter).x, 0.94)

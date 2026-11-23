@@ -26,10 +26,14 @@ struct BayJourneyView: View {
     }
     private var route: String { relay ? "team-" + (model.bay.relayCode ?? "") : "solo" }
     private var count: Int { relay ? model.bay.relaySteps.count : model.bay.days.count }
-    private var trail: BayTrail { BayTrail(shown) }
-    private var region: Int { visiting.flatMap { BayTrail(count).canVisit($0) ? $0 : nil } ?? trail.district }
+    private var legacyCount: Int {
+        relay ? (model.demo ? 0 : model.bay.shortRelaySteps ?? model.bay.relaySteps.count) : (model.bay.shortRouteDays ?? 0)
+    }
+    private var trail: BayTrail { BayTrail(shown, legacyCount: legacyCount) }
+    private var earnedTrail: BayTrail { BayTrail(count, legacyCount: legacyCount) }
+    private var region: Int { visiting.flatMap { earnedTrail.canVisit($0) ? $0 : nil } ?? trail.district }
     private var area: BayDistrict { BayDistrict.all[region] }
-    private var ticks: Int { visiting == nil ? trail.ticks(in: region) : BayTrail(count).visitTicks(region) }
+    private var ticks: Int { visiting == nil ? trail.ticks(in: region) : earnedTrail.visitTicks(region) }
     private var fraction: Double { Double(ticks * 3) / Double(area.length) }
     private var litCount: Int { Int(fraction) }
     private var shells: Int { model.bay.balance }
@@ -100,8 +104,16 @@ struct BayJourneyView: View {
     private func journey(sceneHeight: CGFloat) -> some View {
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
-                scene(region, ticks: ticks, follows: true)
+                ZStack {
+                    scene(region, ticks: ticks, follows: true)
+                        .id(region)
+                        .transition(reduceMotion ? .identity : .asymmetric(
+                            insertion: .offset(x: 24).combined(with: .opacity),
+                            removal: .offset(x: -24).combined(with: .opacity)))
+                }
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 1.25), value: region)
                     .frame(height: sceneHeight)
+                    .clipped()
                     .overlay(alignment: .bottomTrailing) {
                         if cameraFocus != nil {
                             Button("回到精灵") { cameraFocus = nil }.buttonStyle(BayKey()).padding(12)
@@ -110,7 +122,7 @@ struct BayJourneyView: View {
                 HStack(alignment: .top) {
                     Button { sheet = .atlas } label: {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("深圳旅图  \(region+1)/5 ›").font(BayUI.type(13)).foregroundStyle(BayUI.blush)
+                            Text("深圳旅图  \(ticks)/\(area.length) 程 ›").font(BayUI.type(13)).foregroundStyle(BayUI.blush)
                             Text(area.title).font(BayUI.type(area.title.count > 4 ? 22 : 28)).foregroundStyle(BayUI.cream)
                         }.padding(.horizontal, 11).padding(.vertical, 7).fieldPlate()
                     }.buttonStyle(.plain).accessibilityLabel("打开深圳旅图，当前在" + area.title)
@@ -175,7 +187,7 @@ struct BayJourneyView: View {
         if !model.demo && !model.state.requestedHealth && count == 0 { return "手记里连接健康，手表记录就能替你走路。也可以点一下阅读打卡。" }
         if shown == 0 { return "从树荫下出发，点亮深圳的第一盏灯。" }
         if visiting != nil || litCount == 3 { return area.notes[max(0, litCount-1)] }
-        if fraction != Double(litCount) { return "再走一程，就到" + area.stops[litCount] + "了。" }
+        if fraction != Double(litCount) { return "再走 \((litCount + 1) * area.length / 3 - ticks) 程，到" + area.stops[litCount] + "。" }
         return area.notes[max(0,litCount-1)]
     }
 
@@ -191,8 +203,10 @@ struct BayJourneyView: View {
             while shown < destination {
                 do { try await Task.sleep(for: .milliseconds(400)) } catch { return }
                 walking = true
-                withAnimation(.easeInOut(duration: 1.45)) { shown += 1 }
-                do { try await Task.sleep(for: .milliseconds(1480)) } catch { return }
+                let crossing = trail.district != BayTrail(shown + 1, legacyCount: legacyCount).district
+                let duration = crossing ? 2.6 : 2.15
+                withAnimation(.timingCurve(0.28, 0.04, 0.30, 1, duration: duration)) { shown += 1 }
+                do { try await Task.sleep(for: .seconds(duration)) } catch { return }
                 walking = false
                 model.markBaySeen(shown, route: key)
             }
@@ -206,10 +220,10 @@ struct BayJourneyView: View {
             VStack(alignment: .leading, spacing: 16) {
                 if let editing {
                     Picker("放在哪一站", selection: $editDistrict) {
-                        ForEach(BayDistrict.all.indices.filter { BayTrail(count).canVisit($0) }, id: \.self) { i in Text(BayDistrict.all[i].title).tag(i) }
+                        ForEach(BayDistrict.all.indices.filter { earnedTrail.canVisit($0) }, id: \.self) { i in Text(BayDistrict.all[i].title).tag(i) }
                     }
                     Text("点步道上的位置，摆放" + editing.title + "。").font(.subheadline)
-                    scene(editDistrict, ticks: BayTrail(count).visitTicks(editDistrict))
+                    scene(editDistrict, ticks: earnedTrail.visitTicks(editDistrict))
                         .overlay { GeometryReader { g in
                             Color.clear.contentShape(Rectangle()).onTapGesture { point in
                                 place(editing, at: point.x / max(1,g.size.width))
@@ -273,7 +287,7 @@ struct BayJourneyView: View {
     }
 
     private func place(_ item: BaySouvenir, at x: Double) {
-        model.placeBayItem(item, district: editDistrict, x: x, trail: BayTrail(count))
+        model.placeBayItem(item, district: editDistrict, x: x, trail: earnedTrail)
         visiting = editDistrict
         cameraFocus = x
         editing = nil
@@ -281,7 +295,7 @@ struct BayJourneyView: View {
 
     private var atlas: some View {
         List {
-            Section("第 \(trail.lap) 圈 · \(BayTrail(count).local)/\(BayDistrict.lapLength) 程") {
+            Section("第 \(trail.lap) 圈 · \(earnedTrail.local)/\(BayDistrict.lapLength) 程") {
                 ForEach(BayDistrict.all.indices, id: \.self) { i in
                     let d = BayDistrict.all[i]
                     Button {
@@ -294,12 +308,12 @@ struct BayJourneyView: View {
                                 Text(d.stops.joined(separator: " · ")).font(.caption)
                             }
                             Spacer()
-                            Image(systemName: BayTrail(count).canVisit(i) ? "chevron.right" : "lock")
+                            Image(systemName: earnedTrail.canVisit(i) ? "chevron.right" : "lock")
                         }
-                    }.disabled(!BayTrail(count).canVisit(i))
+                    }.disabled(!earnedTrail.canVisit(i))
                 }
                 Button("回到当前进度") { visiting = nil; cameraFocus = nil; sheet = nil }
-                if ticks == area.length { Button("收藏这站的明信片") { makeCard(); sheet = .card } }
+                if earnedTrail.lap > 1 || ticks == area.length { Button("收藏这站的明信片") { makeCard(); sheet = .card } }
             }
             Section(grown ? "同行的精灵 · 已长大" : "同行的精灵 · 再走 \(5-model.bay.days.count) 个习惯日长大") {
                 ForEach([CompanionKind.legacy, .yaya, .xiaoying], id: \.rawValue) { kind in
@@ -389,7 +403,7 @@ struct BayJourneyView: View {
     }
     @MainActor private func makeCard() {
         let card = VStack(alignment: .leading, spacing: 0) {
-            scene(region, ticks: ticks)
+            scene(region, ticks: area.length)
             VStack(alignment: .leading, spacing: 9) {
                 Text(area.title).font(.largeTitle.bold())
                 Text(relay ? model.bay.relaySteps.map(\.name).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }.joined(separator: "、") + " · 一起走过深圳" : model.state.petName + " · 深圳漫步纪念")

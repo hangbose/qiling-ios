@@ -64,6 +64,10 @@ final class AppModel: ObservableObject {
         if state.healthRulesStart == nil { state.healthRulesStart = Calendar.current.startOfDay(for: Date()); save() }
         if state.requestedHealth { startObservers() }
         if state.bay == nil { state.bay = BayJournal(); save() }
+        if let journal = state.bay, journal.shortRouteDays == nil {
+            state.bay?.shortRouteDays = journal.days.count
+            save()
+        }
     }
 
     var ledger: [DailyProgress] {

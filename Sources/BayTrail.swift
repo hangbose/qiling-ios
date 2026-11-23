@@ -10,15 +10,15 @@ struct BayDistrict: Identifiable {
 
     static let all = [
         BayDistrict(id: "bay", title: "深圳湾", art: "BayJourney", stops: ["海边长椅","海湾转角","观景平台"],
-                    notes: ["风从红树林吹过来。","两盏路灯之间，潮水慢慢涨了。","海平线被晚霞染成了金色。"], length: 3),
+                    notes: ["风从红树林吹过来。","两盏路灯之间，潮水慢慢涨了。","海平线被晚霞染成了金色。"], length: 12),
         BayDistrict(id: "park", title: "人才公园", art: "BayPark", stops: ["星光桥","湖畔草坡","春笋倒影"],
-                    notes: ["桥下的湖面碎成一片星光。","草叶上还有露水。","春笋的倒影一直延伸到岸边。"], length: 6),
+                    notes: ["桥下的湖面碎成一片星光。","草叶上还有露水。","春笋的倒影一直延伸到岸边。"], length: 15),
         BayDistrict(id: "loft", title: "华侨城创意园", art: "BayLoft", stops: ["红砖巷","榕树庭院","街角咖啡"],
-                    notes: ["老厂房的砖墙被太阳晒暖了。","停一停，听榕树里的鸟叫。","窗台旁飘来烘豆子的香气。"], length: 6),
+                    notes: ["老厂房的砖墙被太阳晒暖了。","停一停，听榕树里的鸟叫。","窗台旁飘来烘豆子的香气。"], length: 15),
         BayDistrict(id: "ridge", title: "莲花山", art: "BayRidge", stops: ["风筝草坪","山脊小径","山顶看台"],
-                    notes: ["有只风筝偷偷跃过了树梢。","绿荫深处露出一角天际线。","从山顶看，整座城都亮了。"], length: 6),
+                    notes: ["有只风筝偷偷跃过了树梢。","绿荫深处露出一角天际线。","从山顶看，整座城都亮了。"], length: 18),
         BayDistrict(id: "shore", title: "大梅沙", art: "BayShore", stops: ["听潮栈道","拾贝浅滩","海边灯火"],
-                    notes: ["浪花正拍打木栈道下的石头。","沙滩上躺着一枚螺旋贝壳。","海边的灯亮起来了，这一圈到家了。"], length: 6)
+                    notes: ["浪花正拍打木栈道下的石头。","沙滩上躺着一枚螺旋贝壳。","海边的灯亮起来了，这一圈到家了。"], length: 18)
     ]
     static let lapLength = all.reduce(0) { $0 + $1.length }
 }
@@ -26,7 +26,21 @@ struct BayDistrict: Identifiable {
 // At the final stamp we stay at the lookout. The following stamp starts the next circuit.
 struct BayTrail {
     let total: Int
-    init(_ stamps: Int) { total = max(0, stamps) }
+    // Translate only the already-earned part of a short route. New stamps advance one step each.
+    init(_ stamps: Int, legacyCount: Int = 0) {
+        let earned = max(0, stamps)
+        let legacy = min(earned, max(0, legacyCount))
+        let oldLengths = [3, 6, 6, 6, 6]
+        let oldLap = oldLengths.reduce(0, +)
+        var position = legacy / oldLap * BayDistrict.lapLength
+        var remainder = legacy % oldLap
+        for (old, area) in zip(oldLengths, BayDistrict.all) {
+            let segment = min(old, remainder)
+            position += (segment * area.length + old - 1) / old
+            remainder -= segment
+        }
+        total = position + earned - legacy
+    }
     var lap: Int { max(0, total - 1) / BayDistrict.lapLength + 1 }
     var local: Int { total == 0 ? 0 : (total - 1) % BayDistrict.lapLength + 1 }
     func ticks(in index: Int) -> Int {

@@ -35,6 +35,8 @@ struct BayJournal: Codable {
     var bedtime = 23 * 60
     var goals: [String: Int] = [:]
     var days: [String: String] = [:]
+    var shortRouteDays: Int? = 0
+    var shortRelaySteps: Int?
     var relayCode: String?
     var relayFrom: String?
     var relayPaused: Bool?
@@ -74,6 +76,7 @@ struct BayJournal: Codable {
                 relayCode = code
                 relayUser = nil
                 relaySteps = []
+                shortRelaySteps = nil
                 relayBacklog = []
                 relayFrom = today
             } else if relayPaused == true || relayFrom == nil {
