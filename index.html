@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5edde">
+<meta name="description" content="在深圳湾捡起第一枚白贝，派精灵寻找海玻璃、修一盏灯，再请朋友来你的长椅坐坐。">
+<title>栖灵 · 深圳湾海堤漫步</title>
+<link rel="stylesheet" href="bay.css">
+</head>
+<body>
+<main class="game">
+<div id="journeyPage">
+  <div id="frame" class="scene" tabindex="0" title="左右滑动探索，也可以按方向键" role="img" aria-label="深圳湾海堤，星澜在树荫下等你。">
+    <div id="world" class="world">
+      <img id="plate" class="plate" src="assets/Assets.xcassets/BayJourneyWideWest.imageset/trail.jpg" alt="" draggable="false">
+      <img id="farPlate" class="plate east" src="assets/Assets.xcassets/BayJourneyWideEast.imageset/trail.jpg" alt="" draggable="false">
+      <div id="tide" class="tide" aria-hidden="true"></div>
+      <div id="haze" class="haze" aria-hidden="true"></div>
+      <div id="benchProps" aria-hidden="true"></div>
+      <i class="lamp" style="left:20.3%;top:60.6%"></i>
+      <i class="lamp" style="left:47.8%;top:60.7%"></i>
+      <i class="lamp" style="left:73.1%;top:59.4%"></i>
+      <img alt="" id="planter" class="souvenir" hidden src="assets/Assets.xcassets/BayPlanter.imageset/sprite.png">
+      <img alt="" id="pennant" class="souvenir" hidden src="assets/Assets.xcassets/BayPennant.imageset/sprite.png">
+      <img alt="" id="cottage" class="souvenir" hidden src="assets/Assets.xcassets/BayCottage.imageset/sprite.png">
+    </div>
+    <div id="walkers" class="world travelers" aria-hidden="true">
+      <img class="pet resting" id="me" alt=""><span class="pet gait" id="me-walk" aria-hidden="true"></span>
+      <img class="pet guest resting" id="pal" alt="" hidden><span class="pet guest gait" id="pal-walk" aria-hidden="true" hidden></span>
+    </div>
+  </div>
+  <button class="key" id="follow" hidden>回到精灵</button>
+  <button class="key" id="benchEntry" aria-haspopup="dialog">拾起长椅边的白贝</button>
+  <header class="hud">
+    <button class="sign" id="atlas" aria-haspopup="dialog"><small id="chapter">深圳路线图 ↗</small><span id="districtName">深圳湾</span></button>
+    <div class="purse">
+      <button class="key wallet" id="wallet" aria-label="海湾小铺，余额 0 枚贝壳" aria-haspopup="dialog">
+        <span>小铺</span><canvas class="icon" data-icon="shell" aria-hidden="true"></canvas><span id="balance">0</span>
+      </button>
+      <button id="earning" aria-label="选择独行或小队" aria-haspopup="dialog"></button>
+    </div>
+  </header>
+  <section class="dock" aria-label="海堤漫步">
+    <ol class="route" aria-label="亮灯进度">
+      <li>海边长椅</li><li>海湾转角</li><li>观景平台</li>
+    </ol>
+    <article class="paper" aria-live="polite" aria-atomic="true">
+      <button class="portrait" id="companion" aria-label="选择旅行伙伴" aria-haspopup="dialog"><img id="face" alt=""></button>
+      <div class="dialogue"><h2 id="speaker">星澜在海边等你</h2><p id="voice">长椅边还有个位子。明早一起沿着海堤走吧。</p></div>
+    </article>
+    <div class="controls">
+      <button id="advance" class="key primary"><canvas class="icon" id="actionIcon" data-icon="foot"></canvas><span id="action">同步昨夜记录</span></button>
+      <button id="mark" class="key">记阅读</button>
+      <button id="journal" class="key"><canvas class="icon" data-icon="book"></canvas>手记</button>
+    </div>
+    <footer><span>互动试玩 · 使用示例记录</span><button class="replay" id="restart">重新出发</button></footer>
+  </section>
+</div>
+  <section id="fieldPage" aria-labelledby="fieldTitle" hidden></section>
+  <nav class="field-tabs" aria-label="栖灵导航">
+    <button data-page="journey" aria-current="page"><span aria-hidden="true">◈</span>旅途</button>
+    <button data-page="companion"><span aria-hidden="true">♧</span>伙伴</button>
+    <button data-page="square"><span aria-hidden="true">✉</span>广场</button>
+    <button data-page="growth"><span aria-hidden="true">▥</span>成长</button>
+    <button data-page="profile"><span aria-hidden="true">▣</span>我的</button>
+  </nav>
+</main>
+<dialog id="sheet" aria-labelledby="sheetTitle">
+  <form method="dialog"><button class="dismiss" aria-label="合上">×</button></form>
+  <div id="postcard" hidden><canvas id="postArt" width="720" height="540" aria-label="栖灵和伙伴到达深圳湾的合影" role="img"></canvas></div>
+  <div class="sheetText"><h2 id="sheetTitle">旅行手记</h2><p id="sheetNote"></p><div id="choices"></div><ul id="entries"></ul>
+    <form method="dialog"><button class="key primary" id="close">合上手记</button></form>
+  </div>
+</dialog>
+<dialog id="shop" aria-labelledby="shopTitle">
+  <div class="shop-cover">
+    <canvas id="shopArt" width="720" height="235" role="img" aria-label="深圳湾海堤陈设全景"></canvas>
+    <h2 id="shopTitle">海湾小铺</h2>
+    <form method="dialog"><button class="dismiss" aria-label="回到海湾">×</button></form>
+  </div>
+  <div class="shop-body">
+    <div class="shop-balance"><span>我的贝壳</span><strong id="shopBalance"></strong></div>
+    <p id="income"></p>
+    <ul id="goods"></ul>
+    <fieldset id="placement" hidden><legend id="placing"></legend><label>区域 <select id="placeArea"></select></label><label>沿路位置 <input type="range" id="placeX" min="6" max="94"></label><button class="key primary" id="keepPlace">摆在这里</button> <button class="key" id="cancelPlace">取消移动</button></fieldset>
+    <p id="saleNote" role="status" aria-live="polite"></p>
+    <button class="sample-day" id="sampleDay" hidden></button>
+    <form method="dialog"><button class="key primary" id="backToBay">回到海湾</button></form>
+  </div>
+</dialog>
+<div hidden><img id="bg0" alt="" src="assets/Assets.xcassets/BayJourney.imageset/bay.png"><img loading="lazy" alt="" id="wide1West" src="assets/Assets.xcassets/BayParkWideWest.imageset/trail.jpg"><img loading="lazy" alt="" id="wide1East" src="assets/Assets.xcassets/BayParkWideEast.imageset/trail.jpg"><img loading="lazy" alt="" id="wide2West" src="assets/Assets.xcassets/BayLoftWideWest.imageset/trail.jpg"><img loading="lazy" alt="" id="wide2East" src="assets/Assets.xcassets/BayLoftWideEast.imageset/trail.jpg"><img loading="lazy" alt="" id="wide3West" src="assets/Assets.xcassets/BayRidgeWideWest.imageset/trail.jpg"><img loading="lazy" alt="" id="wide3East" src="assets/Assets.xcassets/BayRidgeWideEast.imageset/trail.jpg"><img loading="lazy" alt="" id="wide4West" src="assets/Assets.xcassets/BayShoreWideWest.imageset/trail.jpg"><img loading="lazy" alt="" id="wide4East" src="assets/Assets.xcassets/BayShoreWideEast.imageset/trail.jpg"><img alt="" id="bg1" src="assets/Assets.xcassets/BayPark.imageset/scene.jpg"><img alt="" id="bg2" src="assets/Assets.xcassets/BayLoft.imageset/scene.jpg"><img alt="" id="bg3" src="assets/Assets.xcassets/BayRidge.imageset/scene.jpg"><img alt="" id="bg4" src="assets/Assets.xcassets/BayShore.imageset/scene.jpg"><img alt="" id="legacy0" src="assets/Assets.xcassets/TrailFox0.imageset/pet.png"><img alt="" id="legacy1" src="assets/Assets.xcassets/TrailFox1.imageset/pet.png"><img alt="" id="yaya0" src="assets/Assets.xcassets/TrailBun0.imageset/pet.png"><img alt="" id="yaya1" src="assets/Assets.xcassets/TrailBun1.imageset/pet.png"><img alt="" id="xiaoying0" src="assets/Assets.xcassets/TrailCat0.imageset/pet.png"><img alt="" id="xiaoying1" src="assets/Assets.xcassets/TrailCat1.imageset/pet.png"><img alt="" id="legacy0-walk" src="assets/Assets.xcassets/TrailFox0Walk.imageset/walk.png"><img alt="" id="legacy1-walk" src="assets/Assets.xcassets/TrailFox1Walk.imageset/walk.png"><img alt="" id="yaya0-walk" src="assets/Assets.xcassets/TrailBun0Walk.imageset/walk.png"><img alt="" id="yaya1-walk" src="assets/Assets.xcassets/TrailBun1Walk.imageset/walk.png"><img alt="" id="xiaoying0-walk" src="assets/Assets.xcassets/TrailCat0Walk.imageset/walk.png"><img alt="" id="xiaoying1-walk" src="assets/Assets.xcassets/TrailCat1Walk.imageset/walk.png"></div>
+<img hidden id="findAtlas" alt="" src="assets/Assets.xcassets/BayFinds.imageset/finds.png">
+<audio id="bayChime" preload="none" src="assets/BayChime.wav"></audio>
+<script src="bay-trail.js"></script>
+<script src="bay-bench.js"></script>
+<script src="bay.js"></script>
+<script src="bay-pages.js"></script>
+</body>
+</html>
