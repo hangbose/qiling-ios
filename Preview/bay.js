@@ -96,7 +96,7 @@ function render(){
   byId("speaker").textContent=visit!==null?"重游"+d.name:!ticks?name+"在海边等你":between?name+"正走向"+d.stops[lit]:name+"抵达"+d.stops[lit-1];
   const next=d.stops[Math.min(lit,2)];
   byId("voice").textContent=notice || (ticks===0?"试一次手表同步，或记下今天的阅读，让第一盏灯亮起来。":between?"再走一程，就到"+next+"了。":d.notes[Math.max(0,lit-1)]);
-  byId("earning").hidden=false;byId("earning").textContent=(book.team?"小队":"独行")+" · 第 "+book.day+" 天";
+  byId("earning").hidden=false;byId("earning").textContent=(book.team?"小队":"独行")+" · 第 "+book.day+" 天 ›";
   byId("balance").textContent=walletBalance();byId("wallet").setAttribute("aria-label","小铺，余额 "+walletBalance()+" 贝壳");
   byId("action").textContent=book.watch && !book.days[book.day]?"试同步手表":"试玩下一天";
   byId("mark").textContent=book.days[book.day]?"今日已走":"记"+book.habit;
@@ -139,6 +139,20 @@ function atlas(){
   });
   if(visit!==null)choices.append(button("回到当前路段",()=>{visit=null;focusX=null;byId("sheet").close();commit();},{className:"key primary"}));
 }
+function relayChoices(refresh){
+  choices.append(button(book.team?"小队接力中 · 切回独行":"我想试试小队接力",()=>{book.team=!book.team;if(book.team && book.days[book.day])relay("me");visit=null;focusX=null;commit();refresh();},{id:"team-mode"}));
+  if(book.team){
+    const sent=book.teamSteps.includes("friend|"+book.day);
+    choices.append(button(sent?"小雨今天已接力":"模拟队友小雨接力",()=>{relay("friend");visit=null;focusX=null;commit("小雨也完成了今天的好习惯，一起前进一程。");refresh();},{id:"friend-step",disabled:sent}));
+  }
+}
+function teamSheet(){
+  sheet("结伴同行", "独行时按自己的节奏走。开启接力会带上今天的一程；队友也能各走一程，大家分别攒贝壳。");
+  relayChoices(teamSheet);
+  ledgerRow("我独自走过",personalDays()+" 程");
+  ledgerRow("小队共同走过",book.teamSteps.length+" 程");
+  ledgerRow("其中小雨走过",book.teamSteps.filter(k=>k.startsWith("friend|")).length+" 程");
+}
 function journal(){
   sheet("旅行手记","第 "+book.day+" 天 · 我的习惯日 "+personalDays()+" 天 · 累计贝壳收入 "+ledger().reduce((s,p)=>s+p.amount,0)+" 枚");
   section("旅行伙伴");
@@ -152,11 +166,7 @@ function journal(){
   choices.append(cards);
   const hint=document.createElement("small");hint.textContent=personalDays()>=5?"第五个习惯日留下了成长的模样。":"再过 "+(5-personalDays())+" 个习惯日，伙伴就会长大一点。";choices.append(hint);
   section("同行方式");
-  choices.append(button(book.team?"小队接力中 · 切回独行":"我想试试小队接力",()=>{book.team=!book.team;if(book.team && book.days[book.day])relay("me");visit=null;focusX=null;commit();journal();},{id:"team-mode"}));
-  if(book.team){
-    const sent=book.teamSteps.includes("friend|"+book.day);
-    choices.append(button(sent?"小雨今天已接力":"模拟队友小雨接力",()=>{relay("friend");visit=null;focusX=null;commit("小雨也完成了今天的好习惯，一起前进一程。");journal();},{id:"friend-step",disabled:sent}));
-  }
+  relayChoices(journal);
   section("我的快捷打卡");
   for(const text of habits){const b=button(text,()=>{book.habit=text;commit();journal();},{id:"habit-"+text});b.setAttribute("aria-pressed",String(book.habit===text));choices.append(b);}
   choices.append(button("手表示例同步 · "+(book.watch?"开":"关"),()=>{book.watch=!book.watch;commit();journal();},{id:"watch-mode"}));
@@ -221,6 +231,7 @@ byId("keepPlace").onclick=()=>{if(!editing)return;const {item,region:i,x}=editin
 byId("cancelPlace").onclick=()=>{byId("saleNote").textContent="";renderShop();};
 byId("wallet").onclick=()=>{byId("saleNote").textContent="";renderShop();byId("shop").showModal();};
 byId("advance").onclick=()=>walk("watch");byId("mark").onclick=()=>walk("manual");
+byId("earning").onclick=teamSheet;byId("companion").onclick=journal;
 byId("atlas").onclick=atlas;byId("journal").onclick=journal;
 byId("restart").onclick=()=>{sheet("重新出发？","会清空这个浏览器里的试玩进度、贝壳和摆件。");choices.append(button("清空试玩并出发",()=>{book=freshBook();focusX=null;visit=null;byId("sheet").close();commit();},{id:"confirm-reset"}));};
 for(const im of [baseImage,...[1,2,3,4].map(art),...goods.map(item=>byId(item.id))])im.addEventListener("load",()=>{if(byId("shop").open)shopArt();});

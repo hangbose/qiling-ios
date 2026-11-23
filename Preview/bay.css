@@ -192,3 +192,5 @@ dialog::backdrop { background:#252638ad }
 
 
 .scene {touch-action:pan-y;cursor:grab;user-select:none}.scene:active {cursor:grabbing}.world.panning {transition:none} #follow {position:absolute;right:12px;font-size:14px;padding:4px 9px;min-height:38px}
+
+#earning {pointer-events:auto;min-height:32px;padding-inline:8px}.portrait {padding:0}
