@@ -1,12 +1,14 @@
 import SwiftUI
 
 enum BayUI {
-    static let ink = Color(red: 0.09, green: 0.20, blue: 0.23)
-    static let pine = Color(red: 0.15, green: 0.29, blue: 0.30)
-    static let rim = Color(red: 0.78, green: 0.66, blue: 0.46)
-    static let cream = Color(red: 1, green: 0.94, blue: 0.81)
-    static let honey = Color(red: 1, green: 0.79, blue: 0.47)
-    static let peach = Color(red: 0.94, green: 0.63, blue: 0.46)
+    static let ink = Color(red: 0.16, green: 0.19, blue: 0.26)
+    static let navy = Color(red: 0.20, green: 0.27, blue: 0.39)
+    static let muted = Color(red: 0.38, green: 0.35, blue: 0.34)
+    static let rim = Color(red: 0.75, green: 0.69, blue: 0.60)
+    static let paper = Color(red: 0.96, green: 0.93, blue: 0.87)
+    static let cream = Color(red: 1, green: 0.98, blue: 0.94)
+    static let blush = Color(red: 0.95, green: 0.86, blue: 0.78)
+    static let rust = Color(red: 0.59, green: 0.27, blue: 0.18)
     static func type(_ size: CGFloat) -> Font { .custom("BayLetterpress", size: size, relativeTo: .body) }
 }
 struct BayCut: Shape {
@@ -21,21 +23,41 @@ struct BayCut: Shape {
     }
 }
 extension View {
-    func fieldPlate(_ fill: Color = BayUI.pine, edge: Color = BayUI.rim) -> some View {
+    func fieldPlate(_ fill: Color = BayUI.navy, edge: Color = BayUI.rim) -> some View {
         background(BayCut().fill(fill))
-            .shadow(color: BayUI.ink, radius: 0, y: 3)
+            .shadow(color: BayUI.ink.opacity(0.30), radius: 0, y: 2)
             .overlay(BayCut().stroke(edge, lineWidth: 1))
     }
 }
 struct BayKey: ButtonStyle {
-    var light = false
+    var primary = false
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.font(BayUI.type(16))
             .padding(.horizontal, 11).frame(minHeight: 44)
-            .foregroundStyle(light ? BayUI.ink : BayUI.cream)
-            .background(BayCut().fill(light ? BayUI.honey : BayUI.pine))
-            .overlay(BayCut().stroke(light ? BayUI.cream : BayUI.rim, lineWidth: 1.4))
-            .shadow(color: BayUI.ink, radius: 0, y: configuration.isPressed ? 0 : 3)
+            .foregroundStyle(primary ? BayUI.cream : BayUI.ink)
+            .background(BayCut().fill(primary ? BayUI.navy : BayUI.cream))
+            .overlay(BayCut().stroke(primary ? BayUI.ink : BayUI.rim, lineWidth: 1))
+            .shadow(color: BayUI.ink.opacity(0.22), radius: 0, y: configuration.isPressed ? 0 : 2)
             .offset(y: configuration.isPressed ? 2 : 0)
+    }
+}
+
+/// The striped edge where the illustrated map meets the paper of the travel journal.
+struct BayPostmarkEdge: View {
+    var body: some View {
+        Canvas { context, size in
+            for x in stride(from: CGFloat(-5), to: size.width, by: 40) {
+                for (offset, color) in [(CGFloat.zero, BayUI.rust), (CGFloat(20), BayUI.navy)] {
+                    let left = x + offset
+                    var stripe = Path()
+                    stripe.move(to: CGPoint(x: left, y: size.height))
+                    stripe.addLine(to: CGPoint(x: left + 4, y: 0))
+                    stripe.addLine(to: CGPoint(x: left + 11, y: 0))
+                    stripe.addLine(to: CGPoint(x: left + 7, y: size.height))
+                    stripe.closeSubpath()
+                    context.fill(stripe, with: .color(color))
+                }
+            }
+        }.frame(height: 4).background(BayUI.paper).accessibilityHidden(true)
     }
 }

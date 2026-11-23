@@ -47,7 +47,7 @@ struct BayJourneyView: View {
                         BayScene(stop: shown, kind: actor, together: second, walking: walking, follows: true)
                         HStack(alignment: .top) {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(model.demo ? "第一站 · 演示" : "第一站").font(BayUI.type(13)).foregroundStyle(BayUI.honey)
+                                Text(model.demo ? "第一站 · 演示" : "第一站").font(BayUI.type(13)).foregroundStyle(BayUI.blush)
                                 Text("深圳湾").font(BayUI.type(30)).foregroundStyle(BayUI.cream)
                             }.padding(.horizontal, 13).padding(.vertical, 8).fieldPlate()
                             Spacer()
@@ -56,46 +56,52 @@ struct BayJourneyView: View {
                             }.buttonStyle(BayKey()).accessibilityLabel("贝壳 \(shells) 枚，查看手记")
                         }.padding(12)
                     }
-                    VStack(alignment: .leading, spacing: 14) {
+                    BayPostmarkEdge()
+                    VStack(alignment: .leading, spacing: 13) {
                         HStack(spacing: 6) {
                             ForEach(0..<3) { i in
                                 HStack(spacing: 5) {
                                     Image(systemName: i < litCount ? "diamond.fill" : "diamond").font(.system(size: 8))
                                     Text(names[i]).font(BayUI.type(14))
-                                }.layoutPriority(1).foregroundStyle(i < litCount ? BayUI.honey : BayUI.cream.opacity(0.72))
-                                if i < 2 { Rectangle().fill(BayUI.rim.opacity(0.5)).frame(minWidth: 2, maxWidth: .infinity).frame(height: 1) }
+                                }.layoutPriority(1).foregroundStyle(i < litCount ? BayUI.rust : BayUI.muted)
+                                if i < 2 { Rectangle().fill(BayUI.rim).frame(minWidth: 2, maxWidth: .infinity).frame(height: 1) }
                             }
                         }.accessibilityLabel("亮灯 \(litCount) / 3")
-                        HStack(alignment: .top, spacing: 13) {
+                        HStack(alignment: .center, spacing: 13) {
                             BaySprite(kind: actor, walking: false)
                                 .frame(width: 50, height: 50).padding(4)
-                                .background(BayUI.rim.opacity(0.52)).overlay(BayCut().stroke(BayUI.rim))
+                                .background(BayUI.blush)
+                                .overlay {
+                                    Rectangle().inset(by: 3).stroke(BayUI.rust.opacity(0.65),
+                                        style: StrokeStyle(lineWidth: 1, dash: [2, 3]))
+                                }
                             VStack(alignment: .leading, spacing: 6) {
-                                Text(lastEntry).font(BayUI.type(20))
-                                Text(voice).font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                                Text(lastEntry).font(.headline.weight(.semibold))
+                                Text(voice).font(.subheadline).foregroundStyle(BayUI.muted).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
                                 if let issue = model.bayIssue, relay { Text(issue).font(.caption) }
                             }
                         }.padding(13).frame(maxWidth: .infinity, alignment: .leading)
-                            .foregroundStyle(BayUI.ink).fieldPlate(BayUI.cream, edge: BayUI.rim)
+                            .foregroundStyle(BayUI.ink).background(BayUI.cream)
+                            .overlay(alignment: .leading) { Rectangle().fill(BayUI.rust).frame(width: 3) }
                         HStack {
                             if shown == 3 {
                                 Button { makeCard(); sheet = .card } label: { Label("收下明信片", systemImage: "envelope") }
-                                    .buttonStyle(BayKey(light: true))
+                                    .buttonStyle(BayKey(primary: true))
                             } else if !model.state.requestedHealth && !model.demo {
                                 Button { Task { await model.connect() } } label: { Label("连接健康", systemImage: "heart") }
-                                    .buttonStyle(BayKey(light: true))
+                                    .buttonStyle(BayKey(primary: true))
                             } else {
                                 Button { sheet = .journal } label: { Label("翻开手记", systemImage: "book") }
-                                    .buttonStyle(BayKey(light: true))
+                                    .buttonStyle(BayKey(primary: true))
                             }
                             Button { sheet = .travel } label: { Label(relay ? "小队接力" : "结伴同行", systemImage: "person.2") }
                                 .buttonStyle(BayKey())
                         }
-                    }.padding(15).frame(maxWidth: .infinity, alignment: .leading).background(BayUI.ink)
+                    }.padding(15).frame(maxWidth: .infinity, alignment: .leading).background(BayUI.paper)
                 }
-            }.background(BayUI.ink.ignoresSafeArea()).foregroundStyle(BayUI.cream)
+            }.background(BayUI.paper.ignoresSafeArea()).foregroundStyle(BayUI.ink)
                 .toolbar(.hidden, for: .navigationBar)
-                .tint(BayInk.sea)
+                .tint(BayUI.rust)
                 .refreshable { await model.sync(); await model.refreshBay() }
                 .task { await model.refreshBay() }
                 .onChange(of: phase) { _, value in if value == .active { Task { await model.refreshBay() } } }
@@ -112,14 +118,14 @@ struct BayJourneyView: View {
                                         image.resizable().scaledToFit()
                                         ShareLink(item: image, preview: SharePreview("深圳湾明信片", image: image)) {
                                             Label("分享明信片", systemImage: "square.and.arrow.up")
-                                        }.buttonStyle(BayKey(light: true))
+                                        }.buttonStyle(BayKey(primary: true))
                                     }.padding(20)
                                 }
                             }
                         }.navigationTitle(item == .journal ? "旅行手记" : item == .travel ? "结伴同行" : "深圳湾明信片")
                             .navigationBarTitleDisplayMode(.inline)
                             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { sheet = nil } } }
-                    }.foregroundStyle(BayUI.ink).tint(BayInk.sea).presentationBackground(BayUI.cream).presentationDragIndicator(.visible)
+                    }.foregroundStyle(BayUI.ink).tint(BayUI.rust).presentationBackground(BayUI.cream).presentationDragIndicator(.visible)
                 }
         }
     }
@@ -178,7 +184,7 @@ struct BayJourneyView: View {
                     HStack {
                         VStack(alignment: .leading) { Text(model.bay.days[payment.day] ?? "旅途"); Text(payment.day).font(.caption).foregroundStyle(.secondary) }
                         Spacer()
-                        Text("+\(payment.amount)").monospacedDigit().foregroundStyle(BayInk.coral)
+                        Text("+\(payment.amount)").monospacedDigit().foregroundStyle(BayUI.rust)
                     }
                 }
             }
@@ -213,7 +219,7 @@ struct BayJourneyView: View {
                 Text(relay ? model.bay.relaySteps.map(\.name).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }.joined(separator: "、") + " · 一起点亮海堤" : model.state.petName + " · 海堤漫步纪念")
                     .font(.subheadline)
             }.padding(20)
-        }.frame(width: 360).background(BayInk.paper).foregroundStyle(BayInk.text)
+        }.frame(width: 360).background(BayUI.cream).foregroundStyle(BayUI.ink)
         let render = ImageRenderer(content: card); render.scale = 3
         cardImage = render.uiImage.map { Image(uiImage: $0) }
     }

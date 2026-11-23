@@ -66,10 +66,10 @@ struct RootView: View {
                                 Image(systemName: item.symbol).font(.system(size: 15))
                                 Text(item.rawValue).font(BayUI.type(13))
                             }.frame(maxWidth: .infinity, minHeight: 47)
-                        }.foregroundStyle(tab == item ? BayUI.honey : BayUI.cream)
+                        }.foregroundStyle(tab == item ? BayUI.rust : BayUI.muted)
                             .accessibilityAddTraits(tab == item ? .isSelected : [])
                     }
-                }.padding(.horizontal, 9).background(BayUI.pine)
+                }.padding(.horizontal, 9).background(BayUI.cream)
                     .overlay(alignment: .top) { Rectangle().fill(BayUI.rim).frame(height: 1) }
             } else {
             HStack(spacing: 4) {
