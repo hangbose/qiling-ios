@@ -30,7 +30,11 @@ workflows:
           set -euo pipefail
           : "${APPLE_TEAM_ID:?APPLE_TEAM_ID must be configured}"
           if ! command -v xcodegen >/dev/null; then brew install xcodegen; fi
-          python3 Scripts/configure-release.py --bundle-id "$BUNDLE_ID" --team-id "$APPLE_TEAM_ID" --build-number "$((BUILD_NUMBER + 1))"
+          latest=$(app-store-connect get-latest-testflight-build-number 6827530890 --platform IOS)
+          [[ "$latest" =~ ^[0-9]+$ ]] || { echo "Expected a numeric TestFlight build number"; exit 1; }
+          number=$(( (latest > BUILD_NUMBER ? latest : BUILD_NUMBER) + 1 ))
+          echo "Preparing TestFlight build $number"
+          python3 Scripts/configure-release.py --bundle-id "$BUNDLE_ID" --team-id "$APPLE_TEAM_ID" --build-number "$number"
           mkdir -p Config
           bash Scripts/prepare-assets.sh
           xcodegen generate
@@ -48,11 +52,12 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
       - build/xcodebuild.log
       - build/TestResults.xcresult
-      - build/native-home.png
+      - build/native-*.png
     publishing:
       app_store_connect:
         auth: integration
-        # Upload to App Store Connect; do not request external beta review.
-        # Assign the processed build to the internal group in App Store Connect.
-        submit_to_testflight: false
+        submit_to_testflight: true
+        beta_groups:
+          - 好友体验测试
+          - 本人真机测试
         submit_to_app_store: false

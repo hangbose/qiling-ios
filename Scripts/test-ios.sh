@@ -27,6 +27,10 @@ xcrun simctl bootstatus "$DEVICE_ID" -b
 xcrun simctl install "$DEVICE_ID" build/DerivedData/Build/Products/Debug-iphonesimulator/Qiling.app
 APP_PATH=build/DerivedData/Build/Products/Debug-iphonesimulator/Qiling.app
 APP_BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist")
+xcrun simctl launch "$DEVICE_ID" "$APP_BUNDLE_ID"
+sleep 3
+xcrun simctl io "$DEVICE_ID" screenshot build/native-first-journey.png
+xcrun simctl terminate "$DEVICE_ID" "$APP_BUNDLE_ID"
 xcrun simctl launch "$DEVICE_ID" "$APP_BUNDLE_ID" --demo
 sleep 6
 xcrun simctl io "$DEVICE_ID" screenshot build/native-home.png
