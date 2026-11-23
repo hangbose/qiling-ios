@@ -52,6 +52,26 @@ function drawIcon(canvas, symbol, dark) {
   }));
 }
 document.querySelectorAll("[data-icon]").forEach(el => drawIcon(el,el.dataset.icon,false));
+// Use map coordinates for both the moving view and the finished postcard.
+const lampCenters = lamps.map(lamp => ({
+  x: parseFloat(lamp.style.left),
+  y: parseFloat(lamp.style.top)
+}));
+function addLightPool(group, center, rx, ry, gradient) {
+  const ellipse = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+  ellipse.setAttribute("cx", center.x);
+  ellipse.setAttribute("cy", center.y + 5.5);
+  ellipse.setAttribute("rx", rx);
+  ellipse.setAttribute("ry", ry);
+  ellipse.setAttribute("fill", "url(#" + gradient + ")");
+  ellipse.classList.add("light-pool");
+  group.append(ellipse);
+  return ellipse;
+}
+const litAreas = lampCenters.map(center => [
+  addLightPool(byId("clearings"), center, 30, 40, "clearPool"),
+  addLightPool(byId("pools"), center, 15, 15, "warmPool")
+]);
 const tide=byId("tide");
 for (let i=0;i<13;i++) {
   const fleck=document.createElement("i");
@@ -90,7 +110,6 @@ function paint(now) {
   const left=clamp(cx*ww-vw*.38,0,ww-vw);
   const top=clamp(cy*wh-vh*.76,0,wh-vh);
   world.style.transform="translate("+(-left).toFixed(2)+"px,"+(-top).toFixed(2)+"px)";
-  byId("air").style.opacity=String(.14*(1-(stage+t)/3));
   byId("pal").hidden=!guest;
   put(byId("me"),lerp("me")); put(byId("pal"),lerp("pal"),.016);
   const stride=Boolean(travel && !reduce.matches && Math.floor((now-travel.began)/150)%2);
@@ -110,7 +129,11 @@ function arrived() {
   byId("wallet").setAttribute("aria-label","贝壳 "+s.balance+" 枚，翻开手记");
   drawPet(byId("face"),stage===2);
   drawIcon(byId("actionIcon"),s.icon,true);
-  lamps.forEach((el,i)=>el.classList.toggle("on",i<stage));
+  lamps.forEach((el,i)=>{
+    el.classList.toggle("on",i<stage);
+    for (const area of litAreas[i]) area.classList.toggle("on",i<stage);
+  });
+  byId("shade").classList.toggle("complete", stage===lamps.length);
   locations.forEach((el,i)=>{
     el.classList.toggle("on",i<stage);
     el.setAttribute("aria-label",el.textContent+(i<stage ? "，已点亮" : "，尚未点亮"));
@@ -144,8 +167,17 @@ function drawPostcard() {
   const canvas=byId("postArt"), ctx=canvas.getContext("2d"), w=canvas.width,h=canvas.height;
   ctx.imageSmoothingEnabled=false;
   ctx.drawImage(byId("plate"),0,0,w,h);
-  for(const lamp of lamps) {
-    const x=parseFloat(lamp.style.left)*w/100,y=parseFloat(lamp.style.top)*h/100;
+  for (const center of lampCenters) {
+    const x = center.x*w/100, y = center.y*h/100;
+    ctx.save();
+    ctx.translate(x, y+h*.055);
+    ctx.scale(w*.15, h*.15);
+    const pool = ctx.createRadialGradient(0,0,0,0,0,1);
+    pool.addColorStop(0,"rgba(255,196,102,.20)");
+    pool.addColorStop(1,"rgba(255,196,102,0)");
+    ctx.fillStyle = pool;
+    ctx.fillRect(-1,-1,2,2);
+    ctx.restore();
     ctx.fillStyle="#ffe697"; ctx.fillRect(x-4,y-3,8,6);
   }
   for (const [id,index,offset] of [["pal",poses[3].pal,.016],["me",6,0]]) {

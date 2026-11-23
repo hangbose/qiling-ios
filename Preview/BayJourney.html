@@ -13,7 +13,30 @@
     <div id="world" class="world">
       <img id="plate" src="../Resources/Assets.xcassets/BayJourney.imageset/bay.png" alt="" draggable="false">
       <div id="tide" aria-hidden="true"></div>
-      <div id="air" aria-hidden="true"></div>
+      <svg class="lighting" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id="dusk" x2="0%" y2="100%">
+            <stop stop-color="#1a244a" stop-opacity=".70"/>
+            <stop offset=".55" stop-color="#0f2440" stop-opacity=".68"/>
+            <stop offset="1" stop-color="#0d1a33" stop-opacity=".76"/>
+          </linearGradient>
+          <radialGradient id="clearPool">
+            <stop stop-color="black"/>
+            <stop offset=".43" stop-color="black" stop-opacity=".93"/>
+            <stop offset="1" stop-color="black" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="warmPool">
+            <stop stop-color="#ffc466" stop-opacity=".20"/>
+            <stop offset="1" stop-color="#ffc466" stop-opacity="0"/>
+          </radialGradient>
+          <mask id="shadeMask" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100" style="mask-type:luminance">
+            <rect width="100" height="100" fill="white"/>
+            <g id="clearings"></g>
+          </mask>
+        </defs>
+        <rect id="shade" width="100" height="100" fill="url(#dusk)" mask="url(#shadeMask)"/>
+        <g id="pools"></g>
+      </svg>
       <i class="lamp" style="left:20.3%;top:60.6%"></i>
       <i class="lamp" style="left:47.8%;top:60.7%"></i>
       <i class="lamp" style="left:73.1%;top:59.4%"></i>
