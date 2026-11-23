@@ -28,11 +28,10 @@ button:focus-visible { outline: 3px solid #accfea; outline-offset: 2px; box-shad
 .scene { position: relative; overflow: hidden; height:clamp(320px,74svh,820px); background: #a3c7bc; contain: paint }
 .world { position: absolute; left: 0; top: 0; will-change: transform }
 .plate { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; user-select: none }
-.lighting, .tide { position:absolute; inset:0; width:100%; height:100%; pointer-events:none }
-.light-pool, .shade { transition:opacity .95s ease-out }
-.light-pool { opacity:0 }
-.light-pool.on { opacity:1 }
-.shade.complete { opacity:0 }
+.plate {width:calc(50% + .5px)}
+.plate.east {left:50%;width:50%}
+.tide { position:absolute; inset:0; width:100%; height:100%; pointer-events:none }
+.haze {position:absolute;top:0;left:0;pointer-events:none}
 .glint { position: absolute; width: .5%; height: 2px; background: #fff7cc; animation: glimmer 3s steps(4) infinite }
 @keyframes glimmer { 0%,100%{opacity:.08;scale:.55 1} 50%{opacity:.85;scale:1.2 1} }
 .gull { position: absolute; width: 10px; height: 5px; opacity: .7; color: #466064; animation: drift 22s ease-in-out infinite alternate }
@@ -195,12 +194,14 @@ dialog::backdrop { background:#252638ad }
 
 #earning {pointer-events:auto;min-height:32px;padding-inline:8px}.portrait {padding:0}
 
-/* The camera eases out as the last paw reaches the ground. */
-.world.striding, .world.striding .pet {
-  transition-duration: 2.15s;
-  transition-timing-function: cubic-bezier(.28,.04,.30,1);
-}
-.world.landing, .world.landing .pet, .world.panning {transition:none}
+/* Position is sampled once per animation frame for the pet and its camera together. */
+.world, .world .pet {transition:none}
+.glint {width:4px}
+.lamp {width:calc(var(--scene-unit) * .025);height:calc(var(--scene-unit) * .030);
+  border:2px solid #554656;border-radius:2px;background:#687077}
+.lamp::after {content:"";position:absolute;left:40%;top:100%;width:3px;
+  height:calc(var(--scene-unit) * .052);background:#494750}
+.lamp.on {background:#ffe9a4;box-shadow:0 0 9px 4px #ffcf7788}
 .departure {pointer-events:none;z-index:1}
 .pet.gait {
   aspect-ratio:1;opacity:0;pointer-events:none;background-repeat:no-repeat;

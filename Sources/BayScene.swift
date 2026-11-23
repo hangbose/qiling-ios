@@ -44,24 +44,44 @@ struct BayScene: View {
 
     var body: some View {
         if follows {
-            landscape
+            promenade
         } else {
             landscape.aspectRatio(4.0 / 3.0, contentMode: .fit)
         }
     }
 
+    private var promenade: some View {
+        let ticks = (fraction ?? Double(stop)) * Double(BayDistrict.all[district].length) / 3
+        return GeometryReader { geo in
+            let layout = BayPromenadeLayout(district: district, viewport: geo.size, ticks: ticks, focus: focusX)
+            ZStack {
+                BayPromenade(scene: self, travellers: false, ticks: ticks)
+                    .id(district).transition(reduced ? .identity : .opacity)
+                BayPromenade(scene: self, travellers: true, ticks: ticks)
+                    .id(district).transition(.identity).zIndex(1)
+                if let onPan {
+                    Color.clear.contentShape(Rectangle())
+                        .simultaneousGesture(DragGesture(minimumDistance: 10)
+                            .onChanged { drag in
+                                guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
+                                if dragOrigin == nil { dragOrigin = layout.cameraLeft }
+                                let start = dragOrigin ?? layout.cameraLeft
+                                let left = min(max(0, start - drag.translation.width), max(0, layout.width - geo.size.width))
+                                onPan((left + geo.size.width * 0.40) / max(1, layout.width))
+                            }.onEnded { _ in dragOrigin = nil })
+                        .accessibilityHidden(true).zIndex(2)
+                }
+            }
+        }.clipped().accessibilityLabel("\(BayDistrict.all[district].title)，已点亮 \(stop) 盏路灯")
+    }
+
     private var landscape: some View {
         GeometryReader { geo in
             let frame = geo.size
-            let w = follows ? max(frame.width * 1.78, frame.height * 4 / 3) : frame.width
+            let w = frame.width
             let h = w * 0.75
-            let cameraX = min(max(0, (focusX ?? track.x) * w - frame.width * 0.49), max(0, w - frame.width))
-            let cameraY = min(max(0, track.y * h - frame.height * 0.76), max(0, h - frame.height))
             ZStack {
                 Image(BayDistrict.all[district].art).resizable().interpolation(.none)
-                if follows && [0,1,4].contains(district) {
-                    BayWeather(quiet: reduced)
-                }
                 BayLamplight(lamps: lamps, progress: fraction ?? Double(stop))
                     .animation(reduced ? nil : .easeOut(duration: 0.95), value: fraction)
                     .allowsHitTesting(false)
@@ -89,33 +109,18 @@ struct BayScene: View {
                         .position(x: w * location.x, y: h * location.y - size / 2)
                     }
                 }
-            }.frame(width: w, height: h).offset(x: -cameraX, y: -cameraY)
+            }.frame(width: w, height: h)
                 .frame(width: frame.width, height: frame.height, alignment: .topLeading)
-                .id(district)
-                .transition(!follows || reduced ? .identity : .opacity)
-            // Keep a single set of travellers above both landscapes during a crossing.
             if let together {
                 BaySprite(kind: together, walking: walking && !reduced, grown: buddyGrown, phaseOffset: 0.19)
                     .frame(width: w * 0.092, height: w * 0.092)
-                    .position(x: w * (track.x - 0.073) - cameraX, y: h * (track.y + 0.018) - cameraY)
+                    .position(x: w * (track.x - 0.073), y: h * (track.y + 0.018))
                     .zIndex(1)
             }
             BaySprite(kind: kind, walking: walking && !reduced, grown: grown)
                 .frame(width: w * 0.108, height: w * 0.108)
-                .position(x: w * track.x - cameraX, y: h * track.y - cameraY)
+                .position(x: w * track.x, y: h * track.y)
                 .zIndex(1)
-            if follows, let onPan {
-                Color.clear.contentShape(Rectangle())
-                    .simultaneousGesture(DragGesture(minimumDistance: 10)
-                        .onChanged { drag in
-                            guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
-                            if dragOrigin == nil { dragOrigin = cameraX }
-                            let left = min(max(0, (dragOrigin ?? cameraX) - drag.translation.width), max(0, w - frame.width))
-                            onPan((left + frame.width * 0.49) / max(1, w))
-                        }.onEnded { _ in dragOrigin = nil })
-                    .accessibilityHidden(true)
-                    .zIndex(2)
-            }
         }
             .clipped().accessibilityLabel("\(BayDistrict.all[district].title)，已点亮 \(litCount) 盏路灯")
     }
@@ -163,32 +168,6 @@ private struct BayLamplight: View {
                 }
             }
         }
-    }
-}
-
-private struct BayWeather: View {
-    let quiet: Bool
-    var body: some View {
-        TimelineView(.animation(minimumInterval: 0.16, paused: quiet)) { time in
-            Canvas { ctx, size in
-                let t = quiet ? 0 : time.date.timeIntervalSinceReferenceDate
-                let w = size.width, h = size.height
-                for i in 0..<13 {
-                    let phase = (sin(t * 0.8 + Double(i) * 1.8) + 1) / 2
-                    let x = (0.09 + CGFloat(i * 29 % 83) / 100) * w
-                    let y = (0.48 + CGFloat(i * 7 % 10) / 100) * h
-                    ctx.fill(Path(CGRect(x: x, y: y, width: 2 + 5 * phase, height: 1.3)), with: .color(.white.opacity(phase * 0.80)))
-                }
-                for i in 0..<3 {
-                    let x = (0.25 + (t.truncatingRemainder(dividingBy: 42) / 42) * 0.43 + Double(i) * 0.025) * w
-                    let y = (0.26 + sin(t / 4 + Double(i)) * 0.012 + Double(i % 2) * 0.016) * h
-                    let wing = sin(t * 1.8 + Double(i)) > 0 ? -2.0 : 0.0
-                    var bird = Path(); bird.move(to: CGPoint(x: x - 4, y: y + wing))
-                    bird.addLine(to: CGPoint(x: x, y: y + 1)); bird.addLine(to: CGPoint(x: x + 4, y: y + wing))
-                    ctx.stroke(bird, with: .color(BayUI.ink.opacity(0.65)), lineWidth: 1.5)
-                }
-            }
-        }.accessibilityHidden(true).allowsHitTesting(false)
     }
 }
 

@@ -16,6 +16,8 @@ struct BayJourneyView: View {
     @State private var goal = Date()
     @State private var cardImage: Image?
     @State private var visiting: Int?
+    @State private var entrance: Int?
+    @State private var editX = 0.5
     @State private var cameraFocus: Double?
     @State private var editing: BaySouvenir?
     @State private var editDistrict = 0
@@ -31,9 +33,9 @@ struct BayJourneyView: View {
     }
     private var trail: BayTrail { BayTrail(shown, legacyCount: legacyCount) }
     private var earnedTrail: BayTrail { BayTrail(count, legacyCount: legacyCount) }
-    private var region: Int { visiting.flatMap { earnedTrail.canVisit($0) ? $0 : nil } ?? trail.district }
+    private var region: Int { visiting.flatMap { earnedTrail.canVisit($0) ? $0 : nil } ?? entrance ?? trail.district }
     private var area: BayDistrict { BayDistrict.all[region] }
-    private var ticks: Int { visiting == nil ? trail.ticks(in: region) : earnedTrail.visitTicks(region) }
+    private var ticks: Int { visiting != nil ? earnedTrail.visitTicks(region) : entrance != nil ? 0 : trail.ticks(in: region) }
     private var fraction: Double { Double(ticks * 3) / Double(area.length) }
     private var litCount: Int { Int(fraction) }
     private var shells: Int { model.bay.balance }
@@ -52,13 +54,13 @@ struct BayJourneyView: View {
         return litCount > 0 && fraction == Double(litCount) ? "点亮了" + area.stops[litCount-1] : "走向" + area.stops[min(2,litCount)]
     }
 
-    private func scene(_ region: Int, ticks: Int, follows: Bool = false) -> BayScene {
+    private func scene(_ region: Int, ticks: Int, follows: Bool = false, previewFocus: Double? = nil) -> BayScene {
         let progress = Double(ticks * 3) / Double(BayDistrict.all[region].length)
         return BayScene(stop: Int(progress), kind: actor, together: friend?.companion,
-            walking: follows && walking, follows: follows, souvenirs: souvenirs,
+            walking: follows && previewFocus == nil && walking, follows: follows, souvenirs: souvenirs,
             district: region, fraction: progress, placements: model.bay.placements ?? [:], grown: grown,
             buddyGrown: friend.map { f in model.bay.relaySteps.filter { $0.key.split(separator: "|").first == f.key.split(separator: "|").first }.count >= 5 } ?? false,
-            focusX: follows ? cameraFocus : nil, onPan: follows ? { cameraFocus = $0 } : nil)
+            focusX: previewFocus ?? (follows ? cameraFocus : nil), onPan: follows && previewFocus == nil ? { cameraFocus = $0 } : nil)
     }
 
     var body: some View {
@@ -187,6 +189,7 @@ struct BayJourneyView: View {
 
     @MainActor private func playArrival() async {
         walking = false
+        entrance = nil
         let destination = count, key = route
         let last = min(destination, model.bay.seen[key] ?? 0)
         visiting = nil
@@ -196,10 +199,18 @@ struct BayJourneyView: View {
         else {
             while shown < destination {
                 do { try await Task.sleep(for: .milliseconds(400)) } catch { return }
+                let next = BayTrail(shown + 1, legacyCount: legacyCount).district
+                if next != trail.district {
+                    entrance = next
+                    // Mount the entrance before moving so the new camera starts inside this district.
+                    do { try await Task.sleep(for: .milliseconds(100)) } catch { return }
+                }
                 walking = true
-                let crossing = trail.district != BayTrail(shown + 1, legacyCount: legacyCount).district
-                let duration = crossing ? 2.6 : 2.15
-                withAnimation(.timingCurve(0.28, 0.04, 0.30, 1, duration: duration)) { shown += 1 }
+                let duration = BayPromenadeLayout.duration(next)
+                withAnimation(.timingCurve(0.42, 0, 0.58, 1, duration: duration)) {
+                    shown += 1
+                    entrance = nil
+                }
                 do { try await Task.sleep(for: .seconds(duration)) } catch { return }
                 walking = false
                 model.markBaySeen(shown, route: key)
@@ -216,22 +227,17 @@ struct BayJourneyView: View {
                     Picker("放在哪一站", selection: $editDistrict) {
                         ForEach(BayDistrict.all.indices.filter { earnedTrail.canVisit($0) }, id: \.self) { i in Text(BayDistrict.all[i].title).tag(i) }
                     }
-                    Text("点步道上的位置，摆放" + editing.title + "。").font(.subheadline)
-                    scene(editDistrict, ticks: earnedTrail.visitTicks(editDistrict))
-                        .overlay { GeometryReader { g in
-                            Color.clear.contentShape(Rectangle()).onTapGesture { point in
-                                place(editing, at: point.x / max(1,g.size.width))
-                            }
-                        } }
+                    scene(editDistrict, ticks: earnedTrail.visitTicks(editDistrict), follows: true, previewFocus: editX)
+                        .frame(height: 155)
+                    Slider(value: $editX, in: 0.06...0.94).accessibilityLabel("沿路位置")
                     HStack {
-                        ForEach([0.16,0.50,0.84], id: \.self) { x in
-                            Button(x < 0.2 ? "路左" : x > 0.8 ? "路右" : "路中") { place(editing, at: x) }
-                        }
+                        Button("摆在这里") { place(editing, at: editX) }.buttonStyle(BayKey(primary: true))
                         Spacer()
                         Button("取消") { self.editing = nil }
                     }
                 } else {
-                    scene(region, ticks: ticks)
+                    scene(region, ticks: ticks, follows: true, previewFocus: cameraFocus ?? BayPromenadeLayout.routeX(fraction / 3))
+                        .frame(height: 155)
                 }
                 HStack {
                     Label("\(shells) 枚贝壳", systemImage: "fossil.shell.fill").font(.headline)
@@ -260,10 +266,13 @@ struct BayJourneyView: View {
                         }
                         Spacer(minLength: 0)
                         if owned {
-                            Button("换位置") { editDistrict = region; editing = item }.buttonStyle(BayKey())
+                            Button("换位置") {
+                                let spot = model.bay.position(of: item)
+                                editDistrict = spot.district; editX = spot.x; editing = item
+                            }.buttonStyle(BayKey())
                         } else {
                             VStack(spacing: 4) {
-                                Button { model.buyBaySouvenir(item); editDistrict = region; editing = item } label: {
+                                Button { model.buyBaySouvenir(item); editDistrict = region; editX = item.x; editing = item } label: {
                                     Text("\(item.price) 枚").monospacedDigit()
                                 }.buttonStyle(BayKey(primary: shells >= item.price))
                                     .disabled(shells < item.price)

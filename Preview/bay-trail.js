@@ -215,3 +215,27 @@ function ground(region, x) {
     0.77 - 0.022 * x,
   ][region];
 }
+
+// The route is measured in the panorama. Sprite sizes stay in viewport coordinates.
+const landscapeAspects = [26, 13, 13, 26, 13];
+// Ground contact along the painted paths, sampled at eighths of each panorama.
+const pathProfiles = [
+  [.90, .90, .89, .90, .91, .90, .91, .88, .90],
+  [.90, .90, .91, .91, .91, .90, .91, .90, .91],
+  [.90, .91, .90, .90, .89, .91, .90, .91, .92],
+  [.85, .84, .84, .85, .84, .84, .85, .86, .84],
+  [.91, .91, .89, .90, .91, .90, .90, .92, .91],
+];
+function trailX(i, ticks) {
+  return 0.035 + 0.93 * Math.max(0, Math.min(1, ticks / districts[i].length));
+}
+function panoramaSize(i, screenWidth, screenHeight) {
+  const landscapeAspect = landscapeAspects[i];
+  const width = Math.max(screenHeight * landscapeAspect, screenWidth * districts[i].length * 0.82 / 0.93);
+  return { width, height: width / landscapeAspect };
+}
+function promenadeY(i, x) {
+  const heights = pathProfiles[i], t = Math.max(0, Math.min(1, x)) * (heights.length - 1);
+  const a = Math.min(Math.floor(t), heights.length - 2);
+  return heights[a] + (heights[a + 1] - heights[a]) * (t - a);
+}

@@ -80,6 +80,21 @@ final class BayJournalTests: XCTestCase {
         XCTAssertEqual(BayJournal().shortRouteDays, 0)
     }
 
+    func testPanoramaDayDistanceAndCameraStayInsideEveryDistrict() {
+        let phone = CGSize(width: 390, height: 645)
+        for (index, district) in BayDistrict.all.enumerated() {
+            let start = BayPromenadeLayout(district: index, viewport: phone, ticks: 0, focus: nil)
+            let next = BayPromenadeLayout(district: index, viewport: phone, ticks: 1, focus: nil)
+            XCTAssertGreaterThanOrEqual((next.x - start.x) * start.width, phone.width * 0.82 - 0.001)
+            for tick in 0...district.length {
+                let view = BayPromenadeLayout(district: index, viewport: phone, ticks: Double(tick), focus: nil)
+                XCTAssertGreaterThanOrEqual(view.cameraLeft, 0)
+                XCTAssertLessThanOrEqual(view.cameraLeft + phone.width, view.width + 0.001)
+                XCTAssertTrue((0...phone.height).contains(view.screenPoint(view.x).y))
+            }
+        }
+    }
+
     func testOldPlayersKeepTheirLandmarksAndFutureStepsCostOne() {
         XCTAssertEqual(BayTrail(3, legacyCount: 3).total, 12)
         XCTAssertEqual(BayTrail(4, legacyCount: 3).total, 13)

@@ -58,26 +58,6 @@ function drawIcon(canvas, symbol, primary) {
   );
 }
 document.querySelectorAll("[data-icon]").forEach((el) => drawIcon(el, el.dataset.icon, false));
-// Use map coordinates for both the moving view and the finished postcard.
-const lampCenters = lamps.map((lamp) => ({
-  x: parseFloat(lamp.style.left),
-  y: parseFloat(lamp.style.top),
-}));
-function addLightPool(group, center, rx, ry, gradient) {
-  const ellipse = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
-  ellipse.setAttribute("cx", center.x);
-  ellipse.setAttribute("cy", center.y + 5.5);
-  ellipse.setAttribute("rx", rx);
-  ellipse.setAttribute("ry", ry);
-  ellipse.setAttribute("fill", "url(#" + gradient + ")");
-  ellipse.classList.add("light-pool");
-  group.append(ellipse);
-  return ellipse;
-}
-const litAreas = lampCenters.map((center) => [
-  addLightPool(byId("clearings"), center, 30, 40, "clearPool"),
-  addLightPool(byId("pools"), center, 15, 15, "warmPool"),
-]);
 const tide = byId("tide");
 for (let i = 0; i < 13; i++) {
   const fleck = document.createElement("i");
@@ -95,10 +75,15 @@ for (let i = 0; i < 3; i++) {
   gull.style.animationDelay = -i * 0.6 + "s";
   tide.append(gull);
 }
-const backgrounds = [byId("plate").src, ...[1, 2, 3, 4].map((i) => byId("bg" + i).src)];
-const baseImage = new Image();
-baseImage.src = backgrounds[0];
-const art = (i) => (i === 0 ? baseImage : byId("bg" + i));
+const art = (i) => byId("bg" + i);
+const backgrounds = districts.map((_, i) => art(i).src);
+// Immutable tile sources also feed the shop view while the live map changes districts.
+const widePlates = districts.map((_, i) => ["West", "East"].map((side, j) => {
+  if (i) return byId("wide" + i + side);
+  const im = new Image();
+  im.src = byId(j ? "farPlate" : "plate").src;
+  return im;
+}));
 let visit = null,
   focusX = null,
   editing = null,
@@ -109,35 +94,40 @@ const petImg = (id, grown) => byId(id + (grown ? "1" : "0"));
 const imageIfChanged = (el, src) => {
   if (el.getAttribute("src") !== src) el.src = src;
 };
-function point(i, ticks) {
-  const x = 0.105 + (0.755 * ticks) / districts[i].length;
-  return { x, y: ground(i, x) };
-}
-function placeImage(el, x, y, size) {
-  el.style.left = x * 100 + "%";
-  el.style.top = y * 100 + "%";
-  el.style.width = size * 100 + "%";
-}
+let displayTicks = 0, trackingLead = 0, animationFrame = 0;
 function camera() {
-  const i = region(),
-    p = point(i, route().at(i)),
-    w = frame.clientWidth,
-    h = frame.clientHeight;
-  const width = Math.max(w * (w > 580 ? 1.48 : 1.65), (h * 4) / 3),
-    height = width * 0.75;
-  walkers.style.width = width + "px";
-  walkers.style.height = height + "px";
-  world.style.width = width + "px";
-  world.style.height = height + "px";
-  const left = Math.max(0, Math.min(width - w, (focusX ?? p.x) * width - w * 0.47));
+  const i = Math.max(0, shown), w = frame.clientWidth, h = frame.clientHeight;
+  const {width, height} = panoramaSize(i, w, h);
+  const x = trailX(i, displayTicks);
+  const left = Math.max(0, Math.min(width - w, (focusX ?? x) * width - w * (0.40 + (focusX === null ? trackingLead : 0))));
+  const top = Math.max(0, Math.min(height - h, promenadeY(i, focusX ?? x) * height - h * 0.79));
+  const unit = Math.min(w, h * 0.8);
+  for (const layer of [world, walkers]) {
+    layer.style.width = width + "px";
+    layer.style.height = height + "px";
+    layer.style.transform = "translate(" + -left + "px," + -top + "px)";
+  }
+  const haze = byId("haze"), edge = x * width - left;
+  haze.style.transform = "translate(" + left + "px," + top + "px)";
+  haze.style.width = w + "px";
+  haze.style.height = h + "px";
+  haze.style.background = "linear-gradient(90deg, rgba(19,26,59,.04) " + (edge - w * .55) + "px, rgba(19,26,59,.44) " + (edge + w * .55) + "px)";
+  haze.style.opacity = Math.min(1, Math.max(0, districts[i].length - displayTicks));
+  lamps.forEach((lamp, n) => lamp.classList.toggle("on", displayTicks * 3 >= (n + 1) * districts[i].length));
+  frame.style.setProperty("--scene-unit", unit + "px");
   byId("follow").hidden = focusX === null;
   byId("follow").style.top = h - 56 + "px";
-  const top = Math.max(0, Math.min(height - h, p.y * height - h * 0.78));
-  walkers.style.transform = world.style.transform = "translate(" + -left + "px," + -top + "px)";
+  for (const id of ["me", "pal"]) {
+    const px = id === "me" ? x : Math.max(0, x - unit * 0.14 / width);
+    for (const el of [byId(id), byId(id + "-walk")]) {
+      el.style.left = px * 100 + "%";
+      el.style.top = (promenadeY(i, px) + (id === "pal" ? 0.009 : 0)) * 100 + "%";
+    }
+  }
 }
 let oldLayer = null;
 let dissolve = null;
-let strideTimer;
+
 let lastTotal = null;
 let lastTeam = null;
 let transfer = 0;
@@ -159,15 +149,8 @@ function keepDepartingScene() {
   copy.style.transform = getComputedStyle(world).transform;
   copy.setAttribute("aria-hidden", "true");
   copy.inert = true;
-  // A second SVG mask must resolve its own gradients while both landscapes are on screen.
   copy.removeAttribute("id");
-  for (const el of copy.querySelectorAll("[id]")) el.id = "depart-" + el.id;
-  for (const el of copy.querySelectorAll("[fill], [mask]")) {
-    for (const key of ["fill", "mask"]) {
-      const value = el.getAttribute(key);
-      if (value?.startsWith("url(#")) el.setAttribute(key, value.replace("url(#", "url(#depart-"));
-    }
-  }
+  for (const el of copy.querySelectorAll("[id]")) el.removeAttribute("id");
   frame.append(copy);
   oldLayer = copy;
   world.classList.add("landing");
@@ -178,7 +161,7 @@ async function revealArrival(i) {
     layer = oldLayer;
   if (!layer) return;
   try {
-    await byId("plate").decode();
+    await Promise.all([byId("plate").decode(), byId("farPlate").decode()]);
   } catch {}
   if (id !== transfer || shown !== i) return;
   // Apply the new camera crop before starting the dissolve; travelling backwards across the previous map looks like a jump.
@@ -197,7 +180,7 @@ async function revealArrival(i) {
     () => {},
   );
 }
-function setWalker(id, kind, grown, x, y, size) {
+function setWalker(id, kind, grown, size) {
   const still = byId(id),
     gait = byId(id + "-walk"),
     frames = byId(kind + (grown ? "1" : "0") + "-walk");
@@ -210,17 +193,35 @@ function setWalker(id, kind, grown, x, y, size) {
       kind === "yaya" ? ".84s" : kind === "xiaoying" ? ".70s" : ".62s",
     );
   }
-  placeImage(still, x, y, size);
-  placeImage(gait, x, y, size);
+  still.style.width = gait.style.width = "calc(var(--scene-unit) * " + size + ")";
 }
 function setStriding(active) {
   world.classList.toggle("striding", active);
   walkers.classList.toggle("striding", active);
 }
-function beginWalk(crossing) {
-  clearTimeout(strideTimer);
+function stopWalking(ticks) {
+  cancelAnimationFrame(animationFrame);
+  animationFrame = 0;
+  setStriding(false);
+  displayTicks = ticks;
+  trackingLead = 0;
+  camera();
+}
+function beginWalk(from, to) {
+  cancelAnimationFrame(animationFrame);
+  const started = performance.now();
+  const walkingTime = landscapeAspects[shown] === 26 ? 6800 : 4800;
   setStriding(true);
-  strideTimer = setTimeout(() => setStriding(false), crossing ? 2450 : 2150);
+  function move(now) {
+    const t = Math.min(1, Math.max(0, (now - started) / walkingTime));
+    const eased = t * t * (3 - 2 * t);
+    displayTicks = from + (to - from) * eased;
+    trackingLead = 0.20 * Math.sin(Math.PI * eased);
+    camera();
+    if (t < 1) animationFrame = requestAnimationFrame(move);
+    else stopWalking(to);
+  }
+  move(started);
 }
 
 function render() {
@@ -229,28 +230,26 @@ function render() {
   const i = region(),
     d = districts[i],
     ticks = r.at(i),
-    lit = Math.floor((3 * ticks) / d.length),
-    p = point(i, ticks);
+    lit = Math.floor((3 * ticks) / d.length);
   const crossing = shown >= 0 && i !== shown;
   const advances =
     lastTeam === book.team && lastTotal !== null && r.total > lastTotal && visit === null;
+  const snap = crossing || lastTeam !== book.team || lastTotal > r.total || shown < 0;
   if (crossing) keepDepartingScene();
-  if (advances && !reduce.matches) beginWalk(crossing);
-  else if (crossing || lastTeam !== book.team || lastTotal > r.total) {
-    clearTimeout(strideTimer);
-    setStriding(false);
-  }
-  lastTotal = r.total;
-  lastTeam = book.team;
   if (i !== shown) {
-    byId("plate").src = backgrounds[i];
+    byId("plate").src = widePlates[i][0].src;
+    byId("farPlate").src = widePlates[i][1].src;
     shown = i;
   }
+  if (advances && !reduce.matches) beginWalk(crossing ? 0 : displayTicks, ticks);
+  else if (snap || !animationFrame) stopWalking(ticks);
+  lastTotal = r.total;
+  lastTeam = book.team;
   byId("districtName").textContent = d.name;
   byId("chapter").textContent = "深圳旅图 ↗ · " + ticks + "/" + d.length + " 程";
   byId("tide").hidden = i !== 0 && i !== 4;
   byId("face").src = petImg(book.pet, personalDays() >= 5).src;
-  setWalker("me", book.pet, personalDays() >= 5, p.x, p.y, personalDays() >= 5 ? 0.105 : 0.083);
+  setWalker("me", book.pet, personalDays() >= 5, personalDays() >= 5 ? 0.21 : 0.17);
   const guest = book.team && book.teamSteps.some((k) => k.startsWith("friend|"));
   byId("pal").hidden = !guest;
   byId("pal-walk").hidden = !guest;
@@ -259,33 +258,27 @@ function render() {
       "pal",
       book.pet === "xiaoying" ? "yaya" : "xiaoying",
       false,
-      Math.max(0.058, p.x - 0.075),
-      p.y + 0.014,
-      0.075,
+      0.15,
     );
   }
   lamps.forEach((el, n) => {
-    const cx = i === 0 ? lampCenters[n].x : [27, 52, 82][n],
-      cy = i === 0 ? lampCenters[n].y : 100 * ground(i, cx / 100) - 6;
+    const cx = trailX(i, ((n + 1) * d.length) / 3) * 100;
+    const cy = promenadeY(i, cx / 100) * 100 - 5.5;
     el.style.left = cx + "%";
     el.style.top = cy + "%";
-    el.classList.toggle("on", n < lit);
-    el.hidden = i !== 0 && n >= lit;
-    litAreas[n].forEach((area) => {
-      area.setAttribute("cx", cx);
-      area.setAttribute("cy", cy + 5);
-      area.style.opacity = Math.min(1, Math.max(0, (3 * ticks) / d.length - n));
-    });
     locations[n].textContent = d.stops[n];
     locations[n].classList.toggle("on", n < lit);
     locations[n].setAttribute("aria-label", d.stops[n] + (n < lit ? "，已点亮" : "，未点亮"));
   });
-  byId("shade").classList.toggle("complete", lit === 3);
   for (const item of goods) {
     const spot = book.placements[item.id],
       el = byId(item.id);
     el.hidden = !spot || spot.region !== i;
-    if (!el.hidden) placeImage(el, spot.x, ground(i, spot.x), item.size);
+    if (!el.hidden) {
+      el.style.left = spot.x * 100 + "%";
+      el.style.top = promenadeY(i, spot.x) * 100 + "%";
+      el.style.width = "calc(var(--scene-unit) * " + (item.size * 2) + ")";
+    }
   }
   const between = ticks > 0 && (ticks * 3) % d.length !== 0,
     name = pets[book.pet][0];
@@ -320,8 +313,7 @@ function render() {
 reduce.addEventListener("change", () => {
   if (reduce.matches) {
     endTransition();
-    clearTimeout(strideTimer);
-    setStriding(false);
+    stopWalking(route().at(region()));
   }
 });
 function commit(message = "") {
@@ -589,22 +581,29 @@ function shopArt() {
   const canvas = byId("shopArt"),
     c = canvas.getContext("2d"),
     w = canvas.width,
-    h = w * 0.75,
-    i = editing?.region ?? region();
-  c.clearRect(0, 0, w, canvas.height);
-  c.save();
+    h = canvas.height, i = editing?.region ?? region();
+  const worldWidth = h * landscapeAspects[i];
+  const x = editing?.x ?? trailX(i, route().at(i));
+  const left = Math.max(0, Math.min(worldWidth - w, x * worldWidth - w / 2));
+  canvas.dataset.left = left;
+  canvas.dataset.world = worldWidth;
+  c.clearRect(0, 0, w, h);
   c.imageSmoothingEnabled = false;
-  c.translate(0, -h * 0.39);
-  if (art(i).naturalWidth) c.drawImage(art(i), 0, 0, w, h);
-  paintSouvenirs(c, w, h, i, editing ? { [editing.item.id]: editing } : {});
-  if (editing) {
-    const x = w * editing.x,
-      y = h * ground(i, editing.x) + 4;
-    c.fillStyle = "#ffeaac";
-    c.fillRect(x - 13, y, 26, 3);
-    c.fillRect(x - 2, y + 3, 4, 4);
+  widePlates[i].forEach((tile, n) => {
+    if (tile.naturalWidth) c.drawImage(tile, worldWidth * n / 2 - left, 0, worldWidth / 2, h);
+  });
+  for (const item of goods) {
+    const spot = editing?.item === item ? editing : book.placements[item.id];
+    const im = byId(item.id);
+    if (spot?.region !== i || !im.naturalWidth) continue;
+    const size = item.size * h * 1.8;
+    c.drawImage(im, worldWidth * spot.x - left - size / 2, h * promenadeY(i, spot.x) - size, size, size);
   }
-  c.restore();
+  if (editing) {
+    const marker = x * worldWidth - left;
+    c.fillStyle = "#ffeaac";
+    c.fillRect(marker - 10, h * promenadeY(i, x) + 2, 20, 3);
+  }
 }
 function editPlace(item) {
   const old = book.placements[item.id],
@@ -708,7 +707,8 @@ byId("placeArea").onchange = (e) => {
 byId("shopArt").onclick = (e) => {
   if (!editing) return;
   const box = e.currentTarget.getBoundingClientRect();
-  editing.x = Math.min(0.94, Math.max(0.06, (e.clientX - box.left) / box.width));
+  const localX = (e.clientX - box.left) / box.width * e.currentTarget.width;
+  editing.x = Math.min(0.94, Math.max(0.06, (Number(e.currentTarget.dataset.left) + localX) / Number(e.currentTarget.dataset.world)));
   byId("placeX").value = Math.round(editing.x * 100);
   shopArt();
 };
@@ -753,7 +753,7 @@ byId("restart").onclick = () => {
     ),
   );
 };
-for (const im of [baseImage, ...[1, 2, 3, 4].map(art), ...goods.map((item) => byId(item.id))])
+for (const im of [...widePlates.flat(), ...districts.map((_, i) => art(i)), ...goods.map((item) => byId(item.id))])
   im.addEventListener("load", () => {
     if (byId("shop").open) shopArt();
   });
@@ -766,7 +766,7 @@ function panFrom(left, delta) {
   const width = world.offsetWidth,
     screen = frame.clientWidth;
   const next = Math.max(0, Math.min(width - screen, left - delta));
-  focusX = (next + screen * 0.47) / width;
+  focusX = (next + screen * 0.40) / width;
   camera();
 }
 frame.onpointerdown = (e) => {

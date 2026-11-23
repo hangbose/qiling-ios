@@ -11,32 +11,10 @@
 <main class="game">
   <div id="frame" class="scene" tabindex="0" title="左右滑动探索，也可以按方向键" role="img" aria-label="深圳湾海堤，星澜在树荫下等你。">
     <div id="world" class="world">
-      <img id="plate" class="plate" src="../Resources/Assets.xcassets/BayJourney.imageset/bay.png" alt="" draggable="false">
+      <img id="plate" class="plate" src="../Resources/Assets.xcassets/BayJourneyWideWest.imageset/trail.jpg" alt="" draggable="false">
+      <img id="farPlate" class="plate east" src="../Resources/Assets.xcassets/BayJourneyWideEast.imageset/trail.jpg" alt="" draggable="false">
       <div id="tide" class="tide" aria-hidden="true"></div>
-      <svg class="lighting" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-        <defs>
-          <linearGradient id="dusk" x2="0%" y2="100%">
-            <stop stop-color="#1a244a" stop-opacity=".70"/>
-            <stop offset=".55" stop-color="#0f2440" stop-opacity=".68"/>
-            <stop offset="1" stop-color="#0d1a33" stop-opacity=".76"/>
-          </linearGradient>
-          <radialGradient id="clearPool">
-            <stop stop-color="black"/>
-            <stop offset=".43" stop-color="black" stop-opacity=".93"/>
-            <stop offset="1" stop-color="black" stop-opacity="0"/>
-          </radialGradient>
-          <radialGradient id="warmPool">
-            <stop stop-color="#ffc466" stop-opacity=".20"/>
-            <stop offset="1" stop-color="#ffc466" stop-opacity="0"/>
-          </radialGradient>
-          <mask id="shadeMask" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100" style="mask-type:luminance">
-            <rect width="100" height="100" fill="white"/>
-            <g id="clearings"></g>
-          </mask>
-        </defs>
-        <rect id="shade" class="shade" width="100" height="100" fill="url(#dusk)" mask="url(#shadeMask)"/>
-        <g id="pools"></g>
-      </svg>
+      <div id="haze" class="haze" aria-hidden="true"></div>
       <i class="lamp" style="left:20.3%;top:60.6%"></i>
       <i class="lamp" style="left:47.8%;top:60.7%"></i>
       <i class="lamp" style="left:73.1%;top:59.4%"></i>
@@ -98,7 +76,7 @@
     <form method="dialog"><button class="key primary" id="backToBay">回到海湾</button></form>
   </div>
 </dialog>
-<div hidden><img alt="" id="bg1" src="../Resources/Assets.xcassets/BayPark.imageset/scene.jpg"><img alt="" id="bg2" src="../Resources/Assets.xcassets/BayLoft.imageset/scene.jpg"><img alt="" id="bg3" src="../Resources/Assets.xcassets/BayRidge.imageset/scene.jpg"><img alt="" id="bg4" src="../Resources/Assets.xcassets/BayShore.imageset/scene.jpg"><img alt="" id="legacy0" src="../Resources/Assets.xcassets/TrailFox0.imageset/pet.png"><img alt="" id="legacy1" src="../Resources/Assets.xcassets/TrailFox1.imageset/pet.png"><img alt="" id="yaya0" src="../Resources/Assets.xcassets/TrailBun0.imageset/pet.png"><img alt="" id="yaya1" src="../Resources/Assets.xcassets/TrailBun1.imageset/pet.png"><img alt="" id="xiaoying0" src="../Resources/Assets.xcassets/TrailCat0.imageset/pet.png"><img alt="" id="xiaoying1" src="../Resources/Assets.xcassets/TrailCat1.imageset/pet.png"><img alt="" id="legacy0-walk" src="../Resources/Assets.xcassets/TrailFox0Walk.imageset/walk.png"><img alt="" id="legacy1-walk" src="../Resources/Assets.xcassets/TrailFox1Walk.imageset/walk.png"><img alt="" id="yaya0-walk" src="../Resources/Assets.xcassets/TrailBun0Walk.imageset/walk.png"><img alt="" id="yaya1-walk" src="../Resources/Assets.xcassets/TrailBun1Walk.imageset/walk.png"><img alt="" id="xiaoying0-walk" src="../Resources/Assets.xcassets/TrailCat0Walk.imageset/walk.png"><img alt="" id="xiaoying1-walk" src="../Resources/Assets.xcassets/TrailCat1Walk.imageset/walk.png"></div>
+<div hidden><img id="bg0" alt="" src="../Resources/Assets.xcassets/BayJourney.imageset/bay.png"><img alt="" id="wide1West" src="../Resources/Assets.xcassets/BayParkWideWest.imageset/trail.jpg"><img alt="" id="wide1East" src="../Resources/Assets.xcassets/BayParkWideEast.imageset/trail.jpg"><img alt="" id="wide2West" src="../Resources/Assets.xcassets/BayLoftWideWest.imageset/trail.jpg"><img alt="" id="wide2East" src="../Resources/Assets.xcassets/BayLoftWideEast.imageset/trail.jpg"><img alt="" id="wide3West" src="../Resources/Assets.xcassets/BayRidgeWideWest.imageset/trail.jpg"><img alt="" id="wide3East" src="../Resources/Assets.xcassets/BayRidgeWideEast.imageset/trail.jpg"><img alt="" id="wide4West" src="../Resources/Assets.xcassets/BayShoreWideWest.imageset/trail.jpg"><img alt="" id="wide4East" src="../Resources/Assets.xcassets/BayShoreWideEast.imageset/trail.jpg"><img alt="" id="bg1" src="../Resources/Assets.xcassets/BayPark.imageset/scene.jpg"><img alt="" id="bg2" src="../Resources/Assets.xcassets/BayLoft.imageset/scene.jpg"><img alt="" id="bg3" src="../Resources/Assets.xcassets/BayRidge.imageset/scene.jpg"><img alt="" id="bg4" src="../Resources/Assets.xcassets/BayShore.imageset/scene.jpg"><img alt="" id="legacy0" src="../Resources/Assets.xcassets/TrailFox0.imageset/pet.png"><img alt="" id="legacy1" src="../Resources/Assets.xcassets/TrailFox1.imageset/pet.png"><img alt="" id="yaya0" src="../Resources/Assets.xcassets/TrailBun0.imageset/pet.png"><img alt="" id="yaya1" src="../Resources/Assets.xcassets/TrailBun1.imageset/pet.png"><img alt="" id="xiaoying0" src="../Resources/Assets.xcassets/TrailCat0.imageset/pet.png"><img alt="" id="xiaoying1" src="../Resources/Assets.xcassets/TrailCat1.imageset/pet.png"><img alt="" id="legacy0-walk" src="../Resources/Assets.xcassets/TrailFox0Walk.imageset/walk.png"><img alt="" id="legacy1-walk" src="../Resources/Assets.xcassets/TrailFox1Walk.imageset/walk.png"><img alt="" id="yaya0-walk" src="../Resources/Assets.xcassets/TrailBun0Walk.imageset/walk.png"><img alt="" id="yaya1-walk" src="../Resources/Assets.xcassets/TrailBun1Walk.imageset/walk.png"><img alt="" id="xiaoying0-walk" src="../Resources/Assets.xcassets/TrailCat0Walk.imageset/walk.png"><img alt="" id="xiaoying1-walk" src="../Resources/Assets.xcassets/TrailCat1Walk.imageset/walk.png"></div>
 <script src="bay-trail.js"></script>
 <script src="bay.js"></script>
 </body>

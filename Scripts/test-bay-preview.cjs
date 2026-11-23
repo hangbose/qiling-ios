@@ -6,6 +6,21 @@ const vm = require("node:vm");
 
 const model = readFileSync(path.join(__dirname, "../Preview/bay-trail.js"), "utf8");
 
+test("each habit day covers a visible stretch with room at both ends of every panorama", () => {
+  const game = start();
+  for (const [width, height] of [[325, 470], [390, 645], [430, 700], [720, 430]]) {
+    for (let i = 0; i < 5; i++) {
+      const world = game(`panoramaSize(${i}, ${width}, ${height})`);
+      const length = game(`districts[${i}].length`);
+      const step = game(`trailX(${i}, 1) - trailX(${i}, 0)`) * world.width;
+      assert.ok(step >= width * 0.82 - 0.001);
+      assert.ok(world.height >= height);
+      assert.ok(game(`trailX(${i}, ${length})`) < 1);
+      assert.ok(game(`trailX(${i}, 0)`) > 0);
+    }
+  }
+});
+
 function start(storage = new Map()) {
   const sandbox = vm.createContext({
     localStorage: {
