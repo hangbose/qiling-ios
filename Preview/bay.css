@@ -83,7 +83,7 @@ dialog::backdrop { background:#102825ab }
 @media (max-width:580px) {
   body { padding:0; display:block; background:var(--ink) }
   .game { width:100%; min-height:100svh; border:0; box-shadow:none; background:#203d3a }
-  .scene { aspect-ratio:.94; max-height:63svh; min-height:270px }
+  .scene { aspect-ratio:auto; height:clamp(270px,calc(100svh - 265px),66svh) }
   .hud { inset:12px 12px auto }
   .dock { padding:12px 14px max(8px,env(safe-area-inset-bottom)) }
   .paper { padding:12px 10px; gap:10px; min-height:88px }
