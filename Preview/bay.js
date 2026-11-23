@@ -42,11 +42,11 @@ function drawPet(canvas, guest, stride = false) {
     });
   });
 }
-function drawIcon(canvas, symbol, dark) {
+function drawIcon(canvas, symbol, primary) {
   const rows = symbols[symbol];
   canvas.width=10; canvas.height=10;
   const ctx = canvas.getContext("2d");
-  const colors = dark ? {a:"#38504b",b:"#e9ad60",c:"#fff1ba"} : {a:"#f6dba2",b:"#efad80",c:"#a56051"};
+  const colors = primary ? {a:"#fff4df",b:"#e1ac81",c:"#d99876"} : {a:"#694b3d",b:"#edbf94",c:"#ad7961"};
   rows.forEach((row,y) => [...row].forEach((c,x) => {
     if (colors[c]) { ctx.fillStyle=colors[c]; ctx.fillRect(x,y+1,1,1); }
   }));
