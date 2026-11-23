@@ -16,6 +16,7 @@ struct BayJourneyView: View {
     @State private var goal = Date()
     @State private var cardImage: Image?
     @State private var visiting: Int?
+    @State private var cameraFocus: Double?
     @State private var editing: BaySouvenir?
     @State private var editDistrict = 0
     @State private var demoPet = "legacy"
@@ -52,7 +53,8 @@ struct BayJourneyView: View {
         return BayScene(stop: Int(progress), kind: actor, together: friend?.companion,
             walking: follows && walking, follows: follows, souvenirs: souvenirs,
             district: region, fraction: progress, placements: model.bay.placements ?? [:], grown: grown,
-            buddyGrown: friend.map { f in model.bay.relaySteps.filter { $0.key.split(separator: "|").first == f.key.split(separator: "|").first }.count >= 5 } ?? false)
+            buddyGrown: friend.map { f in model.bay.relaySteps.filter { $0.key.split(separator: "|").first == f.key.split(separator: "|").first }.count >= 5 } ?? false,
+            focusX: follows ? cameraFocus : nil, onPan: follows ? { cameraFocus = $0 } : nil)
     }
 
     var body: some View {
@@ -100,6 +102,11 @@ struct BayJourneyView: View {
             ZStack(alignment: .top) {
                 scene(region, ticks: ticks, follows: true)
                     .frame(height: sceneHeight)
+                    .overlay(alignment: .bottomTrailing) {
+                        if cameraFocus != nil {
+                            Button("回到精灵") { cameraFocus = nil }.buttonStyle(BayKey()).padding(12)
+                        }
+                    }
                 HStack(alignment: .top) {
                     Button { sheet = .atlas } label: {
                         VStack(alignment: .leading, spacing: 3) {
@@ -177,6 +184,7 @@ struct BayJourneyView: View {
         let destination = count, key = route
         let last = min(destination, model.bay.seen[key] ?? 0)
         visiting = nil
+        cameraFocus = nil
         shown = max(last, destination - 2)
         if reduceMotion { shown = destination }
         else {
@@ -267,6 +275,7 @@ struct BayJourneyView: View {
     private func place(_ item: BaySouvenir, at x: Double) {
         model.placeBayItem(item, district: editDistrict, x: x, trail: BayTrail(count))
         visiting = editDistrict
+        cameraFocus = x
         editing = nil
     }
 
@@ -276,7 +285,7 @@ struct BayJourneyView: View {
                 ForEach(BayDistrict.all.indices, id: \.self) { i in
                     let d = BayDistrict.all[i]
                     Button {
-                        visiting = i; sheet = nil
+                        visiting = i; cameraFocus = nil; sheet = nil
                     } label: {
                         HStack {
                             Image(d.art).resizable().scaledToFill().frame(width: 62,height: 46).clipped()
@@ -289,7 +298,7 @@ struct BayJourneyView: View {
                         }
                     }.disabled(!BayTrail(count).canVisit(i))
                 }
-                Button("回到当前进度") { visiting = nil; sheet = nil }
+                Button("回到当前进度") { visiting = nil; cameraFocus = nil; sheet = nil }
                 if ticks == area.length { Button("收藏这站的明信片") { makeCard(); sheet = .card } }
             }
             Section(grown ? "同行的精灵 · 已长大" : "同行的精灵 · 再走 \(5-model.bay.days.count) 个习惯日长大") {

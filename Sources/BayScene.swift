@@ -20,10 +20,16 @@ struct BayScene: View {
     var placements: [String: BayPlacement] = [:]
     var grown = false
     var buddyGrown = false
+    var focusX: Double?
+    var onPan: ((Double) -> Void)?
+    @State private var dragOrigin: Double?
     @Environment(\.accessibilityReduceMotion) private var reduced
     private let walkerX = [0.11, 0.25, 0.51, 0.86]
     private let walkerY = [0.745, 0.738, 0.727, 0.624]
-    private let lamps = [CGPoint(x: 0.203, y: 0.606), CGPoint(x: 0.478, y: 0.607), CGPoint(x: 0.731, y: 0.594)]
+    private var lamps: [CGPoint] {
+        if district == 0 { return [CGPoint(x: 0.203, y: 0.606), CGPoint(x: 0.478, y: 0.607), CGPoint(x: 0.731, y: 0.594)] }
+        return [0.27, 0.52, 0.82].map { x in CGPoint(x: x, y: BayDistrict.pathY(district, at: x) - 0.06) }
+    }
 
     private var litCount: Int {
         guard walking else { return stop }
@@ -49,7 +55,7 @@ struct BayScene: View {
             let frame = geo.size
             let w = follows ? max(frame.width * 1.78, frame.height * 4 / 3) : frame.width
             let h = w * 0.75
-            let cameraX = min(max(0, track.x * w - frame.width * 0.49), max(0, w - frame.width))
+            let cameraX = min(max(0, (focusX ?? track.x) * w - frame.width * 0.49), max(0, w - frame.width))
             let cameraY = min(max(0, track.y * h - frame.height * 0.76), max(0, h - frame.height))
             ZStack {
                 Image(BayDistrict.all[district].art).resizable().interpolation(.none)
@@ -72,7 +78,7 @@ struct BayScene: View {
                         Ellipse().fill(lit ? Color(red: 1, green: 0.90, blue: 0.58) : Color(red: 0.30, green: 0.32, blue: 0.37))
                             .frame(width: w * 0.015, height: h * 0.019)
                     }.frame(width: w * 0.066, height: w * 0.066)
-                        .position(x: w * lamps[i].x, y: h * (district == 0 ? lamps[i].y : 0.71))
+                        .position(x: w * lamps[i].x, y: h * lamps[i].y)
                 }
                 ForEach(souvenirs) { item in
                     let size = w * item.size
@@ -90,6 +96,17 @@ struct BayScene: View {
                 BaySprite(kind: kind, walking: walking && !reduced, grown: grown).frame(width: w * 0.108, height: w * 0.108)
                     .position(x: w * track.x, y: h * track.y)
             }.frame(width: w, height: h).offset(x: -cameraX, y: -cameraY)
+            if follows, let onPan {
+                Color.clear.contentShape(Rectangle())
+                    .simultaneousGesture(DragGesture(minimumDistance: 10)
+                        .onChanged { drag in
+                            guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
+                            if dragOrigin == nil { dragOrigin = cameraX }
+                            let left = min(max(0, (dragOrigin ?? cameraX) - drag.translation.width), max(0, w - frame.width))
+                            onPan((left + frame.width * 0.49) / max(1, w))
+                        }.onEnded { _ in dragOrigin = nil })
+                    .accessibilityHidden(true)
+            }
         }
             .clipped().accessibilityLabel("\(BayDistrict.all[district].title)，已点亮 \(litCount) 盏路灯")
     }

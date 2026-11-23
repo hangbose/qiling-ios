@@ -2,6 +2,7 @@
 import argparse
 import base64
 import mimetypes
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,12 +20,13 @@ def export(destination):
     html = (PREVIEW / "BayJourney.html").read_text(encoding="utf-8")
     css = (PREVIEW / "bay.css").read_text(encoding="utf-8")
     js = (PREVIEW / "bay.js").read_text(encoding="utf-8")
-    images = ["BayJourney.imageset/bay.png", "BayPlanter.imageset/sprite.png", "BayPennant.imageset/sprite.png", "BayCottage.imageset/sprite.png"]
+    images = set(re.findall(r'src="(\.\./Resources/Assets\.xcassets/[^"]+)"', html))
+    trail = (PREVIEW / "bay-trail.js").read_text(encoding="utf-8")
+    html = html.replace('<script src="bay-trail.js"></script>', f"<script>{trail}</script>")
     font = "../Resources/BayLetterpress.ttf"
     license_text = (ROOT / "Resources/BayLetterpress-LICENSE.txt").read_text(encoding="utf-8")
     css = css.replace(font, data_url(font))
-    for image in images:
-        art = "../Resources/Assets.xcassets/" + image
+    for art in images:
         html = html.replace(art, data_url(art))
     html = html.replace('<link rel="stylesheet" href="bay.css">', f"<style>{css}</style>")
     html = html.replace('<script src="bay.js"></script>', f"<script>{js}</script>")

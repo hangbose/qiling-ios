@@ -162,3 +162,33 @@ dialog::backdrop { background:#252638ad }
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { animation:none!important; transition:none!important }
 }
+
+.sign {pointer-events:auto;text-align:left;max-width:70%}
+#districtName {display:block;margin-top:2px;font:clamp(23px,4.8vw,32px)/1.18 var(--pixel)}
+.world,.pet {transition:transform .95s ease-in-out,left .95s ease-in-out,top .95s ease-in-out}
+.pet,.pet.guest {transform:translate(-50%,-94%);filter:drop-shadow(1px 2px 1px #25233250)}
+.controls {display:grid;grid-template-columns:auto auto auto;justify-content:start;gap:7px}
+.controls .key,.controls .primary,.controls #journal {min-width:0}
+.controls .key:disabled {color:#665d54;cursor:default;background:#eee4d2;box-shadow:none}
+#choices {display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:0 0 14px}
+#choices h3 {width:100%;margin:12px 0 0;color:#695447;font-size:14px}
+#choices small {color:var(--muted);line-height:1.45}
+#choices .key {font:15px/1.35 system-ui,sans-serif;min-height:42px;padding:8px 11px}
+#choices [aria-pressed=true] {color:#fff5de;background:var(--navy);border-color:var(--navy)}
+#choices .atlas-row {border:1px solid #cdbaa3;background:var(--paper);padding:4px;display:flex;gap:10px;width:100%;align-items:center;text-align:left}
+.atlas-row img {width:74px;height:47px;object-fit:cover;image-rendering:pixelated}
+.atlas-row span {display:grid;gap:2px}.atlas-row small {font-size:12px}
+.atlas-row:disabled {opacity:.74;filter:saturate(.45);cursor:default}
+.paper-link {border:0;background:transparent;min-height:38px;text-decoration:underline;text-underline-offset:3px;color:var(--rust)}
+.pet-cards {width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pet-card {display:grid;place-items:center;gap:2px;background:var(--paper);border:1px solid var(--rule);padding:5px;color:var(--ink)}
+.pet-card img {width:52px;height:52px;image-rendering:pixelated}
+#placement {border:1px solid var(--rule);padding:10px;margin:6px 0}
+#placement label {display:flex;align-items:center;gap:10px;margin:8px 0 12px}
+#placeX {width:62%;accent-color:var(--rust)} #placeArea {font:inherit;background:var(--cream);color:var(--ink)}
+#placement .key {min-height:40px;font-size:15px}
+@media(max-width:580px){.controls .key {padding:7px 10px;gap:5px;font-size:16px}.sign small {font-size:12px}.hud .wallet {font-size:16px}}
+@media(prefers-reduced-motion:reduce){.world,.pet {transition:none}}
+
+
+.scene {touch-action:pan-y;cursor:grab;user-select:none}.scene:active {cursor:grabbing}.world.panning {transition:none} #follow {position:absolute;right:12px;font-size:14px;padding:4px 9px;min-height:38px}
