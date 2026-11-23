@@ -13,7 +13,15 @@ now = Time.now.to_i
 header = { alg: "ES256", kid: ENV.fetch("APP_STORE_CONNECT_KEY_IDENTIFIER"), typ: "JWT" }
 claims = { iss: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"), aud: "appstoreconnect-v1", iat: now, exp: now + 600 }
 message = [header, claims].map { |value| encode(JSON.generate(value)) }.join(".")
-key = OpenSSL::PKey.read(ENV.fetch("APP_STORE_CONNECT_PRIVATE_KEY"))
+material = ENV.fetch("APP_STORE_CONNECT_PRIVATE_KEY").strip
+if material.start_with?("@file:")
+  material = File.binread(material.delete_prefix("@file:"))
+elsif material.start_with?("/") && File.file?(material)
+  material = File.binread(material)
+elsif !material.include?("-----BEGIN")
+  material = Base64.strict_decode64(material.gsub(/\s+/, ""))
+end
+key = OpenSSL::PKey.read(material.gsub('\n', "\n"))
 der = key.sign("SHA256", message)
 signature = OpenSSL::ASN1.decode(der).value.map { |integer| integer.value.to_s(2).rjust(32, "\0") }.join
 token = message + "." + encode(signature)
