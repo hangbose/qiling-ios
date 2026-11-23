@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PREVIEW = ROOT / "Preview"
+WATERFRONT = "../Resources/Assets.xcassets/BayJourney.imageset/bay.png"
 
 
 def data_url(resource):
@@ -19,6 +20,7 @@ def data_url(resource):
 
 def export(destination):
     html = (PREVIEW / "BayJourney.html").read_text(encoding="utf-8")
+    html = html.replace(WATERFRONT, data_url("bay-waterfront.webp"))
     css = (PREVIEW / "bay.css").read_text(encoding="utf-8")
     js = (PREVIEW / "bay.js").read_text(encoding="utf-8")
     images = set(re.findall(r'src="(\.\./Resources/Assets\.xcassets/[^"]+)"', html))
@@ -45,6 +47,8 @@ def export_site(destination):
     """Publish just the game and its referenced media, keeping large images cacheable."""
     destination.mkdir(parents=True, exist_ok=True)
     html = (PREVIEW / "BayJourney.html").read_text(encoding="utf-8")
+    html = html.replace(WATERFRONT, "bay-waterfront.webp")
+    shutil.copyfile(PREVIEW / "bay-waterfront.webp", destination / "bay-waterfront.webp")
     css = (PREVIEW / "bay.css").read_text(encoding="utf-8")
     assets = set(re.findall(r'(?:src=|url\()"\.\./Resources/([^"]+)"', html + css))
     assets.add("QilingJournal-LICENSE.txt")
@@ -56,6 +60,7 @@ def export_site(destination):
         shutil.copyfile(PREVIEW / script, destination / script)
     html = html.replace("../Resources/", "assets/")
     html = re.sub(r'<img alt="" id="wide', '<img loading="lazy" alt="" id="wide', html)
+    html = re.sub(r'<img alt="" id="bg([1-4])"', r'<img loading="lazy" alt="" id="bg\1"', html)
     (destination / "index.html").write_text(html, encoding="utf-8")
     (destination / "bay.css").write_text(css.replace("../Resources/", "assets/"), encoding="utf-8")
     (destination / ".nojekyll").touch()

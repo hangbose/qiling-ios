@@ -557,6 +557,7 @@ function paintSouvenirs(ctx, w, h, i, overrides = {}) {
   }
 }
 function postcard(i) {
+  art(i).loading = "eager";
   sheet(
     districts[i].name + "的明信片",
     pets[book.pet][0] + " · " + districts[i].stops.join(" / "),
@@ -598,6 +599,7 @@ function shopArt() {
   c.clearRect(0, 0, w, h);
   c.imageSmoothingEnabled = false;
   widePlates[i].forEach((tile, n) => {
+    tile.loading = "eager";
     if (tile.naturalWidth) c.drawImage(tile, worldWidth * n / 2 - left, 0, worldWidth / 2, h);
   });
   for (const item of goods) {
