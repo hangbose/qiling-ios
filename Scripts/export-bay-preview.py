@@ -19,11 +19,13 @@ def export(destination):
     html = (PREVIEW / "BayJourney.html").read_text(encoding="utf-8")
     css = (PREVIEW / "bay.css").read_text(encoding="utf-8")
     js = (PREVIEW / "bay.js").read_text(encoding="utf-8")
-    art = "../Resources/Assets.xcassets/BayJourney.imageset/bay.png"
+    images = ["BayJourney.imageset/bay.png", "BayPlanter.imageset/sprite.png", "BayPennant.imageset/sprite.png", "BayCottage.imageset/sprite.png"]
     font = "../Resources/BayLetterpress.ttf"
     license_text = (ROOT / "Resources/BayLetterpress-LICENSE.txt").read_text(encoding="utf-8")
     css = css.replace(font, data_url(font))
-    html = html.replace(art, data_url(art))
+    for image in images:
+        art = "../Resources/Assets.xcassets/" + image
+        html = html.replace(art, data_url(art))
     html = html.replace('<link rel="stylesheet" href="bay.css">', f"<style>{css}</style>")
     html = html.replace('<script src="bay.js"></script>', f"<script>{js}</script>")
     html = html.replace("</body>", f'<script type="text/plain" id="font-license">{license_text}</script>\n</body>')

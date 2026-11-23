@@ -33,6 +33,19 @@ final class BayJournalTests: XCTestCase {
         XCTAssertEqual(restored.balance, 0)
     }
 
+    func testCanSaveForCottageAfterLightingAllStops() {
+        var book = BayJournal()
+        book.start = "2026-11-10"
+        for day in 10...14 { book.record(day: "2026-11-\(day)", reason: "步行千步") }
+        XCTAssertEqual(book.balance, 340)
+        XCTAssertFalse(book.buy(.cottage))
+        book.record(day: "2026-11-15", reason: "阅读")
+        XCTAssertEqual(book.balance, 420)
+        XCTAssertTrue(book.buy(.cottage))
+        XCTAssertFalse(book.buy(.cottage))
+        XCTAssertEqual(book.balance, 0)
+    }
+
     func testBedtimeUsesMainSleepAndNextMorningForAfterMidnightTargets() {
         let cal = Calendar(identifier: .gregorian)
         let day = cal.date(from: DateComponents(year: 2026, month: 11, day: 21))!

@@ -57,12 +57,11 @@ struct BayScene: View {
                     }.frame(width: w * 0.066, height: w * 0.066)
                         .position(x: w * lamps[i].x, y: h * lamps[i].y)
                 }
-                ForEach(souvenirs, id: \.rawValue) { item in
-                    let size = w * (item == .planter ? 0.053 : 0.073)
+                ForEach(souvenirs) { item in
+                    let size = w * item.size
                     Image(item.asset).resizable().interpolation(.none)
                         .frame(width: size, height: size)
-                        .position(x: w * (item == .planter ? 0.30 : 0.92),
-                                  y: h * (item == .planter ? 0.748 : 0.596) - size / 2)
+                        .position(x: w * item.x, y: h * item.y - size / 2)
                 }
                 if let together {
                     BaySprite(kind: together, walking: false).frame(width: w * 0.075, height: w * 0.075)

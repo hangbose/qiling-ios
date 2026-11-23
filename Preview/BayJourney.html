@@ -40,13 +40,21 @@
       <i class="lamp" style="left:20.3%;top:60.6%"></i>
       <i class="lamp" style="left:47.8%;top:60.7%"></i>
       <i class="lamp" style="left:73.1%;top:59.4%"></i>
+      <img alt="" id="planter" class="souvenir" hidden src="../Resources/Assets.xcassets/BayPlanter.imageset/sprite.png">
+      <img alt="" id="pennant" class="souvenir" hidden src="../Resources/Assets.xcassets/BayPennant.imageset/sprite.png">
+      <img alt="" id="cottage" class="souvenir" hidden src="../Resources/Assets.xcassets/BayCottage.imageset/sprite.png">
       <canvas class="pet" id="me" width="20" height="20"></canvas>
       <canvas class="pet guest" id="pal" width="20" height="20" hidden></canvas>
     </div>
   </div>
   <header class="hud">
     <div class="sign"><small>栖灵 · 第一站</small><h1>深圳湾</h1></div>
-    <button class="key wallet" id="wallet" aria-label="贝壳 0 枚，翻开手记"><canvas class="icon" data-icon="shell"></canvas><span id="balance">0</span></button>
+    <div class="purse">
+      <button class="key wallet" id="wallet" aria-label="海湾小铺，余额 0 枚贝壳" aria-haspopup="dialog">
+        <span>小铺</span><canvas class="icon" data-icon="shell" aria-hidden="true"></canvas><span id="balance">0</span>
+      </button>
+      <span id="earning" hidden></span>
+    </div>
   </header>
   <section class="dock" aria-label="海堤漫步">
     <ol class="route" aria-label="亮灯进度">
@@ -68,6 +76,21 @@
   <div id="postcard" hidden><canvas id="postArt" width="720" height="540" aria-label="栖灵和伙伴到达深圳湾的合影" role="img"></canvas></div>
   <div class="sheetText"><h2 id="sheetTitle">旅行手记</h2><p id="sheetNote"></p><ul id="entries"></ul>
     <form method="dialog"><button class="key primary" id="close">合上手记</button></form>
+  </div>
+</dialog>
+<dialog id="shop" aria-labelledby="shopTitle">
+  <div class="shop-cover">
+    <canvas id="shopArt" width="720" height="235" role="img" aria-label="深圳湾海堤陈设全景"></canvas>
+    <h2 id="shopTitle">海湾小铺</h2>
+    <form method="dialog"><button class="dismiss" aria-label="回到海湾">×</button></form>
+  </div>
+  <div class="shop-body">
+    <div class="shop-balance"><span>我的贝壳</span><strong id="shopBalance"></strong></div>
+    <p id="income"></p>
+    <ul id="goods"></ul>
+    <p id="saleNote" role="status" aria-live="polite"></p>
+    <button class="sample-day" id="sampleDay" hidden></button>
+    <form method="dialog"><button class="key primary" id="backToBay">回到海湾</button></form>
   </div>
 </dialog>
 <script src="bay.js"></script>

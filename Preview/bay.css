@@ -25,7 +25,7 @@ button:focus-visible { outline: 3px solid #accfea; outline-offset: 2px; box-shad
   border: 2px solid #615c62; background: var(--paper);
   box-shadow: 0 3px #c0b39f,0 5px #716864,0 18px 44px #413a4a30;
 }
-.scene { position: relative; overflow: hidden; aspect-ratio: 1.48; background: #a3c7bc; contain: paint }
+.scene { position: relative; overflow: hidden; height:clamp(320px,74svh,820px); background: #a3c7bc; contain: paint }
 .world { position: absolute; left: 0; top: 0; will-change: transform }
 #plate { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; user-select: none }
 .lighting, #tide { position:absolute; inset:0; width:100%; height:100%; pointer-events:none }
@@ -64,12 +64,12 @@ h1 { margin:3px 0 0; font:36px/1.05 var(--pixel) }
 .key.primary:hover { background:#405371 }
 .wallet { pointer-events:auto; min-width:76px; font-size:21px }
 .icon { width:22px; height:22px; image-rendering:pixelated }
-.dock { position:relative; padding:20px clamp(15px,3.5vw,28px) 4px; background:var(--paper) }
+.dock { position:relative; padding:13px clamp(15px,3.5vw,22px) 2px; background:var(--paper) }
 .dock::before {
   content:""; position:absolute; inset:0 0 auto; height:4px;
   background:repeating-linear-gradient(135deg,var(--rust) 0 5px,transparent 5px 14px,var(--navy) 14px 19px,transparent 19px 28px);
 }
-.route { display:flex; align-items:center; list-style:none; margin:0 0 15px; padding:0; color:var(--muted); font:15px/1.4 var(--pixel) }
+.route { display:flex; align-items:center; list-style:none; margin:0 0 8px; padding:0; color:var(--muted); font:15px/1.4 var(--pixel) }
 .route li { display:flex; gap:8px; align-items:center; flex:1; white-space:nowrap }
 .route li:last-child { flex:0 }
 .route li::before { content:""; width:8px; height:8px; flex:none; border:1.5px solid #817565; transform:rotate(45deg) }
@@ -77,19 +77,19 @@ h1 { margin:3px 0 0; font:36px/1.05 var(--pixel) }
 .route li.on { color:var(--rust) }
 .route li.on::before { background:#bd7653; border-color:var(--rust) }
 .paper {
-  display:flex; align-items:center; gap:15px; padding:14px 16px;
+  display:flex; align-items:center; gap:12px; padding:8px 12px;
   color:var(--ink); background:var(--cream); border-left:3px solid var(--rust);
 }
 .portrait {
-  position:relative; flex:none; display:grid; place-items:center; width:59px; height:61px;
+  position:relative; flex:none; display:grid; place-items:center; width:44px; height:46px;
   background:linear-gradient(158deg,#f6e3d0,#ecd1bd); border:1px solid #d7bca8;
 }
 .portrait::after { content:""; position:absolute; inset:3px; border:1px dashed #b28c72; pointer-events:none }
-#face { width:48px; height:48px; image-rendering:pixelated }
+#face { width:38px; height:38px; image-rendering:pixelated }
 .dialogue { min-width:0 }
 h2 { margin:0; font-size:21px; line-height:1.4; font-weight:650 }
 .dialogue p { margin:4px 0 0; font-size:15px; line-height:1.65; color:var(--muted) }
-.controls { display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 6px }
+.controls { display:flex; flex-wrap:wrap; gap:10px; margin:9px 0 5px }
 .controls .primary { min-width:145px }
 footer { display:flex; justify-content:space-between; align-items:center; border-top:1px solid #d6c9b6; color:var(--muted); font-size:12px }
 .replay,.dismiss { background:transparent; border:0; padding:7px; min-height:44px; color:inherit }
@@ -107,10 +107,10 @@ dialog::backdrop { background:#252638ad }
 @media (max-width:580px) {
   body { padding:0; display:block; background:var(--paper) }
   .game { width:100%; min-height:100svh; border:0; box-shadow:none; background:var(--paper) }
-  .scene { aspect-ratio:auto; height:clamp(270px,calc(100svh - 265px),66svh) }
+  .scene { aspect-ratio:auto; height:clamp(70.5svh,calc(100svh - 185px),76.5svh) }
   .hud { inset:12px 12px auto }
-  .dock { padding:16px 14px max(8px,env(safe-area-inset-bottom)) }
-  .paper { padding:12px 10px; gap:10px; min-height:88px }
+  .dock { padding:10px 14px max(4px,env(safe-area-inset-bottom)) }
+  .paper { padding:6px 9px; gap:9px; min-height:54px }
   h2 { font-size:18px }
   .route { font-size:14px }
 }
@@ -121,6 +121,43 @@ dialog::backdrop { background:#252638ad }
   #face { width:39px; height:39px }
   .controls #journal { min-width:85px }
   .key { font-size:17px; padding-inline:10px }
+}
+.purse { display:grid; justify-items:end; gap:4px }
+.wallet { gap:6px; font-variant-numeric:tabular-nums }
+.wallet .icon { width:18px; height:18px }
+#earning { padding:2px 7px; color:var(--cream); background:var(--navy); border:1px solid #dcb592; font:13px/1.5 system-ui,sans-serif }
+#earning.credit { animation:credit-in .6s ease-out }
+@keyframes credit-in { from { opacity:0; transform:translateY(7px) } }
+.souvenir { position:absolute; image-rendering:pixelated; transform:translate(-50%,-100%); pointer-events:none }
+.shop-cover { position:relative; overflow:hidden; background:var(--navy) }
+#shopArt { display:block; width:100%; height:auto; image-rendering:pixelated }
+.shop-cover h2 { position:absolute; left:12px; top:10px; font:26px/1.25 var(--pixel); padding:4px 11px; color:var(--cream); background:var(--navy); border-left:3px solid #e3a27c }
+.shop-cover .dismiss { min-height:36px; width:36px; top:8px; right:8px; padding:3px }
+.shop-body { padding:14px 18px 16px }
+.shop-balance { display:flex; align-items:baseline; justify-content:space-between; font-weight:600 }
+.shop-balance strong { font-size:22px; color:var(--rust); font-variant-numeric:tabular-nums }
+#income { margin:1px 0 12px; color:var(--muted); font-size:13px }
+#goods { list-style:none; padding:0; margin:0 }
+#goods li { display:grid; grid-template-columns:48px minmax(0,1fr) auto; align-items:center; gap:9px; padding:12px 0; border-top:1px dashed var(--rule) }
+#goods img { display:block; width:48px; height:48px; object-fit:contain; image-rendering:pixelated; padding:5px; background:var(--paper); border:1px solid #decbb4 }
+.item-name { display:block; font-weight:650 }
+.item-place,.price small { display:block; font-size:12px; color:var(--muted) }
+.price { text-align:right }
+.price .key { font-size:15px; min-height:42px; padding:6px 9px }
+.price .key:disabled { cursor:default; color:var(--muted); background:var(--paper); box-shadow:none }
+.saving { display:block; width:100%; height:5px; margin-top:6px; border:0; background:var(--blush); color:var(--rust); accent-color:var(--rust) }
+.saving::-webkit-progress-bar { background:var(--blush) }
+.saving::-webkit-progress-value { background:var(--rust) }
+.sample-day { padding:8px 0; min-height:44px; width:100%; background:none; color:var(--navy); border:0; border-top:1px dashed var(--rule); font-size:14px; text-decoration:underline; text-underline-offset:3px }
+.placed { color:var(--rust); font-size:13px }
+#saleNote { color:var(--rust); margin:4px 0 12px; font-size:14px }
+#saleNote:empty { display:none }
+#backToBay { width:100%; margin-top:5px }
+@media(max-width:580px) {
+  .route { margin-bottom:6px }
+  .dialogue p { margin-top:2px; font-size:14px; line-height:1.4 }
+  .controls { margin:7px 0 2px }
+  footer .replay { min-height:32px; padding:4px 7px }
 }
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { animation:none!important; transition:none!important }

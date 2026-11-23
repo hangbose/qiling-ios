@@ -20,7 +20,7 @@ struct BayJourneyView: View {
     private var route: String { relay ? "team-" + model.state.squadCode : "solo" }
     private var count: Int { min(3, relay ? model.bay.relaySteps.count : model.bay.days.count) }
     private var shells: Int { model.bay.balance }
-    private var souvenirs: [BaySouvenir] { BaySouvenir.allCases.filter { model.bay.owns($0) } }
+    private var souvenirs: [BaySouvenir] { BaySouvenir.catalog.filter { model.bay.owns($0) } }
     private var actor: String {
         if relay, shown > 0, let step = model.bay.relaySteps.prefix(shown).last { return step.companion }
         return model.companion.rawValue
@@ -44,7 +44,8 @@ struct BayJourneyView: View {
         NavigationStack {
             GeometryReader { viewport in
                 ScrollView {
-                    journey(sceneHeight: max(240, viewport.size.height * 0.765))
+                    let height = viewport.size.height
+                    journey(sceneHeight: max(height * 0.705, min(height * 0.765, height - 155)))
                 }
                 .refreshable { await model.sync(); await model.refreshBay() }
             }.background(BayUI.paper.ignoresSafeArea()).foregroundStyle(BayUI.ink)
@@ -197,7 +198,7 @@ struct BayJourneyView: View {
                 } else {
                     Text("完成今天的第一项好习惯，收下 50 枚贝壳。").font(.subheadline)
                 }
-                ForEach(BaySouvenir.allCases, id: \.rawValue) { item in
+                ForEach(BaySouvenir.catalog) { item in
                     let owned = model.bay.owns(item)
                     HStack(spacing: 12) {
                         Image(item.asset).resizable().interpolation(.none).frame(width: 44, height: 44)
@@ -206,6 +207,10 @@ struct BayJourneyView: View {
                             Text(item.title).font(.headline)
                             Text(owned ? "已摆在" + item.place : item.detail)
                                 .font(.footnote).foregroundStyle(BayUI.muted)
+                            if item == .cottage && !owned {
+                                ProgressView(value: Double(min(shells, item.price)), total: Double(item.price))
+                                    .tint(BayUI.rust).accessibilityLabel("小屋储蓄进度")
+                            }
                         }
                         Spacer(minLength: 0)
                         if owned {
@@ -244,11 +249,11 @@ struct BayJourneyView: View {
             }
             Section("贝壳 · \(shells) 枚") {
                 Text("每天结算一次，从 50 枚起，连续达成每天多 10 枚，最多 80 枚。间隔一天少一档，已存贝壳一直保留。").font(.footnote)
-                ForEach(souvenirs, id: \.rawValue) { item in
+                ForEach(souvenirs) { item in
                     HStack {
                         Text(item.title)
                         Spacer()
-                        Text("−\(model.bay.purchases?[item.rawValue] ?? item.price)").monospacedDigit()
+                        Text("−\(model.bay.purchases?[item.id] ?? item.price)").monospacedDigit()
                     }
                 }
                 ForEach(model.bay.payments.reversed(), id: \.day) { payment in

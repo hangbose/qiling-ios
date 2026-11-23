@@ -6,13 +6,28 @@ struct BayRelayStep: Codable, Hashable {
     let companion: String
 }
 
-enum BaySouvenir: String, CaseIterable {
-    case planter, pennant
-    var title: String { self == .planter ? "簕杜鹃花盆" : "海风信号旗" }
-    var price: Int { self == .planter ? 35 : 75 }
-    var asset: String { self == .planter ? "BayPlanter" : "BayPennant" }
-    var place: String { self == .planter ? "海边长椅" : "观景平台" }
-    var detail: String { self == .planter ? "给长椅添一丛深圳的市花。" : "在观景平台升起一面海湾的小旗。" }
+struct BaySouvenir: Identifiable, Hashable {
+    let id: String
+    let title: String
+    let price: Int
+    let asset: String
+    let place: String
+    let detail: String
+    // The bottom centre of each piece sits on the illustrated ground.
+    let x: CGFloat
+    let y: CGFloat
+    let size: CGFloat
+
+    static let planter = BaySouvenir(id: "planter", title: "簕杜鹃花盆", price: 35,
+        asset: "BayPlanter", place: "海边长椅", detail: "给长椅添一丛深圳的市花。",
+        x: 0.30, y: 0.748, size: 0.053)
+    static let pennant = BaySouvenir(id: "pennant", title: "海风信号旗", price: 75,
+        asset: "BayPennant", place: "观景平台", detail: "在观景平台升起一面海湾的小旗。",
+        x: 0.92, y: 0.596, size: 0.073)
+    static let cottage = BaySouvenir(id: "cottage", title: "海堤小屋", price: 420,
+        asset: "BayCottage", place: "海湾转角", detail: "沿着海堤回家，窗子正对晚霞。",
+        x: 0.388, y: 0.716, size: 0.115)
+    static let catalog: [BaySouvenir] = [.planter, .pennant, .cottage]
 }
 
 struct BayJournal: Codable {
@@ -33,12 +48,12 @@ struct BayJournal: Codable {
         return earned - (purchases ?? [:]).values.reduce(0, +)
     }
 
-    func owns(_ item: BaySouvenir) -> Bool { purchases?[item.rawValue] != nil }
+    func owns(_ item: BaySouvenir) -> Bool { purchases?[item.id] != nil }
 
     mutating func buy(_ item: BaySouvenir) -> Bool {
         guard !owns(item), balance >= item.price else { return false }
         var updated = purchases ?? [:]
-        updated[item.rawValue] = item.price
+        updated[item.id] = item.price
         purchases = updated
         return true
     }
