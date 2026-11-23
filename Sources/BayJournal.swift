@@ -31,6 +31,7 @@ struct BaySouvenir: Identifiable, Hashable {
 }
 
 struct BayJournal: Codable {
+    var keepsakes: BayKeepsakes?
     var start = Growth.dayID(Date())
     var bedtime = 23 * 60
     var goals: [String: Int] = [:]

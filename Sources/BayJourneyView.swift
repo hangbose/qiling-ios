@@ -1,10 +1,11 @@
 import SwiftUI
 
 private enum BaySheet: String, Identifiable {
-    case journal, travel, card, shop, atlas, focus
+    case journal, travel, card, shop, atlas, focus, bench
     var id: Self { self }
     var title: String {
         switch self {
+        case .bench: return "我的海边长椅"
         case .journal: return "旅行手记"
         case .travel: return "结伴同行"
         case .card: return "深圳漫步明信片"
@@ -52,6 +53,7 @@ struct BayJourneyView: View {
     private var souvenirs: [BaySouvenir] { BaySouvenir.catalog.filter { model.bay.owns($0) } }
     private var actor: String { model.demo ? demoPet : model.companion.rawValue }
     private var grown: Bool { model.bay.days.count >= 5 }
+    private var corner: BayKeepsakes { model.bay.keepsakes ?? BayKeepsakes() }
     private var friend: BayRelayStep? {
         guard relay else { return nil }
         return model.bay.relaySteps.last(where: { !$0.key.hasPrefix((model.demo ? "me" : model.bay.relayUser ?? "") + "|") })
@@ -68,7 +70,7 @@ struct BayJourneyView: View {
         let progress = Double(ticks * 3) / Double(BayDistrict.all[region].length)
         return BayScene(stop: Int(progress), kind: actor, together: friend?.companion,
             walking: follows && previewFocus == nil && walking, follows: follows, souvenirs: souvenirs,
-            district: region, fraction: progress, placements: model.bay.placements ?? [:], grown: grown,
+            district: region, fraction: progress, placements: model.bay.placements ?? [:], keepsakes: corner, grown: grown,
             buddyGrown: friend.map { f in model.bay.relaySteps.filter { $0.key.split(separator: "|").first == f.key.split(separator: "|").first }.count >= 5 } ?? false,
             focusX: previewFocus ?? (follows ? cameraFocus : nil), onPan: follows && previewFocus == nil ? { cameraFocus = $0 } : nil)
     }
@@ -94,6 +96,7 @@ struct BayJourneyView: View {
                     NavigationStack {
                         Group {
                             switch item {
+                            case .bench: BayBenchView(pet: actor, relay: relay)
                             case .atlas: atlas
                             case .shop: shop
                             case .journal: journal
@@ -124,6 +127,12 @@ struct BayJourneyView: View {
                     .animation(reduceMotion ? nil : .easeInOut(duration: 1.25), value: region)
                     .frame(height: sceneHeight)
                     .clipped()
+                    .overlay(alignment: .bottomLeading) {
+                        Button { sheet = .bench } label: {
+                            Label(corner.isReady(days: model.bay.days) ? "精灵带回了礼物" : corner.entry,
+                                  systemImage: corner.errand == nil ? "fossil.shell" : "bag")
+                        }.buttonStyle(BayKey()).padding(12)
+                    }
                     .overlay(alignment: .bottomTrailing) {
                         if cameraFocus != nil {
                             Button("回到精灵") { cameraFocus = nil }.buttonStyle(BayKey()).padding(12)

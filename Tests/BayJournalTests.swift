@@ -2,6 +2,50 @@ import XCTest
 @testable import Qiling
 
 final class BayJournalTests: XCTestCase {
+    func testBenchWaitsForPersonalHabitAfterDepartureAndSurvivesAnAbsence() throws {
+        var journal = try JSONDecoder().decode(BayJournal.self, from: JSONEncoder().encode(BayJournal()))
+        XCTAssertNil(journal.keepsakes)
+        journal.start = "2026-11-01"
+        var corner = BayKeepsakes()
+        corner.send(.light, on: "2026-11-02")
+        XCTAssertNil(corner.errand)
+        corner.hasShell = true
+        corner.send(.light, on: "2026-11-02")
+        corner.send(.post, on: "2026-11-02")
+        journal.record(day: "2026-11-02", reason: "阅读")
+        journal.record(day: "2026-11-01", reason: "睡眠达标")
+        journal.relaySteps = [BayRelayStep(key: "friend|2026-11-03", name: "好友", companion: "yaya")]
+        XCTAssertFalse(corner.unpack(days: journal.days))
+        journal.record(day: "2026-11-05", reason: "步行千步")
+        journal.keepsakes = corner
+        let resumed = try JSONDecoder().decode(BayJournal.self, from: JSONEncoder().encode(journal))
+        corner = try XCTUnwrap(resumed.keepsakes)
+        XCTAssertTrue(corner.unpack(days: resumed.days))
+        XCTAssertEqual(corner.level(.light), 1)
+        XCTAssertFalse(corner.unpack(days: resumed.days))
+        corner.send(.tide, on: "2026-11-07")
+        XCTAssertFalse(corner.isReady(days: resumed.days))
+    }
+
+    func testBenchCompletesAllNineKeepsakesAndCannotRequestDuplicates() {
+        var corner = BayKeepsakes()
+        corner.hasShell = true
+        for route in BayOuting.allCases {
+            for n in 1...3 {
+                let day = 10 + route.row * 3 + n
+                corner.send(route, on: "2026-11-\(day - 1)")
+                XCTAssertTrue(corner.unpack(days: ["2026-11-\(day)":"阅读"]))
+                XCTAssertEqual(corner.level(route), n)
+                XCTAssertEqual(corner.sprite(route)?.column, n - 1)
+            }
+            corner.send(route, on: "2026-11-03")
+            XCTAssertNil(corner.errand)
+        }
+        corner.seaGlassLamp = true
+        XCTAssertEqual(corner.sprite(.light)?.column, 3)
+        XCTAssertEqual(corner.sprite(.light)?.row, 3)
+        XCTAssertTrue(corner.finished)
+    }
     func testSoloDaysStayPersonalAfterResumingOrChangingTeam() {
         var book = BayJournal()
         book.start = "2026-11-01"

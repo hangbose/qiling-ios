@@ -18,6 +18,7 @@ struct BayScene: View {
     var district = 0
     var fraction: Double?
     var placements: [String: BayPlacement] = [:]
+    var keepsakes = BayKeepsakes()
     var grown = false
     var buddyGrown = false
     var focusX: Double?
@@ -107,6 +108,15 @@ struct BayScene: View {
                     Image(item.asset).resizable().interpolation(.none)
                         .frame(width: size, height: size)
                         .position(x: w * location.x, y: h * location.y - size / 2)
+                    }
+                }
+                if district == 0 && keepsakes.hasShell {
+                    ForEach(BayOuting.allCases) { route in
+                        if let tile = keepsakes.benchTile(route) {
+                            let size = w * 0.105
+                            BayFindSprite(column: tile.column, row: tile.row).frame(width: size, height: size)
+                                .position(x: w * route.benchX, y: h * 0.76 - size / 2)
+                        }
                     }
                 }
             }.frame(width: w, height: h)

@@ -70,6 +70,16 @@ struct BayPromenade: View, Animatable {
                             .offset(x: CGFloat(half) * layout.width * 0.5 - layout.cameraLeft, y: -layout.cameraTop)
                     }
                     lamplight(layout)
+                    if scene.district == 0 && scene.keepsakes.hasShell {
+                        ForEach(BayOuting.allCases) { route in
+                            if let tile = scene.keepsakes.benchTile(route) {
+                                let point = layout.screenPoint(0.037 + Double(route.row) * 0.003)
+                                let size = layout.unit * 0.12
+                                BayFindSprite(column: tile.column, row: tile.row).frame(width: size, height: size)
+                                    .position(x: point.x, y: point.y - size / 2)
+                            }
+                        }
+                    }
                     ForEach(scene.souvenirs) { item in
                         let spot = scene.placements[item.id] ?? BayPlacement(district: 0, x: item.x, y: item.y)
                         if spot.district == scene.district {
