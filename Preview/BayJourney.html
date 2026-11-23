@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#203c3b">
+<title>栖灵 · 深圳湾海堤漫步</title>
+<link rel="stylesheet" href="bay.css">
+</head>
+<body>
+<main class="game">
+  <div id="frame" class="scene" role="img" aria-label="深圳湾海堤，星澜在树荫下等你。">
+    <div id="world" class="world">
+      <img id="plate" src="../Resources/Assets.xcassets/BayJourney.imageset/bay.png" alt="" draggable="false">
+      <div id="tide" aria-hidden="true"></div>
+      <div id="air" aria-hidden="true"></div>
+      <i class="lamp" style="left:20.3%;top:60.6%"></i>
+      <i class="lamp" style="left:47.8%;top:60.7%"></i>
+      <i class="lamp" style="left:73.1%;top:59.4%"></i>
+      <canvas class="pet" id="me" width="20" height="20"></canvas>
+      <canvas class="pet guest" id="pal" width="20" height="20" hidden></canvas>
+    </div>
+  </div>
+  <header class="hud">
+    <div class="sign"><small>栖灵 · 第一站</small><h1>深圳湾</h1></div>
+    <button class="key wallet" id="wallet" aria-label="贝壳 0 枚，翻开手记"><canvas class="icon" data-icon="shell"></canvas><span id="balance">0</span></button>
+  </header>
+  <section class="dock" aria-label="海堤漫步">
+    <ol class="route" aria-label="亮灯进度">
+      <li>海边长椅</li><li>海湾转角</li><li>观景平台</li>
+    </ol>
+    <article class="paper" aria-live="polite" aria-atomic="true">
+      <div class="portrait"><canvas id="face" width="20" height="20" aria-hidden="true"></canvas></div>
+      <div class="dialogue"><h2 id="speaker">星澜在海边等你</h2><p id="voice">长椅边还有个位子。明早一起沿着海堤走吧。</p></div>
+    </article>
+    <div class="controls">
+      <button id="advance" class="key gold"><canvas class="icon" id="actionIcon" data-icon="foot"></canvas><span id="action">同步昨夜记录</span></button>
+      <button id="journal" class="key"><canvas class="icon" data-icon="book"></canvas>手记</button>
+    </div>
+    <footer><span>互动试玩 · 使用示例记录</span><button class="replay" id="restart">重新出发</button></footer>
+  </section>
+</main>
+<dialog id="sheet" aria-labelledby="sheetTitle">
+  <form method="dialog"><button class="dismiss" aria-label="合上">×</button></form>
+  <div id="postcard" hidden><canvas id="postArt" width="720" height="540" aria-label="栖灵和伙伴到达深圳湾的合影" role="img"></canvas></div>
+  <div class="sheetText"><h2 id="sheetTitle">旅行手记</h2><p id="sheetNote"></p><ul id="entries"></ul>
+    <form method="dialog"><button class="key gold" id="close">合上手记</button></form>
+  </div>
+</dialog>
+<script src="bay.js"></script>
+</body>
+</html>

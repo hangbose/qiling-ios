@@ -31,7 +31,9 @@ struct BayJourneyView: View {
         let user = last.key.split(separator: "|").first
         return steps.dropLast().last(where: { $0.key.split(separator: "|").first != user })?.companion
     }
+    private var litCount: Int { walking ? max(0, shown - 1) : shown }
     private var lastEntry: String {
+        if walking { return "正在走向" + names[max(0, shown - 1)] }
         if relay, let step = model.bay.relaySteps.prefix(shown).last { return step.name + "点亮了" + names[shown-1] }
         if shown == 0 { return model.state.petName + "在海边等你" }
         return model.state.petName + "走到了" + names[shown-1]
@@ -58,12 +60,12 @@ struct BayJourneyView: View {
                         HStack(spacing: 6) {
                             ForEach(0..<3) { i in
                                 HStack(spacing: 5) {
-                                    Image(systemName: i < shown ? "diamond.fill" : "diamond").font(.system(size: 8))
+                                    Image(systemName: i < litCount ? "diamond.fill" : "diamond").font(.system(size: 8))
                                     Text(names[i]).font(BayUI.type(14))
-                                }.foregroundStyle(i < shown ? BayUI.honey : BayUI.cream.opacity(0.72))
-                                if i < 2 { Rectangle().fill(BayUI.rim.opacity(0.5)).frame(maxWidth: .infinity).frame(height: 1) }
+                                }.layoutPriority(1).foregroundStyle(i < litCount ? BayUI.honey : BayUI.cream.opacity(0.72))
+                                if i < 2 { Rectangle().fill(BayUI.rim.opacity(0.5)).frame(minWidth: 2, maxWidth: .infinity).frame(height: 1) }
                             }
-                        }.accessibilityLabel("亮灯 \(shown) / 3")
+                        }.accessibilityLabel("亮灯 \(litCount) / 3")
                         HStack(alignment: .top, spacing: 13) {
                             BaySprite(kind: actor, walking: false)
                                 .frame(width: 50, height: 50).padding(4)
@@ -123,6 +125,7 @@ struct BayJourneyView: View {
     }
 
     private var voice: String {
+        if walking { return ["树影慢慢从脚边滑过去。", "海风吹过弯道，前面的路灯越来越近。", "沿着栏杆再走一会儿，就能看见整座海湾。"][max(0, shown - 1)] }
         if shown == 0 { return "先在树荫下坐一会儿。下一次好习惯同步后，我们就沿海堤出发。" }
         if shown == 3 { return "从这里能看见整座海湾。把这一刻收进明信片吧。" }
         if relay { return "伙伴走过的路，现在也为你亮着灯。" }
