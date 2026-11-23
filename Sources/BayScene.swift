@@ -89,13 +89,23 @@ struct BayScene: View {
                         .position(x: w * location.x, y: h * location.y - size / 2)
                     }
                 }
-                if let together {
-                    BaySprite(kind: together, walking: walking && !reduced, grown: buddyGrown, phaseOffset: 0.19).frame(width: w * 0.092, height: w * 0.092)
-                        .position(x: w * (track.x - 0.073), y: h * (track.y + 0.018))
-                }
-                BaySprite(kind: kind, walking: walking && !reduced, grown: grown).frame(width: w * 0.108, height: w * 0.108)
-                    .position(x: w * track.x, y: h * track.y)
             }.frame(width: w, height: h).offset(x: -cameraX, y: -cameraY)
+                .frame(width: frame.width, height: frame.height, alignment: .topLeading)
+                .id(district)
+                .transition(!follows || reduced ? .identity : .asymmetric(
+                    insertion: .offset(x: 20).combined(with: .opacity),
+                    removal: .offset(x: -20).combined(with: .opacity)))
+            // Keep a single set of travellers above both landscapes during a crossing.
+            if let together {
+                BaySprite(kind: together, walking: walking && !reduced, grown: buddyGrown, phaseOffset: 0.19)
+                    .frame(width: w * 0.092, height: w * 0.092)
+                    .position(x: w * (track.x - 0.073) - cameraX, y: h * (track.y + 0.018) - cameraY)
+                    .zIndex(1)
+            }
+            BaySprite(kind: kind, walking: walking && !reduced, grown: grown)
+                .frame(width: w * 0.108, height: w * 0.108)
+                .position(x: w * track.x - cameraX, y: h * track.y - cameraY)
+                .zIndex(1)
             if follows, let onPan {
                 Color.clear.contentShape(Rectangle())
                     .simultaneousGesture(DragGesture(minimumDistance: 10)
@@ -106,6 +116,7 @@ struct BayScene: View {
                             onPan((left + frame.width * 0.49) / max(1, w))
                         }.onEnded { _ in dragOrigin = nil })
                     .accessibilityHidden(true)
+                    .zIndex(2)
             }
         }
             .clipped().accessibilityLabel("\(BayDistrict.all[district].title)，已点亮 \(litCount) 盏路灯")

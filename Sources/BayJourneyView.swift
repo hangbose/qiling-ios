@@ -104,13 +104,7 @@ struct BayJourneyView: View {
     private func journey(sceneHeight: CGFloat) -> some View {
         VStack(spacing: 0) {
             ZStack(alignment: .top) {
-                ZStack {
-                    scene(region, ticks: ticks, follows: true)
-                        .id(region)
-                        .transition(reduceMotion ? .identity : .asymmetric(
-                            insertion: .offset(x: 24).combined(with: .opacity),
-                            removal: .offset(x: -24).combined(with: .opacity)))
-                }
+                scene(region, ticks: ticks, follows: true)
                     .animation(reduceMotion ? nil : .easeInOut(duration: 1.25), value: region)
                     .frame(height: sceneHeight)
                     .clipped()
