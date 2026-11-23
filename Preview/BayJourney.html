@@ -11,8 +11,8 @@
 <main class="game">
   <div id="frame" class="scene" tabindex="0" title="左右滑动探索，也可以按方向键" role="img" aria-label="深圳湾海堤，星澜在树荫下等你。">
     <div id="world" class="world">
-      <img id="plate" src="../Resources/Assets.xcassets/BayJourney.imageset/bay.png" alt="" draggable="false">
-      <div id="tide" aria-hidden="true"></div>
+      <img id="plate" class="plate" src="../Resources/Assets.xcassets/BayJourney.imageset/bay.png" alt="" draggable="false">
+      <div id="tide" class="tide" aria-hidden="true"></div>
       <svg class="lighting" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
         <defs>
           <linearGradient id="dusk" x2="0%" y2="100%">
@@ -34,7 +34,7 @@
             <g id="clearings"></g>
           </mask>
         </defs>
-        <rect id="shade" width="100" height="100" fill="url(#dusk)" mask="url(#shadeMask)"/>
+        <rect id="shade" class="shade" width="100" height="100" fill="url(#dusk)" mask="url(#shadeMask)"/>
         <g id="pools"></g>
       </svg>
       <i class="lamp" style="left:20.3%;top:60.6%"></i>
@@ -43,8 +43,10 @@
       <img alt="" id="planter" class="souvenir" hidden src="../Resources/Assets.xcassets/BayPlanter.imageset/sprite.png">
       <img alt="" id="pennant" class="souvenir" hidden src="../Resources/Assets.xcassets/BayPennant.imageset/sprite.png">
       <img alt="" id="cottage" class="souvenir" hidden src="../Resources/Assets.xcassets/BayCottage.imageset/sprite.png">
-      <img class="pet" id="me" alt="">
-      <img class="pet guest" id="pal" alt="" hidden>
+    </div>
+    <div id="walkers" class="world travelers" aria-hidden="true">
+      <img class="pet resting" id="me" alt=""><span class="pet gait" id="me-walk" aria-hidden="true"></span>
+      <img class="pet guest resting" id="pal" alt="" hidden><span class="pet guest gait" id="pal-walk" aria-hidden="true" hidden></span>
     </div>
   </div>
   <button class="key" id="follow" hidden>回到精灵</button>
@@ -96,7 +98,7 @@
     <form method="dialog"><button class="key primary" id="backToBay">回到海湾</button></form>
   </div>
 </dialog>
-<div hidden><img alt="" id="bg1" src="../Resources/Assets.xcassets/BayPark.imageset/scene.jpg"><img alt="" id="bg2" src="../Resources/Assets.xcassets/BayLoft.imageset/scene.jpg"><img alt="" id="bg3" src="../Resources/Assets.xcassets/BayRidge.imageset/scene.jpg"><img alt="" id="bg4" src="../Resources/Assets.xcassets/BayShore.imageset/scene.jpg"><img alt="" id="legacy0" src="../Resources/Assets.xcassets/TrailFox0.imageset/pet.png"><img alt="" id="legacy1" src="../Resources/Assets.xcassets/TrailFox1.imageset/pet.png"><img alt="" id="yaya0" src="../Resources/Assets.xcassets/TrailBun0.imageset/pet.png"><img alt="" id="yaya1" src="../Resources/Assets.xcassets/TrailBun1.imageset/pet.png"><img alt="" id="xiaoying0" src="../Resources/Assets.xcassets/TrailCat0.imageset/pet.png"><img alt="" id="xiaoying1" src="../Resources/Assets.xcassets/TrailCat1.imageset/pet.png"></div>
+<div hidden><img alt="" id="bg1" src="../Resources/Assets.xcassets/BayPark.imageset/scene.jpg"><img alt="" id="bg2" src="../Resources/Assets.xcassets/BayLoft.imageset/scene.jpg"><img alt="" id="bg3" src="../Resources/Assets.xcassets/BayRidge.imageset/scene.jpg"><img alt="" id="bg4" src="../Resources/Assets.xcassets/BayShore.imageset/scene.jpg"><img alt="" id="legacy0" src="../Resources/Assets.xcassets/TrailFox0.imageset/pet.png"><img alt="" id="legacy1" src="../Resources/Assets.xcassets/TrailFox1.imageset/pet.png"><img alt="" id="yaya0" src="../Resources/Assets.xcassets/TrailBun0.imageset/pet.png"><img alt="" id="yaya1" src="../Resources/Assets.xcassets/TrailBun1.imageset/pet.png"><img alt="" id="xiaoying0" src="../Resources/Assets.xcassets/TrailCat0.imageset/pet.png"><img alt="" id="xiaoying1" src="../Resources/Assets.xcassets/TrailCat1.imageset/pet.png"><img alt="" id="legacy0-walk" src="../Resources/Assets.xcassets/TrailFox0Walk.imageset/walk.png"><img alt="" id="legacy1-walk" src="../Resources/Assets.xcassets/TrailFox1Walk.imageset/walk.png"><img alt="" id="yaya0-walk" src="../Resources/Assets.xcassets/TrailBun0Walk.imageset/walk.png"><img alt="" id="yaya1-walk" src="../Resources/Assets.xcassets/TrailBun1Walk.imageset/walk.png"><img alt="" id="xiaoying0-walk" src="../Resources/Assets.xcassets/TrailCat0Walk.imageset/walk.png"><img alt="" id="xiaoying1-walk" src="../Resources/Assets.xcassets/TrailCat1Walk.imageset/walk.png"></div>
 <script src="bay-trail.js"></script>
 <script src="bay.js"></script>
 </body>

@@ -72,6 +72,14 @@ final class BayJournalTests: XCTestCase {
         XCTAssertEqual(BayTrail(79).visitTicks(4), 18)
     }
 
+    func testMissingSoloPaceIsDistinguishableFromANewJournal() throws {
+        var old = BayJournal()
+        old.shortRouteDays = nil
+        let data = try JSONEncoder().encode(old)
+        XCTAssertNil(try JSONDecoder().decode(BayJournal.self, from: data).shortRouteDays)
+        XCTAssertEqual(BayJournal().shortRouteDays, 0)
+    }
+
     func testOldPlayersKeepTheirLandmarksAndFutureStepsCostOne() {
         XCTAssertEqual(BayTrail(3, legacyCount: 3).total, 12)
         XCTAssertEqual(BayTrail(4, legacyCount: 3).total, 13)

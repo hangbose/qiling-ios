@@ -4,31 +4,31 @@ const districts = [
     name: "深圳湾",
     stops: ["海边长椅", "海湾转角", "观景平台"],
     notes: ["海风掀起一片红树叶。", "潮水绕过岸边的石头。", "春笋的剪影落进晚霞里。"],
-    length: 3,
+    length: 12,
   },
   {
     name: "人才公园",
     stops: ["星光桥", "湖畔草坡", "春笋倒影"],
     notes: ["桥下的光晃成一片。", "草坡上留着清晨的露水。", "春笋的倒影几乎碰到了鞋尖。"],
-    length: 6,
+    length: 15,
   },
   {
     name: "华侨城创意园",
     stops: ["红砖巷", "榕树庭院", "街角咖啡"],
     notes: ["红砖墙在夕阳里发亮。", "榕树荫里传来几声鸟鸣。", "街角飘来烘豆子的香气。"],
-    length: 6,
+    length: 15,
   },
   {
     name: "莲花山",
     stops: ["风筝草坪", "山脊小径", "山顶看台"],
     notes: ["风筝从树梢后面飞了起来。", "树荫里有一段凉快的小路。", "山顶的风把整座城都吹亮了。"],
-    length: 6,
+    length: 18,
   },
   {
     name: "大梅沙",
     stops: ["听潮栈道", "拾贝浅滩", "海边灯火"],
     notes: ["浪花在栈道脚下拍手。", "退潮的沙滩留下一枚螺旋贝。", "岸边的灯火把这圈旅途串起来了。"],
-    length: 6,
+    length: 18,
   },
 ];
 const pets = {
@@ -76,6 +76,8 @@ function freshBook() {
     watch: true,
     buys: {},
     placements: {},
+    shortSolo: 0,
+    shortTeam: 0,
   };
 }
 function restore() {
@@ -89,7 +91,11 @@ function restore() {
       Array.isArray(current.teamSteps) &&
       Object.hasOwn(pets, current.pet)
     )
-      return Object.assign(freshBook(), current);
+      return Object.assign(
+        freshBook(),
+        { shortSolo: Object.keys(current.days).length, shortTeam: current.teamSteps.length },
+        current,
+      );
     const old = JSON.parse(localStorage.getItem("qiling.shenzhen-bay.demo.v1")),
       b = freshBook();
     if (!old || !Number.isInteger(old.stage) || old.stage < 1 || old.stage > 3) return b;
@@ -102,7 +108,14 @@ function restore() {
       b.days[2] = "阅读";
       b.day = 2;
       b.teamSteps.push("me|2");
-      const previousHabits = ["步行千步", "按时入睡", "完成阅读", "运动达标", "睡眠达标", "完成专注"];
+      const previousHabits = [
+        "步行千步",
+        "按时入睡",
+        "完成阅读",
+        "运动达标",
+        "睡眠达标",
+        "完成专注",
+      ];
       for (let i = 0; i < Math.min(previousHabits.length, old.extraDays || 0); i++) {
         b.day++;
         b.days[b.day] = previousHabits[i];
@@ -114,6 +127,8 @@ function restore() {
         b.buys[item.id] = item.price;
         b.placements[item.id] = { region: 0, x: item.x };
       }
+    b.shortSolo = Object.keys(b.days).length;
+    b.shortTeam = b.teamSteps.length;
     return b;
   } catch {
     return freshBook();
@@ -162,8 +177,19 @@ function record(reason) {
 function route() {
   const total = book.team ? book.teamSteps.length : personalDays(),
     length = districts.reduce((s, d) => s + d.length, 0);
-  const lap = Math.floor(Math.max(0, total - 1) / length) + 1,
-    within = total === 0 ? 0 : ((total - 1) % length) + 1;
+  const legacy = Math.min(total, book.team ? book.shortTeam : book.shortSolo);
+  const oldLengths = [3, 6, 6, 6, 6];
+  const oldLap = oldLengths.reduce((sum, n) => sum + n, 0);
+  let remaining = legacy % oldLap;
+  let position = Math.floor(legacy / oldLap) * length + total - legacy;
+  districts.forEach((area, i) => {
+    const old = oldLengths[i],
+      segment = Math.min(old, remaining);
+    position += Math.ceil((segment * area.length) / old);
+    remaining -= segment;
+  });
+  const lap = Math.floor(Math.max(0, position - 1) / length) + 1,
+    within = position === 0 ? 0 : ((position - 1) % length) + 1;
   let before = 0,
     current = 0;
   const ticks = districts.map((d, i) => {

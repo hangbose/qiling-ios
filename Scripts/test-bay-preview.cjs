@@ -30,15 +30,15 @@ test("migrates the original demo with its actual habits and bought planter", () 
   assert.equal(start(storage)("book.placements.planter.region"), 0);
 });
 
-test("crosses all 15 landmarks, preserves visits, and starts a new circuit on day 28", () => {
+test("crosses all 15 landmarks, preserves visits, and starts a new circuit on day 79", () => {
   const game = start();
-  game('for (let i=1; i<=27; i++) { book.day=i; record("阅读"); }');
+  game('for (let i=1; i<=78; i++) { book.day=i; record("阅读"); }');
   assert.equal(game("route().current"), 4);
   assert.equal(game("route().lap"), 1);
   game('book.day++; record("喝水")');
   assert.equal(game("route().current"), 0);
   assert.equal(game("route().lap"), 2);
-  assert.equal(game("route().at(4)"), 6);
+  assert.equal(game("route().at(4)"), 18);
 });
 
 test("a friend advances the team once without earning shells for another player", () => {
@@ -50,3 +50,19 @@ test("a friend advances the team once without earning shells for another player"
   assert.equal(game("route().total"), 1);
 });
 
+
+test("keeps saved solo and relay landmarks when each route gets longer", () => {
+  const storage = new Map();
+  const original = start(storage);
+  original('for(let i=1;i<=9;i++){book.day=i;record("阅读")} book.teamSteps=Array.from({length:4},(_,i)=>"friend|"+i);delete book.shortSolo;delete book.shortTeam;persist();');
+  const game = start(storage);
+  assert.equal(game("route().at(1)"), 15);
+  const earned = game("walletBalance()");
+  game("book.team=true");
+  assert.equal(game("route().current"), 1);
+  assert.equal(game("route().at(1)"), 3);
+  game("book.team=false;book.day++;record('阅读');persist()");
+  assert.equal(game("route().at(2)"), 1);
+  assert.equal(start(storage)("route().at(2)"), 1);
+  assert.equal(game("walletBalance()"), earned + 80);
+});

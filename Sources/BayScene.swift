@@ -92,9 +92,7 @@ struct BayScene: View {
             }.frame(width: w, height: h).offset(x: -cameraX, y: -cameraY)
                 .frame(width: frame.width, height: frame.height, alignment: .topLeading)
                 .id(district)
-                .transition(!follows || reduced ? .identity : .asymmetric(
-                    insertion: .offset(x: 20).combined(with: .opacity),
-                    removal: .offset(x: -20).combined(with: .opacity)))
+                .transition(!follows || reduced ? .identity : .opacity)
             // Keep a single set of travellers above both landscapes during a crossing.
             if let together {
                 BaySprite(kind: together, walking: walking && !reduced, grown: buddyGrown, phaseOffset: 0.19)

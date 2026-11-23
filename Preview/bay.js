@@ -3,7 +3,8 @@ const byId = (id) => document.getElementById(id);
 const locations = Array.from(document.querySelectorAll(".route li"));
 const lamps = Array.from(document.querySelectorAll(".lamp"));
 const frame = byId("frame"),
-  world = byId("world");
+  world = byId("world"),
+  walkers = byId("walkers");
 const reduce = matchMedia("(prefers-reduced-motion: reduce)");
 const symbols = {
   shell: [
@@ -124,14 +125,104 @@ function camera() {
     h = frame.clientHeight;
   const width = Math.max(w * (w > 580 ? 1.48 : 1.65), (h * 4) / 3),
     height = width * 0.75;
+  walkers.style.width = width + "px";
+  walkers.style.height = height + "px";
   world.style.width = width + "px";
   world.style.height = height + "px";
   const left = Math.max(0, Math.min(width - w, (focusX ?? p.x) * width - w * 0.47));
   byId("follow").hidden = focusX === null;
   byId("follow").style.top = h - 56 + "px";
   const top = Math.max(0, Math.min(height - h, p.y * height - h * 0.78));
-  world.style.transform = "translate(" + -left + "px," + -top + "px)";
+  walkers.style.transform = world.style.transform = "translate(" + -left + "px," + -top + "px)";
 }
+let oldLayer = null;
+let dissolve = null;
+let strideTimer;
+let lastTotal = null;
+let lastTeam = null;
+let transfer = 0;
+
+function endTransition() {
+  transfer++;
+  oldLayer?.remove();
+  oldLayer = null;
+  dissolve?.cancel();
+  dissolve = null;
+  world.classList.remove("landing");
+}
+
+function keepDepartingScene() {
+  endTransition();
+  if (reduce.matches) return;
+  const copy = world.cloneNode(true);
+  copy.classList.add("departure");
+  copy.style.transform = getComputedStyle(world).transform;
+  copy.setAttribute("aria-hidden", "true");
+  copy.inert = true;
+  // A second SVG mask must resolve its own gradients while both landscapes are on screen.
+  copy.removeAttribute("id");
+  for (const el of copy.querySelectorAll("[id]")) el.id = "depart-" + el.id;
+  for (const el of copy.querySelectorAll("[fill], [mask]")) {
+    for (const key of ["fill", "mask"]) {
+      const value = el.getAttribute(key);
+      if (value?.startsWith("url(#")) el.setAttribute(key, value.replace("url(#", "url(#depart-"));
+    }
+  }
+  frame.append(copy);
+  oldLayer = copy;
+  world.classList.add("landing");
+}
+
+async function revealArrival(i) {
+  const id = transfer,
+    layer = oldLayer;
+  if (!layer) return;
+  try {
+    await byId("plate").decode();
+  } catch {}
+  if (id !== transfer || shown !== i) return;
+  // Apply the new camera crop before starting the dissolve; travelling backwards across the previous map looks like a jump.
+  world.getBoundingClientRect();
+  world.classList.remove("landing");
+  const ease = "cubic-bezier(.35,.05,.3,1)";
+  dissolve = layer.animate([{ opacity: 1 }, { opacity: 0 }], {
+    duration: 1250,
+    easing: ease,
+    fill: "forwards",
+  });
+  dissolve.finished.then(
+    () => {
+      if (id === transfer) endTransition();
+    },
+    () => {},
+  );
+}
+function setWalker(id, kind, grown, x, y, size) {
+  const still = byId(id),
+    gait = byId(id + "-walk"),
+    frames = byId(kind + (grown ? "1" : "0") + "-walk");
+  imageIfChanged(still, petImg(kind, grown).src);
+  if (gait.dataset.frames !== frames.id) {
+    gait.style.backgroundImage = 'url("' + frames.src + '")';
+    gait.dataset.frames = frames.id;
+    gait.style.setProperty(
+      "--stride-period",
+      kind === "yaya" ? ".84s" : kind === "xiaoying" ? ".70s" : ".62s",
+    );
+  }
+  placeImage(still, x, y, size);
+  placeImage(gait, x, y, size);
+}
+function setStriding(active) {
+  world.classList.toggle("striding", active);
+  walkers.classList.toggle("striding", active);
+}
+function beginWalk(crossing) {
+  clearTimeout(strideTimer);
+  setStriding(true);
+  strideTimer = setTimeout(() => setStriding(false), crossing ? 2450 : 2150);
+}
+
 function render() {
   const r = route();
   if (visit !== null && !r.available(visit)) visit = null;
@@ -140,21 +231,38 @@ function render() {
     ticks = r.at(i),
     lit = Math.floor((3 * ticks) / d.length),
     p = point(i, ticks);
+  const crossing = shown >= 0 && i !== shown;
+  const advances =
+    lastTeam === book.team && lastTotal !== null && r.total > lastTotal && visit === null;
+  if (crossing) keepDepartingScene();
+  if (advances && !reduce.matches) beginWalk(crossing);
+  else if (crossing || lastTeam !== book.team || lastTotal > r.total) {
+    clearTimeout(strideTimer);
+    setStriding(false);
+  }
+  lastTotal = r.total;
+  lastTeam = book.team;
   if (i !== shown) {
     byId("plate").src = backgrounds[i];
     shown = i;
   }
   byId("districtName").textContent = d.name;
-  byId("chapter").textContent = "深圳路线图 ↗ · 第" + r.lap + "圈";
+  byId("chapter").textContent = "深圳旅图 ↗ · " + ticks + "/" + d.length + " 程";
   byId("tide").hidden = i !== 0 && i !== 4;
   byId("face").src = petImg(book.pet, personalDays() >= 5).src;
-  imageIfChanged(byId("me"), byId("face").src);
-  placeImage(byId("me"), p.x, p.y, personalDays() >= 5 ? 0.105 : 0.083);
+  setWalker("me", book.pet, personalDays() >= 5, p.x, p.y, personalDays() >= 5 ? 0.105 : 0.083);
   const guest = book.team && book.teamSteps.some((k) => k.startsWith("friend|"));
   byId("pal").hidden = !guest;
+  byId("pal-walk").hidden = !guest;
   if (guest) {
-    imageIfChanged(byId("pal"), petImg(book.pet === "xiaoying" ? "yaya" : "xiaoying", false).src);
-    placeImage(byId("pal"), Math.max(0.058, p.x - 0.075), p.y + 0.014, 0.075);
+    setWalker(
+      "pal",
+      book.pet === "xiaoying" ? "yaya" : "xiaoying",
+      false,
+      Math.max(0.058, p.x - 0.075),
+      p.y + 0.014,
+      0.075,
+    );
   }
   lamps.forEach((el, n) => {
     const cx = i === 0 ? lampCenters[n].x : [27, 52, 82][n],
@@ -166,7 +274,7 @@ function render() {
     litAreas[n].forEach((area) => {
       area.setAttribute("cx", cx);
       area.setAttribute("cy", cy + 5);
-      area.classList.toggle("on", n < lit);
+      area.style.opacity = Math.min(1, Math.max(0, (3 * ticks) / d.length - n));
     });
     locations[n].textContent = d.stops[n];
     locations[n].classList.toggle("on", n < lit);
@@ -193,9 +301,9 @@ function render() {
   byId("voice").textContent =
     notice ||
     (ticks === 0
-      ? "试一次手表同步，或记下今天的阅读，让第一盏灯亮起来。"
+      ? "试一次手表同步，或记下今天的阅读，向第一盏灯出发。"
       : between
-        ? "再走一程，就到" + next + "了。"
+        ? "再走 " + (((lit + 1) * d.length) / 3 - ticks) + " 程，到" + next + "。"
         : d.notes[Math.max(0, lit - 1)]);
   byId("earning").hidden = false;
   byId("earning").textContent = (book.team ? "小队" : "独行") + " · 第 " + book.day + " 天 ›";
@@ -207,7 +315,15 @@ function render() {
   frame.setAttribute("aria-label", d.name + "，已点亮 " + lit + " 处，" + name + "在小径上。");
   drawIcon(byId("actionIcon"), "foot", true);
   camera();
+  if (crossing) revealArrival(i);
 }
+reduce.addEventListener("change", () => {
+  if (reduce.matches) {
+    endTransition();
+    clearTimeout(strideTimer);
+    setStriding(false);
+  }
+});
 function commit(message = "") {
   notice = message;
   persist();
@@ -670,12 +786,14 @@ frame.onpointermove = (e) => {
     dragging.active = true;
     frame.setPointerCapture(e.pointerId);
     world.classList.add("panning");
+    walkers.classList.add("panning");
   }
   panFrom(dragging.left, dx);
 };
 function endDrag() {
   dragging = null;
   world.classList.remove("panning");
+  walkers.classList.remove("panning");
 }
 frame.onpointerup = endDrag;
 frame.onpointercancel = endDrag;
