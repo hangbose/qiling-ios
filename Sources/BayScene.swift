@@ -19,6 +19,8 @@ struct BayScene: View {
     private let walkerY = [0.745, 0.738, 0.727, 0.624]
     private let lamps = [CGPoint(x: 0.203, y: 0.606), CGPoint(x: 0.478, y: 0.607), CGPoint(x: 0.731, y: 0.594)]
 
+    private var litCount: Int { walking ? max(0, stop - 1) : stop }
+
     var body: some View {
         GeometryReader { geo in
             let frame = geo.size
@@ -30,11 +32,13 @@ struct BayScene: View {
                 Image("BayJourney").resizable().interpolation(.none)
                 if follows {
                     BayWeather(quiet: reduced)
-                    Color(red: 0.28, green: 0.30, blue: 0.58).opacity([0.14, 0.08, 0.04, 0][stop])
-                        .allowsHitTesting(false)
                 }
+                BayLamplight(lamps: lamps, litCount: litCount)
+                    .animation(reduced ? nil : .easeOut(duration: 0.95), value: litCount)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
                 ForEach(lamps.indices, id: \.self) { i in
-                    let lit = i < (walking ? max(0, stop-1) : stop)
+                    let lit = i < litCount
                     ZStack {
                         if lit {
                             Circle().fill(RadialGradient(colors: [.yellow.opacity(0.58), .orange.opacity(0.14), .clear], center: .center, startRadius: 0, endRadius: w * 0.031))
@@ -52,7 +56,52 @@ struct BayScene: View {
                     .position(x: w * walkerX[stop], y: h * walkerY[stop])
             }.frame(width: w, height: h).offset(x: -cameraX, y: -cameraY)
         }.aspectRatio(follows ? 0.98 : 4.0 / 3.0, contentMode: .fit)
-            .clipped().accessibilityLabel("深圳湾海堤，已点亮 \(stop) 盏路灯")
+            .clipped().accessibilityLabel("深圳湾海堤，已点亮 \(litCount) 盏路灯")
+    }
+}
+
+/// The light pools live on the map so the illuminated stretch stays put as the camera pans.
+private struct BayLamplight: View {
+    let lamps: [CGPoint]
+    let litCount: Int
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            ZStack {
+                LinearGradient(stops: [
+                    .init(color: Color(red: 0.10, green: 0.14, blue: 0.29).opacity(0.70), location: 0),
+                    .init(color: Color(red: 0.06, green: 0.14, blue: 0.25).opacity(0.68), location: 0.55),
+                    .init(color: Color(red: 0.05, green: 0.10, blue: 0.20).opacity(0.76), location: 1)
+                ], startPoint: .top, endPoint: .bottom)
+                .mask {
+                    ZStack {
+                        Color.white
+                        ForEach(lamps.indices, id: \.self) { i in
+                            EllipticalGradient(stops: [
+                                .init(color: .black, location: 0),
+                                .init(color: .black.opacity(0.93), location: 0.43),
+                                .init(color: .clear, location: 1)
+                            ], center: .center, startRadiusFraction: 0, endRadiusFraction: 0.5)
+                            .frame(width: w * 0.60, height: h * 0.80)
+                            .opacity(i < litCount ? 1 : 0)
+                            .position(x: w * lamps[i].x, y: h * (lamps[i].y + 0.055))
+                            .blendMode(.destinationOut)
+                        }
+                    }.compositingGroup()
+                }
+                .opacity(litCount == lamps.count ? 0 : 1)
+
+                ForEach(lamps.indices, id: \.self) { i in
+                    EllipticalGradient(colors: [
+                        Color(red: 1, green: 0.77, blue: 0.40).opacity(0.20), .clear
+                    ], center: .center, startRadiusFraction: 0, endRadiusFraction: 0.5)
+                    .frame(width: w * 0.30, height: h * 0.30)
+                    .opacity(i < litCount ? 1 : 0)
+                    .position(x: w * lamps[i].x, y: h * (lamps[i].y + 0.055))
+                }
+            }
+        }
     }
 }
 
