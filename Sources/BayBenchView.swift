@@ -78,7 +78,7 @@ struct BayBenchView: View {
                     Text("精灵把它推到你掌心。旁边的木架，刚好可以挂下第一枚贝壳。")
                     Button("挂上第一枚白贝") {
                         model.changeKeepsakes { $0.hasShell = true }
-                        message = "白贝挂好了。明天，想让精灵去哪里？"
+                        message = "白贝轻轻晃了两下，精灵抬起头等你指路。"
                     }.buttonStyle(BayKey(primary: true))
                 } else if let errand = corner.errand {
                     let route = errand.route
@@ -131,6 +131,10 @@ struct BayBenchView: View {
             ViewThatFits(in: .horizontal) {
                 HStack { playButton; lampButton; cardButton }
                 VStack(alignment: .leading) { playButton; lampButton; cardButton }
+            }
+            if let url = corner.visitURL(pet: pet, grown: grown) {
+                ShareLink(item: url) { Label("请朋友来坐坐", systemImage: "envelope.open") }
+                    .buttonStyle(BayKey())
             }
             if let postcard {
                 ShareLink(item: postcard, preview: SharePreview("我的深圳湾长椅", image: postcard)) {

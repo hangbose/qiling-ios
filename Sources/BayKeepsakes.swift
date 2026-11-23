@@ -71,6 +71,12 @@ struct BayKeepsakes: Codable {
         if route == .tide && hasShell && level(.tide) == 0 { return (0, 3) }
         return sprite(route)
     }
+    func visitURL(pet: String, grown: Bool) -> URL? {
+        guard hasShell else { return nil }
+        let traveler = ["legacy","yaya","xiaoying"].contains(pet) ? pet : "legacy"
+        let parts = [traveler, grown ? "1" : "0"] + BayOuting.allCases.map { String(level($0)) } + [seaGlassLamp ? "1" : "0"]
+        return URL(string: "https://hangbose.github.io/qiling-ios/#bench=" + parts.joined(separator: "."))
+    }
 }
 
 extension AppModel {

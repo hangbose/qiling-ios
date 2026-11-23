@@ -250,4 +250,15 @@ dialog::backdrop { background:#252638ad }
 .field-chart span {display:grid;justify-items:center;align-content:end;height:83px;font-size:11px;color:var(--muted)}
 .field-chart i {width:60%;max-width:28px;background:var(--navy);border-top:2px solid var(--rust);min-height:2px;margin-bottom:5px}
 .field-note {display:block;margin-top:12px;color:var(--muted);font-size:12px}
+#benchEntry {position:absolute;left:12px;min-height:42px;font-size:15px;border-left:4px solid var(--rust);background:#fff7e9}
+#benchProps canvas {position:absolute;width:calc(var(--scene-unit) * .12);transform:translate(-50%,-100%);image-rendering:pixelated}
+.bench-scene {display:block;width:100%;height:auto;image-rendering:pixelated;border:1px solid var(--rule)}
+.bench-note {width:100%;font-size:14px;color:var(--rust)}
+.bench-note:empty {display:none}
+#choices:has(.bench-scene) h3 {color:var(--navy);font:600 18px/1.45 var(--ui);margin:6px 0 2px}
+#choices .bench-status {margin:0 0 5px;font-size:15px}
+.bench-route {display:flex;align-items:center;gap:10px;width:100%;padding:5px 9px;background:var(--paper);border:1px solid var(--rule);text-align:left}
+.bench-route:after {content:"›";margin-left:auto;color:var(--rust);font-size:22px}
+.bench-route canvas {width:44px;height:44px;image-rendering:pixelated}
+.bench-route strong,.bench-route small {display:block}
 @media(max-width:580px) {#fieldPage {padding:8px}.scene {height:clamp(280px,65svh,690px)}}

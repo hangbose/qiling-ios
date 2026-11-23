@@ -32,6 +32,45 @@ function start(storage = new Map()) {
   return expression => vm.runInContext(expression, sandbox);
 }
 
+test("only a later personal habit brings home a find; returning late and reloading preserve it", () => {
+  const storage = new Map(), game = start(storage);
+  game("book.bench.shell=true; record('阅读'); book.team=true; sendOuting(outings[1]); book.day=2; relay('friend')");
+  assert.equal(game("unpackOuting()"), false);
+  assert.equal(game("sendOuting(outings[2])"), false);
+  game("book.day=4; record('步行千步'); book.day=8; persist()");
+  const restored = start(storage);
+  assert.equal(restored("unpackOuting()"), true);
+  assert.equal(restored("unpackOuting()"), false);
+  assert.equal(restored("findLevel(outings[1])"), 1);
+  assert.equal(restored("sendOuting(outings[0]); unpackOuting()"), false);
+  assert.equal(restored("walletBalance()"), 100);
+});
+
+test("nine finds complete three distinct scenes and the same habit cannot be reused", () => {
+  const game = start();
+  game("book.bench.shell=true; for(const r of outings){for(let n=0;n<3;n++){sendOuting(r);book.day++;record('阅读');unpackOuting();}}");
+  assert.equal(game("outings.every(r=>findLevel(r)===3 && !sendOuting(r))"),true);
+  assert.equal(game("book.bench.cool=true; benchTile(1).join(',')"),"3,3");
+});
+
+test("a bench invitation is a decorative snapshot and opening it never imports the sender's progress", () => {
+  const game = start();
+  game("book.bench.shell=true;book.bench.levels={tide:1,light:2,post:1};book.bench.cool=true;book.pet='yaya'");
+  const hash = game("benchLink().split('#')[1]");
+  assert.equal(hash, "bench=yaya.0.1.2.1.1");
+  const visitor = start();
+  assert.equal(visitor("readBenchLink('#"+hash+"').corner.levels.light"),2);
+  assert.equal(visitor("book.bench.shell"),false);
+  assert.equal(visitor("readBenchLink('#bench=yaya.0.8.0.1.0')"),null);
+});
+
+test("real calendar rollover never invents habits or counts the same day twice", () => {
+  const game = start();
+  game("rollCalendar(new Date(2026,10,30));record('阅读');rollCalendar(new Date(2026,11,3));rollCalendar(new Date(2026,11,3))");
+  assert.equal(game("book.day"),4);
+  assert.equal(game("personalDays()"),1);
+});
+
 test("migrates the original demo with its actual habits and bought planter", () => {
   const storage = new Map([
     ["qiling.shenzhen-bay.demo.v1", JSON.stringify({ stage: 3, extraDays: 3, owned: ["planter"] })],

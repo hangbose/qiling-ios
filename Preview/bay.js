@@ -118,6 +118,7 @@ function camera() {
   frame.style.setProperty("--scene-unit", unit + "px");
   byId("follow").hidden = focusX === null;
   byId("follow").style.top = h - 56 + "px";
+  byId("benchEntry").style.top = h - 56 + "px";
   for (const id of ["me", "pal"]) {
     const px = id === "me" ? x : Math.max(0, x - unit * 0.14 / width);
     for (const el of [byId(id), byId(id + "-walk")]) {
@@ -238,6 +239,7 @@ function render() {
   const snap = crossing || lastTeam !== book.team || lastTotal > r.total || shown < 0;
   if (crossing) keepDepartingScene();
   if (i !== shown) {
+    for (const im of widePlates[i]) im.loading = "eager";
     byId("plate").src = widePlates[i][0].src;
     byId("farPlate").src = widePlates[i][1].src;
     shown = i;
@@ -310,6 +312,7 @@ function render() {
   byId("action").textContent = book.watch && !book.days[book.day] ? "试同步手表" : "试玩下一天";
   byId("mark").textContent = book.days[book.day] ? "今日已走" : "记" + book.habit;
   byId("mark").disabled = !!book.days[book.day];
+  renderBenchEntry(i);
   frame.setAttribute("aria-label", d.name + "，已点亮 " + lit + " 处，" + name + "在小径上。");
   drawIcon(byId("actionIcon"), "foot", true);
   camera();
@@ -737,6 +740,7 @@ byId("wallet").onclick = () => {
   byId("shop").showModal();
 };
 byId("advance").onclick = () => walk("watch");
+byId("benchEntry").onclick = () => showBench();
 byId("mark").onclick = () => walk("manual");
 byId("earning").onclick = teamSheet;
 byId("companion").onclick = journal;
@@ -763,8 +767,19 @@ for (const im of [...widePlates.flat(), ...districts.map((_, i) => art(i)), ...g
     if (byId("shop").open) shopArt();
   });
 new ResizeObserver(camera).observe(frame);
+rollCalendar();
 render();
 persist();
+openBenchVisit();
+window.addEventListener("hashchange",openBenchVisit);
+function refreshCalendar() {
+  if (!document.hidden && rollCalendar()) {
+    commit();
+    if (byId("sheet").open && byId("sheetTitle").textContent === "我的海边长椅") showBench();
+  }
+}
+document.addEventListener("visibilitychange",refreshCalendar);
+window.setInterval(refreshCalendar,60000);
 
 let dragging = null;
 function panFrom(left, delta) {

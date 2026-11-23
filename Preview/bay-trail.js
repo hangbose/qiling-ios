@@ -76,6 +76,7 @@ function freshBook() {
     watch: true,
     buys: {},
     placements: {},
+    bench: { shell: false, levels: {}, errand: null, lastUsed: 0, cool: false },
     shortSolo: 0,
     shortTeam: 0,
   };
@@ -163,6 +164,61 @@ function walletBalance() {
 }
 function personalDays() {
   return Object.keys(book.days).length;
+}
+const outings = [
+  { id: "tide", title: "退潮的小径", finds: ["一枚蓝贝", "两片海玻璃", "珊瑚色坠子"],
+    notes: ["蓝贝碰上白贝，听见第一声海风。", "海玻璃碰在一起，多了一对清亮的音。", "坠子接住海风，这串风铃终于齐了。"] },
+  { id: "light", title: "堤边灯铺", finds: ["琥珀灯罩", "黄铜提梁", "星纹灯帽"],
+    notes: ["长椅脚边有了一盏小灯。点一下可以换灯色。", "提梁架起来，晚归的人也看得清小路。", "灯帽把星星留在这段海堤。"] },
+  { id: "post", title: "老邮局", finds: ["旧木信箱", "海鸥邮戳", "红色信号旗"],
+    notes: ["长椅旁有了自己的信箱。可以寄张海湾明信片。", "海鸥邮戳落在了你的明信片上。", "小红旗升起来了，今天也有一封海边来信。"] },
+];
+function findLevel(route) { return book.bench.levels[route.id] || 0; }
+function sendOuting(route) {
+  if (!book.bench.shell || book.bench.errand || findLevel(route) >= route.finds.length) return false;
+  book.bench.errand = { id: route.id, departure: Math.max(book.day, book.bench.lastUsed) };
+  return true;
+}
+function returnDay() {
+  const trip = book.bench.errand;
+  return trip && Object.keys(book.days).map(Number).filter(day => day > trip.departure).sort((a,b) => a-b)[0];
+}
+function unpackOuting() {
+  const day = returnDay();
+  if (!day) return false;
+  const route = outings.find(route => route.id === book.bench.errand.id);
+  if (!route || findLevel(route) >= route.finds.length) return false;
+  book.bench.levels[route.id] = findLevel(route) + 1;
+  book.bench.lastUsed = day;
+  book.bench.errand = null;
+  return true;
+}
+function benchTile(row) {
+  return keepsakeTile(book.bench,row);
+}
+function keepsakeTile(corner,row) {
+  const level = corner.levels[outings[row].id] || 0;
+  if (row === 0 && !level && corner.shell) return [0,3];
+  if (!level) return null;
+  return row === 1 && corner.cool ? [level,3] : [level-1,row];
+}
+function benchLink() {
+  const code = [book.pet,Number(personalDays()>=5),...outings.map(findLevel),Number(book.bench.cool)].join(".");
+  return "https://hangbose.github.io/qiling-ios/#bench=" + code;
+}
+function readBenchLink(hash) {
+  const match = /^#bench=(legacy|yaya|xiaoying)\.([01])\.([0-3])\.([0-3])\.([0-3])\.([01])$/.exec(hash);
+  if (!match) return null;
+  return {pet:match[1],grown:match[2]==="1",corner:{shell:true,cool:match[6]==="1",
+    levels:{tide:Number(match[3]),light:Number(match[4]),post:Number(match[5])}}};
+}
+function rollCalendar(now = new Date()) {
+  const local = Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()) / 86400000;
+  if (book.calendarDay == null) { book.calendarDay = local; return true; }
+  if (local <= book.calendarDay) return false;
+  book.day += local - book.calendarDay;
+  book.calendarDay = local;
+  return true;
 }
 function relay(who) {
   const key = who + "|" + book.day;
