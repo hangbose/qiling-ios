@@ -36,10 +36,13 @@ get = lambda do |path, query|
 end
 
 app_id = "6827530890"
-groups = get.call("apps/#{app_id}/betaGroups", {"limit" => "200", "fields[betaGroups]" => "name,isInternalGroup,publicLinkEnabled"})
+groups = get.call("apps/#{app_id}/betaGroups", {"limit" => "200", "fields[betaGroups]" => "name,isInternalGroup,publicLinkEnabled,publicLink"})
 groups.fetch("data").each do |group|
   info = group.fetch("attributes")
   puts "Group #{info["name"]} | #{info["isInternalGroup"] ? "internal" : "external"} | public link #{info["publicLinkEnabled"] == true ? "on" : "off"}"
+  if info["publicLinkEnabled"] && info["name"] == "好友体验测试"
+    puts "TestFlight invitation: #{info["publicLink"]}"
+  end
 end
 builds = get.call("builds", { "filter[app]" => app_id, "sort" => "-uploadedDate", "limit" => "5", "include" => "betaGroups,buildBetaDetail" })
 included = builds.fetch("included", []).to_h { |item| [[item["type"], item["id"]], item.fetch("attributes", {})] }
