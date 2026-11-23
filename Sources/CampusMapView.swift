@@ -86,7 +86,7 @@ struct CampusMapView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("深大 · 精灵领地").font(BayUI.type(23))
+                    Text("深大 · 精灵领地").font(BayUI.heading(26))
                     Text(model.demo ? "演示地图 · 不参与真实抢地" : "粤海校园 · 每日刷新")
                         .font(.caption).foregroundStyle(BayUI.muted)
                 }

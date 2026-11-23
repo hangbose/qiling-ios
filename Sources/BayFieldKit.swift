@@ -9,7 +9,7 @@ enum BayUI {
     static let cream = Color(red: 1, green: 0.98, blue: 0.94)
     static let blush = Color(red: 0.95, green: 0.86, blue: 0.78)
     static let rust = Color(red: 0.59, green: 0.27, blue: 0.18)
-    static func type(_ size: CGFloat) -> Font { .custom("BayLetterpress", size: size, relativeTo: .body) }
+    static func heading(_ size: CGFloat) -> Font { .custom("QilingJournal", size: size, relativeTo: .title2) }
 }
 struct BayCut: Shape {
     func path(in box: CGRect) -> Path {
@@ -35,7 +35,7 @@ struct BayKey: ButtonStyle {
 
     init(primary: Bool = false) { self.primary = primary }
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.font(BayUI.type(16))
+        configuration.label.font(.subheadline.weight(.semibold)).monospacedDigit()
             .padding(.horizontal, 11).frame(minHeight: 44)
             .foregroundStyle(primary ? BayUI.cream : BayUI.ink)
             .background(BayCut().fill(primary ? BayUI.navy : BayUI.cream))

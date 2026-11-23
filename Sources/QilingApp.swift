@@ -87,7 +87,7 @@ struct RootView: View {
                 Button { tab = item } label: {
                     VStack(spacing: 3) {
                         Image(systemName: item.symbol).font(.system(size: 15))
-                        Text(item.rawValue).font(BayUI.type(13))
+                        Text(item.rawValue).font(.caption.weight(tab == item ? .semibold : .regular))
                     }.frame(maxWidth: .infinity, minHeight: 47)
                 }.foregroundStyle(tab == item ? BayUI.rust : BayUI.muted)
                     .accessibilityAddTraits(tab == item ? .isSelected : [])
@@ -132,7 +132,7 @@ struct SettingsView: View {
                         PetView(stage: model.stage, xp: model.xp, companion: model.companion)
                             .frame(width: 68, height: 76).background(BayUI.blush).overlay(Rectangle().stroke(BayUI.rim))
                         VStack(alignment: .leading, spacing: 5) {
-                            Text(model.state.name).font(BayUI.type(22))
+                            Text(model.state.name).font(.title3.weight(.semibold))
                             Text("同行伙伴　\(model.state.petName)").font(.subheadline)
                             Text("\(model.xp) XP").font(.caption.monospacedDigit()).foregroundStyle(BayUI.rust)
                         }

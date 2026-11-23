@@ -19,7 +19,7 @@ struct NewCompanionPreview: View {
                             ZStack(alignment: .topTrailing) {
                                 BaySprite(kind: selected.rawValue, walking: pose == 1 && !reduceMotion)
                                     .rotationEffect(.degrees(pose == 2 ? -9 : 0))
-                                if pose == 2 { Text("z Z").font(BayUI.type(15)).padding(4).fieldPlate(BayUI.cream) }
+                                if pose == 2 { Text("z Z").font(.caption.weight(.medium)).padding(4).fieldPlate(BayUI.cream) }
                             }.frame(width: 132, height: 132)
                         }.buttonStyle(.plain).accessibilityLabel("\(selected.title)，\(poses[pose])，点按切换姿态")
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom).padding(.bottom, 8)

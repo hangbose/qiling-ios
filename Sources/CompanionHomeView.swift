@@ -21,7 +21,7 @@ struct CompanionHomeView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             VStack(alignment: .leading, spacing: 5) {
-                                Text(model.state.petName).font(BayUI.type(25))
+                                Text(model.state.petName).font(.title2.weight(.semibold))
                                 Text("\(model.companionStageName) · Lv.\(1 + model.xp / 100)").font(.subheadline)
                             }
                             Spacer()

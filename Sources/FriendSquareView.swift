@@ -54,7 +54,7 @@ struct FriendSquareView: View {
                         }
                     }
                     if model.demo {
-                        Text("演示小队 · 成绩与互动均为示例").font(.system(size: 10)).foregroundStyle(.secondary)
+                        Text("演示小队 · 成绩与互动均为示例").font(.caption).foregroundStyle(.secondary)
                     }
                     if model.state.squadCode.isEmpty && !model.demo {
                         Text("建一支小队或输入好友的邀请码，这里就会收到同行伙伴的近况。")
@@ -65,7 +65,7 @@ struct FriendSquareView: View {
                     } else if section == 0 {
                         ForEach(filtered) { member in summaryCard(member) }
                         Text("依据已共享的经验与周积分生成成长摘要，不公开原始健康明细。")
-                            .font(.system(size: 10)).foregroundStyle(.secondary).padding(.horizontal, 6)
+                            .font(.caption).foregroundStyle(.secondary).padding(.horizontal, 6)
                     } else {
                         VStack(spacing: 12) {
                             SectionHeading(title: "本周同行榜")
@@ -76,10 +76,10 @@ struct FriendSquareView: View {
                                     PetView(stage: Growth.stage(member.xp), xp: member.xp).frame(width: 54, height: 58)
                                     VStack(alignment: .leading, spacing: 5) {
                                         Text(member.name).font(.system(size: 14, weight: .semibold))
-                                        Text(Growth.stageName(member.xp)).font(.system(size: 10)).foregroundStyle(.secondary)
+                                        Text(Growth.stageName(member.xp)).font(.caption).foregroundStyle(.secondary)
                                     }
                                     Spacer(minLength: 0)
-                                    Text("\(member.points) 分").font(.system(size: 16, weight: .semibold)).foregroundStyle(Palette.green)
+                                    Text("\(member.points) 分").font(.headline.monospacedDigit()).foregroundStyle(Palette.green)
                                     Button { Task { await model.cheer(member) } } label: {
                                         Image(systemName: "hands.clap").font(.system(size: 15))
                                     }.accessibilityLabel("鼓励\(member.name)")
@@ -215,7 +215,7 @@ struct FriendSquareView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(member.name).font(.system(size: 15, weight: .semibold))
                     Text(model.demo ? "示例成长摘要" : member.updated.formatted(date: .abbreviated, time: .shortened))
-                        .font(.system(size: 10)).foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Button {

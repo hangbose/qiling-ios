@@ -9,6 +9,7 @@
 </head>
 <body>
 <main class="game">
+<div id="journeyPage">
   <div id="frame" class="scene" tabindex="0" title="左右滑动探索，也可以按方向键" role="img" aria-label="深圳湾海堤，星澜在树荫下等你。">
     <div id="world" class="world">
       <img id="plate" class="plate" src="../Resources/Assets.xcassets/BayJourneyWideWest.imageset/trail.jpg" alt="" draggable="false">
@@ -52,6 +53,15 @@
     </div>
     <footer><span>互动试玩 · 使用示例记录</span><button class="replay" id="restart">重新出发</button></footer>
   </section>
+</div>
+  <section id="fieldPage" aria-labelledby="fieldTitle" hidden></section>
+  <nav class="field-tabs" aria-label="栖灵导航">
+    <button data-page="journey" aria-current="page"><span aria-hidden="true">◈</span>旅途</button>
+    <button data-page="companion"><span aria-hidden="true">♧</span>伙伴</button>
+    <button data-page="square"><span aria-hidden="true">✉</span>广场</button>
+    <button data-page="growth"><span aria-hidden="true">▥</span>成长</button>
+    <button data-page="profile"><span aria-hidden="true">▣</span>我的</button>
+  </nav>
 </main>
 <dialog id="sheet" aria-labelledby="sheetTitle">
   <form method="dialog"><button class="dismiss" aria-label="合上">×</button></form>
@@ -79,5 +89,6 @@
 <div hidden><img id="bg0" alt="" src="../Resources/Assets.xcassets/BayJourney.imageset/bay.png"><img alt="" id="wide1West" src="../Resources/Assets.xcassets/BayParkWideWest.imageset/trail.jpg"><img alt="" id="wide1East" src="../Resources/Assets.xcassets/BayParkWideEast.imageset/trail.jpg"><img alt="" id="wide2West" src="../Resources/Assets.xcassets/BayLoftWideWest.imageset/trail.jpg"><img alt="" id="wide2East" src="../Resources/Assets.xcassets/BayLoftWideEast.imageset/trail.jpg"><img alt="" id="wide3West" src="../Resources/Assets.xcassets/BayRidgeWideWest.imageset/trail.jpg"><img alt="" id="wide3East" src="../Resources/Assets.xcassets/BayRidgeWideEast.imageset/trail.jpg"><img alt="" id="wide4West" src="../Resources/Assets.xcassets/BayShoreWideWest.imageset/trail.jpg"><img alt="" id="wide4East" src="../Resources/Assets.xcassets/BayShoreWideEast.imageset/trail.jpg"><img alt="" id="bg1" src="../Resources/Assets.xcassets/BayPark.imageset/scene.jpg"><img alt="" id="bg2" src="../Resources/Assets.xcassets/BayLoft.imageset/scene.jpg"><img alt="" id="bg3" src="../Resources/Assets.xcassets/BayRidge.imageset/scene.jpg"><img alt="" id="bg4" src="../Resources/Assets.xcassets/BayShore.imageset/scene.jpg"><img alt="" id="legacy0" src="../Resources/Assets.xcassets/TrailFox0.imageset/pet.png"><img alt="" id="legacy1" src="../Resources/Assets.xcassets/TrailFox1.imageset/pet.png"><img alt="" id="yaya0" src="../Resources/Assets.xcassets/TrailBun0.imageset/pet.png"><img alt="" id="yaya1" src="../Resources/Assets.xcassets/TrailBun1.imageset/pet.png"><img alt="" id="xiaoying0" src="../Resources/Assets.xcassets/TrailCat0.imageset/pet.png"><img alt="" id="xiaoying1" src="../Resources/Assets.xcassets/TrailCat1.imageset/pet.png"><img alt="" id="legacy0-walk" src="../Resources/Assets.xcassets/TrailFox0Walk.imageset/walk.png"><img alt="" id="legacy1-walk" src="../Resources/Assets.xcassets/TrailFox1Walk.imageset/walk.png"><img alt="" id="yaya0-walk" src="../Resources/Assets.xcassets/TrailBun0Walk.imageset/walk.png"><img alt="" id="yaya1-walk" src="../Resources/Assets.xcassets/TrailBun1Walk.imageset/walk.png"><img alt="" id="xiaoying0-walk" src="../Resources/Assets.xcassets/TrailCat0Walk.imageset/walk.png"><img alt="" id="xiaoying1-walk" src="../Resources/Assets.xcassets/TrailCat1Walk.imageset/walk.png"></div>
 <script src="bay-trail.js"></script>
 <script src="bay.js"></script>
+<script src="bay-pages.js"></script>
 </body>
 </html>

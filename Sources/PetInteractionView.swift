@@ -61,7 +61,7 @@ struct GrowthCelebrationView: View {
         VStack(spacing: 18) {
             Image(systemName: event.evolved ? "sparkles" : "heart.fill")
                 .font(.largeTitle).foregroundStyle(Palette.green)
-            Text(event.title).font(BayUI.type(24))
+            Text(event.title).font(BayUI.heading(27))
             PetView(stage: Growth.stage(event.current), xp: event.current, companion: model.companion).frame(height: 220)
             Text("\(name)获得了 \(event.current - event.previous) 成长能量")
                 .font(.headline).multilineTextAlignment(.center)

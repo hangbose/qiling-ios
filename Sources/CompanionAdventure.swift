@@ -25,7 +25,7 @@ struct ExpeditionView: View {
     private let stops = ["森林入口", "萤光溪流", "树下营地", "星光花园"]
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Label("本周远征 · 萤光森林", systemImage: "flag.fill").font(BayUI.type(18))
+            Label("本周远征 · 萤光森林", systemImage: "flag.fill").font(BayUI.heading(21))
             Text("\(Growth.weekID(Date())) · \(model.demo ? "演示远征" : "全队共同推进")")
                 .font(.caption).foregroundStyle(.secondary)
             ProgressView(value: Double(min(model.expedition.total, ExpeditionProgress.target)), total: Double(ExpeditionProgress.target))

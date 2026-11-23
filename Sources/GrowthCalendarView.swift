@@ -21,7 +21,7 @@ struct GrowthCalendarView: View {
                         Button { move(-1) } label: { Image(systemName: "chevron.left") }
                             .accessibilityLabel("上个月")
                         Spacer()
-                        Text(month.formatted(.dateTime.year().month())).font(BayUI.type(20))
+                        Text(month.formatted(.dateTime.year().month())).font(.headline.monospacedDigit())
                         Spacer()
                         Button { move(1) } label: { Image(systemName: "chevron.right") }
                             .disabled(cal.isDate(month, equalTo: Date(), toGranularity: .month))
@@ -76,12 +76,12 @@ struct GrowthShareView: View {
     @State private var image: Image?
     private var card: some View {
         VStack(alignment: .leading, spacing: 14) {
-            FieldCover(art: "BayJourney", title: model.state.petName, caption: "深圳湾 · 成长明信片", height: 214) {
+            FieldCover(art: "BayJourney", title: model.state.petName, caption: "深圳湾 · 成长明信片", height: 214, titleFont: .title2.weight(.semibold)) {
                 BaySprite(kind: model.companion.rawValue, walking: false, grown: model.stage > 0 || Growth.appearance(model.xp) >= 3)
                     .frame(width: 116, height: 116)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing).padding(12)
             }
-            Text("Lv.\(1 + model.xp / 100) · \(model.companionStageName)").font(BayUI.type(19))
+            Text("Lv.\(1 + model.xp / 100) · \(model.companionStageName)").font(.headline.monospacedDigit())
             Text("本周寄出 \(model.weekPoints) 点成长能量").foregroundStyle(BayUI.rust)
             if model.demo { Text("演示数据").font(.caption) }
         }.padding(16).frame(width: 320).background(BayUI.paper)

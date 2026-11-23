@@ -132,8 +132,8 @@ struct BayJourneyView: View {
                 HStack(alignment: .top) {
                     Button { sheet = .atlas } label: {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("深圳旅图  \(ticks)/\(area.length) 程 ›").font(BayUI.type(13)).foregroundStyle(BayUI.blush)
-                            Text(area.title).font(BayUI.type(area.title.count > 4 ? 22 : 28)).foregroundStyle(BayUI.cream)
+                            Text("深圳旅图  \(ticks)/\(area.length) 程 ›").font(.caption.weight(.medium).monospacedDigit()).foregroundStyle(BayUI.blush)
+                            Text(area.title).font(BayUI.heading(area.title.count > 4 ? 24 : 30)).foregroundStyle(BayUI.cream)
                         }.padding(.horizontal, 11).padding(.vertical, 7).fieldPlate()
                     }.buttonStyle(.plain).accessibilityLabel("打开深圳旅图，当前在" + area.title)
                     Spacer()
@@ -156,7 +156,7 @@ struct BayJourneyView: View {
                     ForEach(0..<3) { i in
                         HStack(spacing: 5) {
                             Image(systemName: i < litCount ? "diamond.fill" : "diamond").font(.system(size: 8))
-                            Text(area.stops[i]).font(BayUI.type(14))
+                            Text(area.stops[i]).font(.caption.weight(.medium))
                         }.layoutPriority(1).foregroundStyle(i < litCount ? BayUI.rust : BayUI.muted)
                         if i < 2 { Rectangle().fill(BayUI.rim).frame(minWidth: 2, maxWidth: .infinity).frame(height: 1) }
                     }
@@ -433,7 +433,7 @@ struct BayJourneyView: View {
         let card = VStack(alignment: .leading, spacing: 0) {
             scene(region, ticks: area.length)
             VStack(alignment: .leading, spacing: 9) {
-                Text(area.title).font(.largeTitle.bold())
+                Text(area.title).font(BayUI.heading(32))
                 Text(relay ? model.bay.relaySteps.map(\.name).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }.joined(separator: "、") + " · 一起走过深圳" : model.state.petName + " · 深圳漫步纪念")
                     .font(.subheadline)
             }.padding(20)

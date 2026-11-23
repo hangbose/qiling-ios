@@ -15,7 +15,7 @@ struct GrowthRecordView: View {
                     FieldCover(art: "BayRidge", title: "成长手帐", caption: "深圳 · 莲花山", height: 174) { EmptyView() }
                     HStack(alignment: .center) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("同行第 \(summary.companionDays) 天").font(BayUI.type(22))
+                            Text("同行第 \(summary.companionDays) 天").font(.title3.weight(.semibold).monospacedDigit())
                             Text("本周健康贡献　\(model.weekPoints) 分").font(.subheadline)
                         }
                         Spacer()
@@ -28,7 +28,7 @@ struct GrowthRecordView: View {
                             Text("本周健康贡献 \(model.weekPoints) 分").foregroundStyle(.secondary)
                             Spacer()
                             Text("每日能量").foregroundStyle(Palette.green)
-                        }.font(.system(size: 10))
+                        }.font(.caption)
                         HStack(alignment: .bottom, spacing: 14) {
                             ForEach(Array(summary.week.enumerated()), id: \.offset) { index, day in
                                 VStack(spacing: 8) {
@@ -36,7 +36,7 @@ struct GrowthRecordView: View {
                                     Rectangle().fill(day.points > 0 ? BayUI.navy : BayUI.rim)
                                         .frame(width: 16, height: max(2, min(72, CGFloat(day.points) * 0.72)))
                                     Text("周\(["一", "二", "三", "四", "五", "六", "日"][index])")
-                                        .font(.system(size: 9)).foregroundStyle(.secondary)
+                                        .font(.caption2).foregroundStyle(.secondary)
                                 }.frame(maxWidth: .infinity)
                                     .accessibilityElement(children: .ignore)
                                     .accessibilityLabel("\(day.date.formatted(date: .abbreviated, time: .omitted))，\(day.points)能量")
@@ -55,18 +55,18 @@ struct GrowthRecordView: View {
                                         Text(["初生", "成长", "进化"][stage]).font(.system(size: 11, weight: stage == model.stage ? .semibold : .regular))
                                         PetView(stage: stage, companion: model.companion).frame(height: 83)
                                             .grayscale(stage > model.stage ? 1 : 0).opacity(stage > model.stage ? 0.25 : 1)
-                                        Text(["Lv.1", "1000 XP", "3000 XP"][stage]).font(.system(size: 10))
+                                        Text(["Lv.1", "1000 XP", "3000 XP"][stage]).font(.caption)
                                     }
                                     .frame(maxWidth: .infinity).padding(.vertical, 8)
                                     .foregroundStyle(stage == model.stage ? Palette.green : .secondary)
                                     .background(stage == model.stage ? Palette.lime.opacity(0.22) : .clear,
                                                 in: RoundedRectangle(cornerRadius: 15))
                                 }.buttonStyle(.plain).accessibilityLabel("查看\(["星芽幼体", "逐光成长体", "月辉守护体"][stage])")
-                                if stage < 2 { Image(systemName: "chevron.right").font(.system(size: 10)).foregroundStyle(.tertiary) }
+                                if stage < 2 { Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary) }
                             }
                         }
                         Text("当前 \(model.xp) 经验 · 距离下一里程碑 \(Growth.nextMilestone(model.xp) - model.xp)")
-                            .font(.system(size: 10)).foregroundStyle(.secondary)
+                            .font(.caption).foregroundStyle(.secondary)
                     }.softPanel()
 
                     VStack(spacing: 14) {
@@ -78,7 +78,7 @@ struct GrowthRecordView: View {
                             achievement("运动搭子", symbol: "figure.run", color: BayUI.rust, count: summary.workoutDays, target: 30)
                         }
                     }.softPanel()
-                    if model.demo { Text("演示记录 · 真实成长由健康数据自动计算").font(.system(size: 10)).foregroundStyle(.secondary) }
+                    if model.demo { Text("演示记录 · 真实成长由健康数据自动计算").font(.caption).foregroundStyle(.secondary) }
                 }.padding(.horizontal, 17).padding(.bottom, 20)
             }
             .background(Palette.background).toolbar(.hidden, for: .navigationBar)
@@ -108,7 +108,7 @@ struct GrowthRecordView: View {
 
                 VStack(alignment: .leading, spacing: 5) {
                     Text(title).font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.ink)
-                    Text(count >= target ? "已点亮" : "\(count) / \(target) 天").font(.system(size: 10)).foregroundStyle(.secondary)
+                    Text(count >= target ? "已点亮" : "\(count) / \(target) 天").font(.caption).foregroundStyle(.secondary)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding(8)
                 .fieldPlate(count >= target ? BayUI.blush : BayUI.paper)

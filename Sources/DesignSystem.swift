@@ -5,6 +5,7 @@ struct FieldCover<Overlay: View>: View {
     let title: String
     let caption: String
     let height: CGFloat
+    var titleFont: Font? = nil
     @ViewBuilder let overlay: () -> Overlay
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -15,7 +16,7 @@ struct FieldCover<Overlay: View>: View {
             overlay()
             VStack(alignment: .leading, spacing: 5) {
                 Text(caption).font(.caption.weight(.semibold))
-                Text(title).font(BayUI.type(27)).accessibilityAddTraits(.isHeader)
+                Text(title).font(titleFont ?? BayUI.heading(30)).accessibilityAddTraits(.isHeader)
             }.foregroundStyle(BayUI.cream).padding(10).fieldPlate().padding(12)
         }.frame(height: height).overlay(alignment: .bottom) { BayPostmarkEdge() }
     }
@@ -24,7 +25,7 @@ struct FieldCover<Overlay: View>: View {
 struct FieldGroupStyle: GroupBoxStyle {
     func makeBody(configuration: Configuration) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            configuration.label.font(BayUI.type(17)).foregroundStyle(BayUI.navy)
+            configuration.label.font(.headline).foregroundStyle(BayUI.navy)
             configuration.content
         }.frame(maxWidth: .infinity, alignment: .leading).softPanel()
     }
@@ -76,12 +77,12 @@ struct SectionHeading: View {
     var body: some View {
         HStack {
             Rectangle().fill(BayUI.rust).frame(width: 4, height: 16)
-            Text(title).font(BayUI.type(18))
+            Text(title).font(.headline)
             Spacer()
             if let actionTitle, let action {
                 Button(action: action) {
                     HStack(spacing: 3) { Text(actionTitle); Image(systemName: "chevron.right") }
-                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .font(.caption).foregroundStyle(.secondary)
                 }
             }
         }

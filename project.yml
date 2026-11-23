@@ -17,7 +17,7 @@ targets:
     info:
       path: Config/Info.plist
       properties:
-        UIAppFonts: [BayLetterpress.ttf]
+        UIAppFonts: [QilingJournal.ttf]
         CFBundleDisplayName: 栖灵
         ITSAppUsesNonExemptEncryption: false
         UILaunchScreen: {}

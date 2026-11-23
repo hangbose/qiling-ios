@@ -23,8 +23,10 @@ def export(destination):
     images = set(re.findall(r'src="(\.\./Resources/Assets\.xcassets/[^"]+)"', html))
     trail = (PREVIEW / "bay-trail.js").read_text(encoding="utf-8")
     html = html.replace('<script src="bay-trail.js"></script>', f"<script>{trail}</script>")
-    font = "../Resources/BayLetterpress.ttf"
-    license_text = (ROOT / "Resources/BayLetterpress-LICENSE.txt").read_text(encoding="utf-8")
+    pages = (PREVIEW / "bay-pages.js").read_text(encoding="utf-8")
+    html = html.replace('<script src="bay-pages.js"></script>', f"<script>{pages}</script>")
+    font = "../Resources/QilingJournal.ttf"
+    license_text = (ROOT / "Resources/QilingJournal-LICENSE.txt").read_text(encoding="utf-8")
     css = css.replace(font, data_url(font))
     for art in images:
         html = html.replace(art, data_url(art))

@@ -97,6 +97,7 @@ const imageIfChanged = (el, src) => {
 let displayTicks = 0, trackingLead = 0, animationFrame = 0;
 function camera() {
   const i = Math.max(0, shown), w = frame.clientWidth, h = frame.clientHeight;
+  if (!w || !h) return;
   const {width, height} = panoramaSize(i, w, h);
   const x = trailX(i, displayTicks);
   const left = Math.max(0, Math.min(width - w, (focusX ?? x) * width - w * (0.40 + (focusX === null ? trackingLead : 0))));
