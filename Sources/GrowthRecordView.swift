@@ -12,23 +12,37 @@ struct GrowthRecordView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
-                    ScreenTitle(title: "成长记录") {
-                        RoundAction(symbol: "calendar", label: "查看成长日历") { showHistory() }
-                    }.padding(.horizontal, 7).padding(.top, 18)
+                    FieldCover(art: "BayRidge", title: "成长手帐", caption: "深圳 · 莲花山", height: 174) { EmptyView() }
+                    HStack(alignment: .center) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("同行第 \(summary.companionDays) 天").font(BayUI.type(22))
+                            Text("本周健康贡献　\(model.weekPoints) 分").font(.subheadline)
+                        }
+                        Spacer()
+                        Button { showHistory() } label: { Label("翻日历", systemImage: "calendar") }.buttonStyle(BayKey())
+                    }.softPanel()
 
-                    HStack(spacing: 0) {
-                        PetView(stage: model.stage, xp: model.xp, companion: model.companion).frame(maxWidth: .infinity).frame(height: 185)
-                        VStack(alignment: .leading, spacing: 12) {
-                            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                                Text("陪伴的第").font(.system(size: 15, weight: .semibold))
-                                Text("\(summary.companionDays)").font(.system(size: 29, weight: .bold))
-                                Text("天").font(.system(size: 15, weight: .semibold))
-                            }.minimumScaleFactor(0.7).lineLimit(1)
-                            Text("好的习惯\n让我们一起成长 ✨").font(.system(size: 12)).foregroundStyle(.secondary).lineSpacing(8)
-                        }.frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .background { RoomBackdrop().overlay(.white.opacity(0.68)) }
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
+                    VStack(spacing: 14) {
+                        SectionHeading(title: "本周成长", actionTitle: "查看记录") { showHistory() }
+                        HStack {
+                            Text("本周健康贡献 \(model.weekPoints) 分").foregroundStyle(.secondary)
+                            Spacer()
+                            Text("每日能量").foregroundStyle(Palette.green)
+                        }.font(.system(size: 10))
+                        HStack(alignment: .bottom, spacing: 14) {
+                            ForEach(Array(summary.week.enumerated()), id: \.offset) { index, day in
+                                VStack(spacing: 8) {
+                                    Spacer(minLength: 0)
+                                    Rectangle().fill(day.points > 0 ? BayUI.navy : BayUI.rim)
+                                        .frame(width: 16, height: max(2, min(72, CGFloat(day.points) * 0.72)))
+                                    Text("周\(["一", "二", "三", "四", "五", "六", "日"][index])")
+                                        .font(.system(size: 9)).foregroundStyle(.secondary)
+                                }.frame(maxWidth: .infinity)
+                                    .accessibilityElement(children: .ignore)
+                                    .accessibilityLabel("\(day.date.formatted(date: .abbreviated, time: .omitted))，\(day.points)能量")
+                            }
+                        }.frame(height: 100)
+                    }.softPanel()
 
                     VStack(spacing: 15) {
                         SectionHeading(title: "进化历程", actionTitle: "成长规则") {
@@ -39,7 +53,7 @@ struct GrowthRecordView: View {
                                 Button { selectedStage = stage } label: {
                                     VStack(spacing: 4) {
                                         Text(["初生", "成长", "进化"][stage]).font(.system(size: 11, weight: stage == model.stage ? .semibold : .regular))
-                                        PetView(stage: stage).frame(height: 83)
+                                        PetView(stage: stage, companion: model.companion).frame(height: 83)
                                             .grayscale(stage > model.stage ? 1 : 0).opacity(stage > model.stage ? 0.25 : 1)
                                         Text(["Lv.1", "1000 XP", "3000 XP"][stage]).font(.system(size: 10))
                                     }
@@ -56,35 +70,12 @@ struct GrowthRecordView: View {
                     }.softPanel()
 
                     VStack(spacing: 14) {
-                        SectionHeading(title: "本周成长", actionTitle: "查看记录") { showHistory() }
-                        HStack {
-                            Text("本周健康贡献 \(model.weekPoints) 分").foregroundStyle(.secondary)
-                            Spacer()
-                            Text("图表为健康成长经验").foregroundStyle(Palette.green)
-                        }.font(.system(size: 10))
-                        HStack(alignment: .bottom, spacing: 14) {
-                            ForEach(Array(summary.week.enumerated()), id: \.offset) { index, day in
-                                VStack(spacing: 8) {
-                                    Spacer(minLength: 0)
-                                    RoundedRectangle(cornerRadius: 5)
-                                        .fill(LinearGradient(colors: [Palette.green.opacity(0.58), Palette.lime], startPoint: .top, endPoint: .bottom))
-                                        .frame(width: 16, height: max(2, min(72, CGFloat(day.points) * 0.72)))
-                                    Text("周\(["一", "二", "三", "四", "五", "六", "日"][index])")
-                                        .font(.system(size: 9)).foregroundStyle(.secondary)
-                                }.frame(maxWidth: .infinity)
-                                    .accessibilityElement(children: .ignore)
-                                    .accessibilityLabel("\(day.date.formatted(date: .abbreviated, time: .omitted))，\(day.points)能量")
-                            }
-                        }.frame(height: 100)
-                    }.softPanel()
-
-                    VStack(spacing: 14) {
                         SectionHeading(title: "我的成就", actionTitle: "查看全部") {
                             detail = DetailContent(title: "我的成就", text: "睡眠达人：累计 7 天完成自己的睡眠时长目标，当前 \(summary.sleepDays) 天。\n\n运动搭子：累计 30 天完成自己的运动目标，当前 \(summary.workoutDays) 天。\n\n成就按记录计算，不要求额外打卡。")
                         }
                         HStack(spacing: 9) {
-                            achievement("睡眠达人", symbol: "moon.fill", color: .purple, count: summary.sleepDays, target: 7)
-                            achievement("运动搭子", symbol: "figure.run", color: .orange, count: summary.workoutDays, target: 30)
+                            achievement("睡眠达人", symbol: "moon.fill", color: BayUI.navy, count: summary.sleepDays, target: 7)
+                            achievement("运动搭子", symbol: "figure.run", color: BayUI.rust, count: summary.workoutDays, target: 30)
                         }
                     }.softPanel()
                     if model.demo { Text("演示记录 · 真实成长由健康数据自动计算").font(.system(size: 10)).foregroundStyle(.secondary) }
@@ -97,7 +88,7 @@ struct GrowthRecordView: View {
                 if let stage = selectedStage {
                     VStack(spacing: 18) {
                         Text(["星芽幼体", "逐光成长体", "月辉守护体"][stage]).font(.title2.bold())
-                        PetView(stage: stage).frame(height: 240)
+                        PetView(stage: stage, companion: model.companion).frame(height: 240)
                         Text(stage <= model.stage ? "已经解锁，一起继续成长。" : "达到 \(stage == 1 ? 1000 : 3000) 成长经验后解锁。")
                             .font(.subheadline).foregroundStyle(.secondary)
                         Button("完成") { selectedStage = nil }
@@ -113,14 +104,14 @@ struct GrowthRecordView: View {
             HStack(spacing: 8) {
                 Image(systemName: symbol).font(.system(size: 21, weight: .semibold)).foregroundStyle(.white)
                     .frame(width: 41, height: 41)
-                    .background(LinearGradient(colors: [color.opacity(0.45), color.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
-                    .overlay(Circle().stroke(color.opacity(0.25), lineWidth: 3))
+                    .background(color, in: BayCut())
+
                 VStack(alignment: .leading, spacing: 5) {
                     Text(title).font(.system(size: 12, weight: .semibold)).foregroundStyle(Palette.ink)
                     Text(count >= target ? "已点亮" : "\(count) / \(target) 天").font(.system(size: 10)).foregroundStyle(.secondary)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding(8)
-                .background(.white, in: RoundedRectangle(cornerRadius: 16)).opacity(count >= target ? 1 : 0.55)
+                .fieldPlate(count >= target ? BayUI.blush : BayUI.paper)
         }.buttonStyle(.plain)
     }
     private func showHistory() {

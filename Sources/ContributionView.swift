@@ -5,7 +5,7 @@ struct ContributionView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text("今日贡献").font(.largeTitle.bold())
+                FieldCover(art: "BayPark", title: "今日贡献", caption: "营地 · 补给记录", height: 130) { EmptyView() }
                 Text("\(model.today?.contribution ?? 0) / 110").font(.system(size: 38, weight: .bold)).foregroundStyle(Palette.green)
                 Text("健康数据自动贡献给领地和小队。精灵经验永久保留，领地贡献每天重置。")
                 GroupBox("自动结算") {

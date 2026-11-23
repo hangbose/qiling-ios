@@ -9,129 +9,60 @@ struct CompanionHomeView: View {
     @State private var previewingCompanions = false
     @State private var draftName = ""
     private var earned: Int { model.today?.points ?? 0 }
-    private var greeting: String {
-        let hour = Calendar.current.component(.hour, from: Date())
-        return hour < 12 ? "早上好 ☀️" : (hour < 18 ? "下午好 👋" : "晚上好 👋")
-    }
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 0) {
-                    VStack(alignment: .leading, spacing: 0) {
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(greeting).font(.system(size: 15, weight: .semibold))
-                                Text("我的伙伴").font(.system(size: 34, weight: .bold)).tracking(-1)
+                VStack(spacing: 15) {
+                    FieldCover(art: "BayPark", title: "伙伴营地", caption: "深圳 · 人才公园", height: 265) {
+                        InteractivePetView(stage: model.stage, xp: model.xp, name: model.state.petName)
+                            .frame(width: 165, height: 156).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                            .padding(.bottom, 10)
+                    }
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text(model.state.petName).font(BayUI.type(25))
+                                Text("\(model.companionStageName) · Lv.\(1 + model.xp / 100)").font(.subheadline)
                             }
                             Spacer()
-                            RoundAction(symbol: "bell", label: "成长消息", dot: earned > 0) {
-                                detail = DetailContent(title: "成长消息", text: earned > 0
-                                    ? "今日 \(earned) 能量已自动到账。\n\n\(model.status)"
-                                    : "\(model.status)\n\n晚到的数据会自动补算，没有记录不会扣除成长。")
-                            }
-                            RoundAction(symbol: "plus", label: "查看伙伴档案") { tab = .growth }
-                        }.padding(.horizontal, 24).padding(.top, 18)
-                        GeometryReader { proxy in
-                            let width = proxy.size.width
-                            ZStack(alignment: .bottomLeading) {
-                                InteractivePetView(stage: model.stage, xp: model.xp, name: model.state.petName)
-                                    .frame(width: width * 0.69, height: 290).offset(x: -6, y: -6)
-                                VStack(alignment: .leading, spacing: 8) {
-                                    HStack(spacing: 6) {
-                                        Text(model.state.petName).font(.system(size: 25, weight: .bold)).lineLimit(1)
-                                        Button { draftName = model.state.petName; renaming = true } label: {
-                                            Image(systemName: "square.and.pencil").font(.system(size: 13)).foregroundStyle(.secondary)
-                                        }.accessibilityLabel("修改伙伴名字")
-                                    }
-                                    Text("Lv.\(1 + model.xp / 100)").font(.system(size: 24, weight: .semibold))
-                                        .foregroundStyle(Palette.green)
-                                    ProgressView(value: Double(model.xp), total: Double(Growth.nextMilestone(model.xp)))
-                                        .tint(Palette.green)
-                                    Text("距离下一次\(model.xp < 3000 ? "进化" : "里程碑")")
-                                        .font(.system(size: 11)).foregroundStyle(.secondary)
-                                    Text("\(Growth.nextMilestone(model.xp) - model.xp) 能量").font(.system(size: 14, weight: .medium))
-                                }
-                                .frame(width: width * 0.30, alignment: .leading)
-                                .position(x: width * 0.80, y: 112)
-                                Text("✦ \(model.companionStageName)\(model.demo ? " · 演示" : "")")
-                                    .font(.system(size: 10)).foregroundStyle(Palette.green)
-                                    .padding(.horizontal, 11).padding(.vertical, 6)
-                                    .background(.regularMaterial, in: Capsule()).padding(.leading, 24).padding(.bottom, 9)
-                            }
-                        }.frame(height: 330)
-                    }
-                    .background { RoomBackdrop().overlay(alignment: .bottom) {
-                        LinearGradient(colors: [.clear, Palette.background], startPoint: .top, endPoint: .bottom).frame(height: 50)
-                    } }
-
-                    Button { previewingCompanions = true } label: {
-                        Label("认识新伙伴 · 芽芽与小影", systemImage: "pawprint.fill")
-                            .frame(maxWidth: .infinity).padding(.vertical, 10)
-                    }.buttonStyle(.bordered).padding(.horizontal, 24).padding(.bottom, 12)
-
-                    NavigationLink { ContributionView() } label: {
-                        Label("今日贡献 · 运动明细与专注陪伴", systemImage: "heart.text.square")
-                    }.buttonStyle(.bordered).padding(.bottom, 12)
-
-                    VStack(spacing: 13) {
-                        HStack(spacing: 12) {
-                            HabitTile(symbol: "moon.fill", title: "睡眠", value: model.today?.sleepHours ?? 0,
-                                      goal: model.today?.sleepGoal ?? model.state.sleepGoal, unit: "小时", color: .indigo) {
-                                showHabit(sleep: true)
-                            }
-                            HabitTile(symbol: "figure.run", title: "运动", value: model.today?.workoutMinutes ?? 0,
-                                      goal: model.today?.workoutGoal ?? model.state.workoutGoal, unit: "分钟", color: Palette.green) {
-                                showHabit(sleep: false)
-                            }
+                            RoundAction(symbol: "pencil", label: "修改伙伴名字") { draftName = model.state.petName; renaming = true }
+                            RoundAction(symbol: "square.and.arrow.up", label: "晒晒伙伴") { sharingCard = true }
                         }
-                        Label("今日 \(model.today?.steps ?? 0) 步 · 步行与训练取高计分", systemImage: "figure.walk")
-                            .font(.subheadline)
-                        HStack(spacing: 9) {
-                            Image(systemName: earned > 0 ? "checkmark" : "applewatch")
-                            Text(earned > 0 ? "今日 \(earned) 能量已自动到账" : "等待手表数据同步")
+                        ProgressView(value: Double(model.xp), total: Double(Growth.nextMilestone(model.xp))).tint(BayUI.rust)
+                        HStack {
+                            Text("距下一次成长还差 \(Growth.nextMilestone(model.xp) - model.xp) XP").font(.caption)
+                            Spacer()
+                            Button("成长手帐") { tab = .growth }.font(.subheadline)
                         }
-                        .font(.system(size: 17, weight: .semibold)).foregroundStyle(Palette.green)
-                        .frame(maxWidth: .infinity).padding(.vertical, 16)
-                        .background(Palette.lime, in: Capsule())
-                        Text("无需打卡，无需领取，成长自然发生。")
-                            .font(.system(size: 10)).foregroundStyle(.secondary)
+                    }.softPanel()
+                    HStack {
+                        Button { previewingCompanions = true } label: {
+                            Label("伙伴图鉴", systemImage: "pawprint.fill").frame(maxWidth: .infinity)
+                        }.buttonStyle(BayKey(primary: true))
+                        NavigationLink { ContributionView() } label: {
+                            Label("今日贡献", systemImage: "book").frame(maxWidth: .infinity)
+                        }.buttonStyle(BayKey())
                     }
-                    .padding(12).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 27))
-                    .padding(.horizontal, 17).padding(.top, -2)
-
-                    HStack {
-                        let summary = GrowthSummary(days: model.ledger, now: Date(), started: model.state.started)
-                        Label("连续达标 \(summary.currentStreak) 天", systemImage: "flame.fill")
-                            .font(.subheadline).foregroundStyle(Palette.green)
-                        Spacer()
-                        Button { sharingCard = true } label: {
-                            Label("晒晒伙伴", systemImage: "square.and.arrow.up")
-                        }.buttonStyle(.bordered)
-                    }.padding(.horizontal, 24).padding(.top, 16)
-                    Text("任一目标达标即计入连续天数，今天尚未达标不影响昨天的连续记录。")
-                        .font(.caption2).foregroundStyle(.secondary).padding(.horizontal, 24)
-
-                    HStack {
-                        Label(model.demo ? "Apple Watch · 模拟连接" : (model.syncing ? "正在同步…" : model.status), systemImage: "applewatch")
-                        Spacer()
-                        Button("查看成长") { tab = .growth }
-                    }.font(.system(size: 10)).foregroundStyle(.secondary).padding(.horizontal, 24).padding(.vertical, 18)
-
+                    SectionHeading(title: "今日补给", actionTitle: "同步详情") {
+                        detail = DetailContent(title: "今日同步", text: model.status)
+                    }
+                    HStack(spacing: 10) {
+                        HabitTile(symbol: "moon.fill", title: "睡眠", value: model.today?.sleepHours ?? 0,
+                                  goal: model.today?.sleepGoal ?? model.state.sleepGoal, unit: "小时", color: BayUI.navy) { showHabit(sleep: true) }
+                        HabitTile(symbol: "figure.run", title: "运动", value: model.today?.workoutMinutes ?? 0,
+                                  goal: model.today?.workoutGoal ?? model.state.workoutGoal, unit: "分钟", color: BayUI.rust) { showHabit(sleep: false) }
+                    }
+                    let streak = GrowthSummary(days: model.ledger, now: Date(), started: model.state.started).currentStreak
+                    Text("今日 \(model.today?.steps ?? 0) 步 · 已获 \(earned) 能量 · 连续达标 \(streak) 天")
+                        .font(.footnote).foregroundStyle(BayUI.muted)
                     if !model.state.requestedHealth && !model.demo {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("让好习惯，自然变成成长").font(.headline)
-                            Text("连接 Apple 健康，睡眠、运动和步行都能自动获得能量。")
-                                .font(.subheadline).foregroundStyle(.secondary)
-                            Button { Task { await model.connect() } } label: {
-                                Label("连接 Apple 健康", systemImage: "heart.fill").frame(maxWidth: .infinity)
-                            }.buttonStyle(.borderedProminent).controlSize(.large)
-                            Button("先体验演示") { model.enterDemo() }.frame(maxWidth: .infinity)
-                        }.softPanel().padding(.horizontal, 18)
+                        Button { Task { await model.connect() } } label: {
+                            Label("连接 Apple 健康", systemImage: "applewatch")
+                        }.buttonStyle(BayKey(primary: true))
+                        Button("先体验演示") { model.enterDemo() }
                     }
-                }
-                .padding(.bottom, 10)
-            }
-            .background(Palette.background).toolbar(.hidden, for: .navigationBar)
+                }.padding(.horizontal, 14).padding(.bottom, 20)
+            }.background(BayUI.paper).toolbar(.hidden, for: .navigationBar)
             .refreshable { await model.sync() }
             .sheet(isPresented: $previewingCompanions) { NewCompanionPreview() }
             .sheet(isPresented: $sharingCard) { GrowthShareView() }
@@ -183,7 +114,7 @@ struct HabitTile: View {
                 Text("目标 \(goal.formatted()) \(unit)\(value >= goal ? " ✓" : "")")
                     .font(.system(size: 11)).foregroundStyle(.secondary)
             }.foregroundStyle(Palette.ink).frame(maxWidth: .infinity, alignment: .leading)
-                .padding(13).background(.white.opacity(0.9), in: RoundedRectangle(cornerRadius: 21))
+                .padding(13).fieldPlate(BayUI.cream)
         }.buttonStyle(.plain)
     }
 }

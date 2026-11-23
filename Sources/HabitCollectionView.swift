@@ -9,14 +9,14 @@ struct CampusShareView: View {
                 image.resizable().scaledToFit()
                 ShareLink(item: image, preview: SharePreview("我的校园足迹", image: image)) {
                     Label("分享纪念卡", systemImage: "square.and.arrow.up")
-                }.buttonStyle(.borderedProminent)
+                }.buttonStyle(BayKey(primary: true))
             } else { ProgressView("正在制作纪念卡") }
             Text("只包含精灵名字、领地和贡献，不含健康明细。").font(.caption).foregroundStyle(.secondary)
         }.padding(24)
         .task {
             let plot = model.campusBoard?.plots.first { $0.owner == model.campusUser }
             let card = VStack(spacing: 22) {
-                Text("栖灵 · 深大校园足迹").font(.title.bold())
+                FieldCover(art: "BayRidge", title: "校园足迹", caption: "栖灵 · 深圳", height: 128) { EmptyView() }
                 Text(model.campusBoard?.day ?? CampusBoard.dayID(Date())).foregroundStyle(.secondary)
                 PetView(stage: model.stage, xp: model.xp, companion: model.companion).frame(width: 260, height: 260)
                 Text(model.state.petName).font(.title2.bold())

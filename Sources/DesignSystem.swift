@@ -1,13 +1,32 @@
 import SwiftUI
 
-struct RoomBackdrop: View {
+struct FieldCover<Overlay: View>: View {
+    let art: String
+    let title: String
+    let caption: String
+    let height: CGFloat
+    @ViewBuilder let overlay: () -> Overlay
     var body: some View {
-        GeometryReader { proxy in
-            Image("CompanionRoom").resizable().scaledToFill()
-                .frame(width: proxy.size.width, height: proxy.size.height).clipped()
-                .overlay(.white.opacity(0.12))
-        }
-        .accessibilityHidden(true)
+        ZStack(alignment: .topLeading) {
+            GeometryReader { size in
+                Image(art).resizable().interpolation(.none).scaledToFill()
+                    .frame(width: size.size.width, height: size.size.height).clipped().accessibilityHidden(true)
+            }
+            overlay()
+            VStack(alignment: .leading, spacing: 5) {
+                Text(caption).font(.caption.weight(.semibold))
+                Text(title).font(BayUI.type(27)).accessibilityAddTraits(.isHeader)
+            }.foregroundStyle(BayUI.cream).padding(10).fieldPlate().padding(12)
+        }.frame(height: height).overlay(alignment: .bottom) { BayPostmarkEdge() }
+    }
+}
+
+struct FieldGroupStyle: GroupBoxStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            configuration.label.font(BayUI.type(17)).foregroundStyle(BayUI.navy)
+            configuration.content
+        }.frame(maxWidth: .infinity, alignment: .leading).softPanel()
     }
 }
 
@@ -19,28 +38,12 @@ struct RoundAction: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol).font(.system(size: 19, weight: .medium))
-                .foregroundStyle(Palette.ink).frame(width: 42, height: 42)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .foregroundStyle(Palette.ink).frame(width: 44, height: 44)
+                .fieldPlate(BayUI.cream)
                 .overlay(alignment: .topTrailing) {
                     if dot { Circle().fill(.red).frame(width: 7, height: 7).padding(8) }
                 }
         }.accessibilityLabel(label)
-    }
-}
-
-struct ScreenTitle<Trailing: View>: View {
-    let title: String
-    let trailing: Trailing
-    init(title: String, @ViewBuilder trailing: () -> Trailing) {
-        self.title = title
-        self.trailing = trailing()
-    }
-    var body: some View {
-        HStack {
-            Text(title).font(.system(size: 32, weight: .bold)).tracking(-1)
-            Spacer()
-            trailing
-        }.foregroundStyle(Palette.ink)
     }
 }
 
@@ -59,7 +62,7 @@ struct DetailSheet: View {
                 Text(content.text).font(.body).lineSpacing(8)
                     .frame(maxWidth: .infinity, alignment: .leading).padding(24)
             }
-            .navigationTitle(content.title).navigationBarTitleDisplayMode(.inline)
+            .background(BayUI.paper).navigationTitle(content.title).navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
         }
         .presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
@@ -72,7 +75,8 @@ struct SectionHeading: View {
     var action: (() -> Void)? = nil
     var body: some View {
         HStack {
-            Text(title).font(.system(size: 17, weight: .semibold))
+            Rectangle().fill(BayUI.rust).frame(width: 4, height: 16)
+            Text(title).font(BayUI.type(18))
             Spacer()
             if let actionTitle, let action {
                 Button(action: action) {
@@ -86,6 +90,6 @@ struct SectionHeading: View {
 
 extension View {
     func softPanel() -> some View {
-        padding(16).background(.white.opacity(0.88), in: RoundedRectangle(cornerRadius: 25))
+        padding(16).fieldPlate(BayUI.cream)
     }
 }

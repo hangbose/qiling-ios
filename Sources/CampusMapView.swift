@@ -9,8 +9,6 @@ struct CampusMapView: View {
     @State private var showingGuide = false
     @State private var now = Date()
     private let dayTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
-    private let mint = Color(red: 0.65, green: 0.96, blue: 0.72)
-    private let night = Color(red: 0.07, green: 0.10, blue: 0.10)
     static func title(_ index: Int) -> String {
         ["书香", "运动", "林荫", "湖畔", "生活", "花园"][index / 4] + " \(index % 4 + 1)"
     }
@@ -43,7 +41,7 @@ struct CampusMapView: View {
                         Text(model.campusBusy ? "正在连接校园…" : "你的校园，等你点亮")
                             .font(.headline)
                         Text("连接后显示今日真实领地").font(.caption).foregroundStyle(.secondary)
-                    }.padding(20).background(night.opacity(0.94), in: RoundedRectangle(cornerRadius: 22))
+                    }.padding(20).background(BayUI.paper.opacity(0.94), in: RoundedRectangle(cornerRadius: 22))
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
                 Button {
@@ -51,16 +49,16 @@ struct CampusMapView: View {
                     else { selected = nil }
                 } label: {
                     Image(systemName: "flag.fill").font(.body.bold()).frame(width: 44, height: 44)
-                }.foregroundStyle(mint).background(night, in: Circle())
+                }.foregroundStyle(BayUI.rust).background(BayUI.paper, in: Circle())
                     .accessibilityLabel("查看我的领地").padding(.trailing, 14).padding(.bottom, 34)
                     .disabled(board == nil)
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
             bottomCard
         }
-        .foregroundStyle(.white)
-        .background(night)
-        .toolbarBackground(night, for: .navigationBar)
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .foregroundStyle(BayUI.ink)
+        .background(BayUI.paper)
+        .toolbarBackground(BayUI.paper, for: .navigationBar)
+        .toolbarColorScheme(.light, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingGuide) { guide }
         .sheet(isPresented: $sharingCard) { CampusShareView() }
@@ -88,26 +86,26 @@ struct CampusMapView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("深大 · 精灵领地").font(.title2.bold())
+                    Text("深大 · 精灵领地").font(BayUI.type(23))
                     Text(model.demo ? "演示地图 · 不参与真实抢地" : "粤海校园 · 每日刷新")
-                        .font(.caption).foregroundStyle(.white.opacity(0.55))
+                        .font(.caption).foregroundStyle(BayUI.muted)
                 }
                 Spacer()
                 Button { showingGuide = true } label: {
                     Image(systemName: "info.circle").font(.title3).frame(width: 44, height: 44)
                 }.accessibilityLabel("守护规则与校园足迹")
                 Button { Task { await model.sync(); await model.refreshCampus() } } label: {
-                    if model.campusBusy { ProgressView().tint(mint).frame(width: 44, height: 44) }
+                    if model.campusBusy { ProgressView().tint(BayUI.rust).frame(width: 44, height: 44) }
                     else { Image(systemName: "arrow.clockwise").font(.title3).frame(width: 44, height: 44) }
                 }.disabled(model.campusBusy || model.demo || model.state.campusSharing != true)
                     .accessibilityLabel("同步健康贡献并刷新地图")
             }
             HStack(alignment: .firstTextBaseline, spacing: 5) {
-                Text("\(model.campusScore)").font(.system(size: 36, weight: .bold, design: .rounded)).foregroundStyle(mint)
-                Text("/ 110 今日贡献").font(.caption).foregroundStyle(.white.opacity(0.65))
+                Text("\(model.campusScore)").font(.system(size: 36, weight: .bold, design: .rounded)).foregroundStyle(BayUI.rust)
+                Text("/ 110 今日贡献").font(.caption).foregroundStyle(BayUI.muted)
                 Spacer()
                 Label(CampusBoard.open(now) ? "22:00 休战" : "今日已休战", systemImage: "moon")
-                    .font(.caption2).foregroundStyle(.white.opacity(0.65))
+                    .font(.caption2).foregroundStyle(BayUI.muted)
             }
         }.padding(.horizontal, 20).padding(.vertical, 12)
     }
@@ -122,7 +120,7 @@ struct CampusMapView: View {
                 if model.state.campusSharing != true && !model.demo {
                     Text("让日常坚持，变成你的领地").font(.headline)
                     Text("参与后公开昵称、精灵、贡献分和领地，不公开原始健康记录。当前为邀请测试。")
-                        .font(.caption).foregroundStyle(.white.opacity(0.65))
+                        .font(.caption).foregroundStyle(BayUI.muted)
                     action("参与校园地图", icon: "flag.fill") {
                         model.state.campusSharing = true; model.save()
                         Task { await model.refreshCampus() }
@@ -134,25 +132,25 @@ struct CampusMapView: View {
                         VStack(alignment: .leading, spacing: 5) {
                             Text(ownPlot == nil ? "下一块领地，属于你" : "你的精灵正在守护校园").font(.headline)
                             Text(ownPlot.map { "\(Self.title($0.id)) · 守护值 \($0.score)" } ?? "点选地图地块，查看占领与保护状态")
-                                .font(.caption).foregroundStyle(.white.opacity(0.6))
+                                .font(.caption).foregroundStyle(BayUI.muted)
                         }
                         Spacer()
-                        Image(systemName: "pawprint.fill").font(.title).foregroundStyle(mint)
+                        Image(systemName: "pawprint.fill").font(.title).foregroundStyle(BayUI.rust)
                     }
                     HStack(spacing: 18) {
-                        legend("我的", tint: mint)
+                        legend("我的", tint: BayUI.rust)
                         legend("他人", tint: .orange)
                         legend("空地", tint: .gray)
                         Spacer()
                         Text("机会 \(max(0, 3 - (board?.challenges[model.campusUser] ?? 0)))/3").font(.caption)
                     }
-                    Text("20 分起占 · 首次空地免费 · 保护 2 小时").font(.caption2).foregroundStyle(mint)
+                    Text("20 分起占 · 首次空地免费 · 保护 2 小时").font(.caption2).foregroundStyle(BayUI.rust)
                 }
             }.padding(18)
         }
         .scrollBounceBehavior(.basedOnSize)
         .frame(height: selected == nil ? 184 : 240)
-        .background(Color(red: 0.11, green: 0.14, blue: 0.14), in: UnevenRoundedRectangle(topLeadingRadius: 26, topTrailingRadius: 26))
+        .background(BayUI.cream).overlay(alignment: .top) { BayPostmarkEdge() }
     }
 
     private func selectionCard(_ id: Int) -> some View {
@@ -162,12 +160,12 @@ struct CampusMapView: View {
                     PetView(xp: 0, companion: CompanionKind(rawValue: plot.companion) ?? .legacy)
                         .frame(width: 64, height: 64).clipped()
                 } else {
-                    Image(systemName: "flag.checkered").font(.title).foregroundStyle(mint).frame(width: 48)
+                    Image(systemName: "flag.checkered").font(.title).foregroundStyle(BayUI.rust).frame(width: 48)
                 }
                 VStack(alignment: .leading, spacing: 5) {
                     Text(Self.title(id)).font(.title3.bold())
                     Text(chosenPlot.map { "\($0.name) · 守护值 \($0.score)" } ?? "无人驻守 · 20 分即可占领")
-                        .font(.caption).foregroundStyle(.white.opacity(0.65))
+                        .font(.caption).foregroundStyle(BayUI.muted)
                 }
                 Spacer()
                 Button { selected = nil } label: { Image(systemName: "xmark").frame(width: 36, height: 36) }
@@ -175,17 +173,17 @@ struct CampusMapView: View {
             }
             if let plot = chosenPlot, plot.protectedUntil > now {
                 Label("保护至 \(plot.protectedUntil.formatted(date: .omitted, time: .shortened))", systemImage: "shield.fill")
-                    .font(.caption).foregroundStyle(mint)
+                    .font(.caption).foregroundStyle(BayUI.rust)
             } else {
                 Text(chosenPlot == nil ? "占领后精灵将为你守护这块地" : "挑战需高出 10 分 · 今日剩余 \(max(0, 3 - (board?.challenges[model.campusUser] ?? 0))) 次")
-                    .font(.caption).foregroundStyle(.white.opacity(0.65))
+                    .font(.caption).foregroundStyle(BayUI.muted)
             }
             HStack {
                 action(protected ? "领地保护中" : chosenPlot?.owner == model.campusUser ? "更新守护值" : chosenPlot == nil ? "占领这里" : "挑战这块地", icon: protected ? "lock.fill" : "flag.fill") { confirming = true }
                     .disabled(model.demo || model.campusBusy || protected || !CampusBoard.open(now))
                 Button { sharingCard = true } label: {
                     Image(systemName: "square.and.arrow.up").frame(width: 48, height: 48)
-                }.background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 16))
+                }.fieldPlate(BayUI.cream)
                     .accessibilityLabel("分享我的今日纪念卡")
             }
         }
@@ -196,7 +194,7 @@ struct CampusMapView: View {
     private func action(_ title: String, icon: String, perform: @escaping () -> Void) -> some View {
         Button(action: perform) {
             Label(title, systemImage: icon).font(.subheadline.bold()).frame(maxWidth: .infinity).frame(minHeight: 48)
-        }.buttonStyle(CampusActionStyle(tint: mint))
+        }.buttonStyle(BayKey(primary: true))
     }
     private var guide: some View {
         NavigationStack {
@@ -230,18 +228,8 @@ struct CampusMapView: View {
                 }
 
                 }.padding()
-            }.navigationTitle("守护约定与足迹")
+            }.background(BayUI.paper).navigationTitle("守护约定与足迹")
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { showingGuide = false } } }
         }.foregroundStyle(Color.primary)
-    }
-}
-
-private struct CampusActionStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var enabled
-    let tint: Color
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label.foregroundStyle(Color.black.opacity(0.85))
-            .background(tint.opacity(enabled ? 1 : 0.35), in: RoundedRectangle(cornerRadius: 16))
-            .opacity(configuration.isPressed ? 0.75 : 1)
     }
 }

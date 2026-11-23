@@ -7,16 +7,16 @@ struct CampusTerritoryAtlas: View {
     @Binding var selected: Int?
 
     static func tint(_ plot: CampusPlot?, user: String) -> Color {
-        guard let plot else { return Color(red: 0.26, green: 0.34, blue: 0.33) }
-        if plot.owner == user { return Color(red: 0.65, green: 0.96, blue: 0.72) }
-        let colors: [Color] = [.orange, .cyan, .pink, .purple]
+        guard let plot else { return BayUI.rim }
+        if plot.owner == user { return BayUI.rust }
+        let colors: [Color] = [BayUI.navy, .indigo, .brown, .teal]
         return colors[plot.owner.utf8.reduce(0) { ($0 + Int($1)) % colors.count }]
     }
 
     var body: some View {
         GeometryReader { geo in
             ZStack {
-                Color(red: 0.09, green: 0.14, blue: 0.14)
+                BayUI.paper
                 Canvas { context, size in
                     // Quiet street texture, with a broad campus promenade through the blocks.
                     for index in 0..<18 {
@@ -24,15 +24,15 @@ struct CampusTerritoryAtlas: View {
                         let y = CGFloat(index) * size.height / 14
                         path.move(to: CGPoint(x: 0, y: y))
                         path.addLine(to: CGPoint(x: size.width, y: y - 65))
-                        context.stroke(path, with: .color(.white.opacity(0.035)), lineWidth: 1)
+                        context.stroke(path, with: .color(BayUI.rim.opacity(0.37)), lineWidth: 1)
                     }
                     var road = Path()
                     road.move(to: CGPoint(x: size.width * 0.46, y: 0))
                     road.addCurve(to: CGPoint(x: size.width * 0.54, y: size.height),
                                   control1: CGPoint(x: size.width * 0.64, y: size.height * 0.4),
                                   control2: CGPoint(x: size.width * 0.32, y: size.height * 0.6))
-                    context.stroke(road, with: .color(.white.opacity(0.10)), lineWidth: 14)
-                    context.stroke(road, with: .color(.white.opacity(0.15)), style: StrokeStyle(lineWidth: 1, dash: [3, 5]))
+                    context.stroke(road, with: .color(BayUI.rim.opacity(0.7)), lineWidth: 14)
+                    context.stroke(road, with: .color(BayUI.navy.opacity(0.6)), style: StrokeStyle(lineWidth: 1, dash: [3, 5]))
                 }
                 ForEach(0..<24, id: \.self) { id in
                     let row = id / 4
@@ -46,7 +46,7 @@ struct CampusTerritoryAtlas: View {
                             CampusParcel(variant: id % 3)
                                 .fill(tint.opacity(plot == nil ? 0.60 : 0.30))
                             CampusParcel(variant: id % 3)
-                                .stroke(selected == id ? Color.white : tint.opacity(plot == nil ? 0.65 : 1),
+                                .stroke(selected == id ? BayUI.ink : tint.opacity(plot == nil ? 0.65 : 1),
                                         lineWidth: selected == id ? 3 : (plot == nil ? 1 : 2))
                             VStack(spacing: 3) {
                                 if let plot {
@@ -58,7 +58,7 @@ struct CampusTerritoryAtlas: View {
                                     Text(String(format: "%02d", id + 1))
                                         .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 }
-                            }.foregroundStyle(plot == nil ? Color.white.opacity(0.45) : tint)
+                            }.foregroundStyle(plot == nil ? BayUI.muted : BayUI.ink)
                                 .padding(8)
                         }.frame(width: width, height: height)
                             .contentShape(CampusParcel(variant: id % 3))
@@ -77,7 +77,7 @@ struct CampusTerritoryAtlas: View {
                     Spacer()
                     Text("深大 · 校园主题示意图 · 非实景地图")
                         .font(.system(size: 10)).tracking(1)
-                }.foregroundStyle(.white.opacity(0.45)).padding(18).allowsHitTesting(false)
+                }.foregroundStyle(BayUI.muted).padding(18).allowsHitTesting(false)
             }
         }.clipped()
     }

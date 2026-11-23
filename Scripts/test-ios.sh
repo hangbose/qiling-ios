@@ -35,7 +35,7 @@ xcrun simctl launch "$DEVICE_ID" "$APP_BUNDLE_ID" --demo
 sleep 6
 xcrun simctl io "$DEVICE_ID" screenshot build/native-home.png
 
-for SCREEN in contributions campus; do
+for SCREEN in companion square growth profile contributions campus; do
   xcrun simctl terminate "$DEVICE_ID" "$APP_BUNDLE_ID" || true
   xcrun simctl launch "$DEVICE_ID" "$APP_BUNDLE_ID" --demo "--preview-$SCREEN"
   sleep 3

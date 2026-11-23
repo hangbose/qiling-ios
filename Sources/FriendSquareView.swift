@@ -2,6 +2,7 @@ import SwiftUI
 
 struct FriendSquareView: View {
     @EnvironmentObject private var model: AppModel
+    @Binding var tab: AppTab
     @State private var section = 0
     @State private var invitation = ""
     @State private var search = ""
@@ -18,36 +19,46 @@ struct FriendSquareView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 13) {
-                    ScreenTitle(title: "好友广场") {
-                        HStack(spacing: 9) {
-                            RoundAction(symbol: "magnifyingglass", label: "搜索小队成员") { searching = true }
-                            RoundAction(symbol: "person.badge.plus", label: "邀请好友") { inviting = true }
+                    FieldCover(art: "BayLoft", title: "小队邮局", caption: "深圳 · 华侨城创意园", height: 194) { EmptyView() }
+                    HStack(spacing: 10) {
+                        Button { inviting = true } label: {
+                            Label(model.demo || !model.state.squadCode.isEmpty ? "小队邀请" : "创建小队", systemImage: "envelope.fill")
+                                .frame(maxWidth: .infinity)
+                        }.buttonStyle(BayKey(primary: true))
+                        if !model.demo {
+                            Button { joining = true } label: { Label("加入小队", systemImage: "ticket").frame(maxWidth: .infinity) }
+                                .buttonStyle(BayKey())
+                        } else {
+                            Button("体验接力") { model.switchDemoRelay(true); tab = .journey }.buttonStyle(BayKey())
                         }
-                    }.padding(.top, 18).padding(.horizontal, 7)
-                    Picker("广场内容", selection: $section) {
-                        Text("动态").tag(0)
-                        Text("本周榜").tag(1)
-                    }.pickerStyle(.segmented).padding(.horizontal, 26)
-
-                    NavigationLink { CampusMapView() } label: {
-                        Label("深大精灵领地 · 每日占地", systemImage: "map.fill")
-                            .frame(maxWidth: .infinity).padding(.vertical, 10)
-                    }.buttonStyle(.bordered)
-
-                    if !model.demo {
-                        Button { joining = true } label: {
-                            Label("输入邀请码，加入好友小队", systemImage: "person.2.badge.plus")
-                                .frame(maxWidth: .infinity).padding(.vertical, 8)
-                        }.buttonStyle(.borderedProminent)
                     }
+                    NavigationLink { CampusMapView() } label: {
+                        HStack { Image(systemName: "map"); Text("深大领地"); Spacer(); Text("今日地图 ↗") }
+                            .frame(maxWidth: .infinity)
+                    }.buttonStyle(BayKey())
                     if !model.state.squadCode.isEmpty || model.demo { ExpeditionView() }
-                    if !model.members.isEmpty { podium }
-
+                    if !model.demo && !model.state.squadCode.isEmpty {
+                        Button {
+                            Task { await model.setBayRelay(true); tab = .journey }
+                        } label: { Label("与小队接力走深圳", systemImage: "figure.walk").frame(maxWidth: .infinity) }
+                            .buttonStyle(BayKey())
+                    }
+                    HStack {
+                        SectionHeading(title: "小队来信")
+                        RoundAction(symbol: "magnifyingglass", label: "搜索小队成员") { searching = true }
+                    }
+                    HStack {
+                        ForEach(0..<2, id: \.self) { index in
+                            Button { section = index } label: { Text(index == 0 ? "近况" : "本周榜").frame(maxWidth: .infinity) }
+                                .buttonStyle(BayKey(primary: section == index)).accessibilityAddTraits(section == index ? .isSelected : [])
+                        }
+                    }
                     if model.demo {
                         Text("演示小队 · 成绩与互动均为示例").font(.system(size: 10)).foregroundStyle(.secondary)
                     }
                     if model.state.squadCode.isEmpty && !model.demo {
-                        joinPanel
+                        Text("建一支小队或输入好友的邀请码，这里就会收到同行伙伴的近况。")
+                            .font(.subheadline).frame(maxWidth: .infinity, alignment: .leading).softPanel()
                     } else if filtered.isEmpty {
                         ContentUnavailableView(search.isEmpty ? "等待伙伴加入" : "没有找到伙伴",
                             systemImage: "person.2", description: Text(search.isEmpty ? "下拉同步或邀请朋友，一起开始本周挑战。" : "试试其他昵称。"))
@@ -110,15 +121,16 @@ struct FriendSquareView: View {
                             }
                         }
                     }
+                    .scrollContentBackground(.hidden).background(BayUI.paper)
                     .safeAreaInset(edge: .bottom) {
                         VStack(spacing: 8) {
                             if !model.state.sharing { Text("请先开启上方共享开关").font(.caption) }
                             Button(action: joinSquad) {
                                 Text(model.socialBusy ? "正在加入…" : "加入好友小队")
                                     .frame(maxWidth: .infinity).padding(.vertical, 8)
-                            }.buttonStyle(.borderedProminent)
+                            }.buttonStyle(BayKey(primary: true))
                                 .disabled(!model.state.sharing || invitation.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || model.socialBusy)
-                        }.padding().background(.regularMaterial)
+                        }.padding().background(BayUI.paper)
                     }
                     .navigationTitle("加入好友小队").navigationBarTitleDisplayMode(.inline)
                     .toolbar { ToolbarItem(placement: .cancellationAction) {
@@ -134,7 +146,7 @@ struct FriendSquareView: View {
                 if joinAfterDismiss { joinAfterDismiss = false; joining = true }
             }) {
                 NavigationStack {
-                    ScrollView { joinPanel.padding(24) }
+                    ScrollView { joinPanel.padding(20) }.background(BayUI.paper)
                         .navigationTitle("邀请朋友一起长大").navigationBarTitleDisplayMode(.inline)
                         .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { inviting = false } } }
                 }.presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
@@ -161,28 +173,6 @@ struct FriendSquareView: View {
 
     private func rank(_ member: SquadMember) -> Int { 1 + model.members.filter { $0.points > member.points }.count }
 
-    private var podium: some View {
-        let first = Array(model.members.prefix(3))
-        let ordered = first.count > 1 ? [first[1], first[0]] + Array(first.dropFirst(2)) : first
-        return HStack(alignment: .bottom, spacing: 0) {
-            ForEach(ordered) { member in
-                let winner = member.id == first.first?.id
-                VStack(spacing: 2) {
-                    Text(winner ? "👑" : (rank(member) == 2 ? "🥈" : "🥉")).font(.system(size: winner ? 30 : 23))
-                    PetView(stage: Growth.stage(member.xp), xp: member.xp).frame(height: winner ? 158 : 115)
-                    VStack(spacing: 4) {
-                        Text(member.name).font(.system(size: 12, weight: .medium)).lineLimit(1)
-                        Text("Lv.\(1 + member.xp / 100)").font(.system(size: 11)).foregroundStyle(Palette.green)
-                    }.frame(maxWidth: .infinity).padding(.vertical, 7)
-                        .background(.thinMaterial, in: Capsule())
-                }.frame(maxWidth: .infinity)
-            }
-        }
-        .padding(10).frame(height: 255, alignment: .bottom)
-        .background { RoomBackdrop().overlay(.white.opacity(0.40)) }
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-    }
-
     private var joinPanel: some View {
         VStack(alignment: .leading, spacing: 16) {
             if model.demo {
@@ -194,7 +184,7 @@ struct FriendSquareView: View {
                 Text("邀请码：\(model.state.squadCode)").font(.title3.monospaced())
                 ShareLink(item: "来栖灵一起养精灵吧！小队邀请码：\(model.state.squadCode)") {
                     Label("分享邀请码", systemImage: "square.and.arrow.up")
-                }.buttonStyle(.borderedProminent)
+                }.buttonStyle(BayKey(primary: true))
             } else {
                 Text("邀请熟悉的人，一起坚持").font(.headline)
                 TextField("你的昵称", text: $model.state.name).textFieldStyle(.roundedBorder)
@@ -205,13 +195,13 @@ struct FriendSquareView: View {
                     .font(.caption).foregroundStyle(.secondary)
                 if !model.state.sharing { Text("开启上方共享开关后，即可创建或加入小队。").font(.caption).foregroundStyle(.secondary) }
                 Button("创建我的小队") { Task { await model.connectSquad(code: nil) } }
-                    .buttonStyle(.borderedProminent).disabled(!model.state.sharing || model.socialBusy)
+                    .buttonStyle(BayKey(primary: true)).disabled(!model.state.sharing || model.socialBusy)
                 Divider()
                 Button("输入邀请码，加入好友小队") {
                     if inviting { joinAfterDismiss = true; inviting = false }
                     else { joining = true }
                 }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(BayKey(primary: true))
                 if model.socialBusy { ProgressView("正在连接 iCloud…") }
             }
         }.softPanel()
@@ -235,16 +225,13 @@ struct FriendSquareView: View {
             Text("本周积累了 \(member.points) 能量，伙伴又成长了一点！🌱").font(.system(size: 14))
             Text("\(Growth.stageName(member.xp)) · Lv.\(1 + member.xp / 100)")
                 .font(.system(size: 12)).foregroundStyle(.secondary)
-            ZStack(alignment: .bottom) {
-                RoomBackdrop().overlay(.white.opacity(0.30))
-                PetView(stage: Growth.stage(member.xp), xp: member.xp).frame(height: 165)
-            }.frame(height: 175).clipShape(RoundedRectangle(cornerRadius: 17))
+            BayPostmarkEdge()
             HStack {
                 Button { Task { await model.cheer(member) } } label: {
                     Label("\(member.cheers)", systemImage: "heart.fill").foregroundStyle(.pink)
                 }.accessibilityLabel("鼓励\(member.name)，已有\(member.cheers)次鼓励")
                 Spacer()
-                Text("一起坚持，一起长大").font(.system(size: 11)).foregroundStyle(.secondary)
+
                 Spacer()
                 ShareLink(item: "\(member.name)的精灵已经 Lv.\(1 + member.xp / 100)，本周积累 \(member.points) 能量。来栖灵一起长大！") {
                     Image(systemName: "square.and.arrow.up").foregroundStyle(.secondary)

@@ -32,28 +32,29 @@ enum AppTab: String, CaseIterable {
 }
 
 enum Palette {
-    static let background = Color(red: 0.97, green: 0.98, blue: 0.97)
-    static let ink = Color(red: 0.08, green: 0.11, blue: 0.09)
-    static let green = Color(red: 0.08, green: 0.51, blue: 0.37)
-    static let lime = Color(red: 0.65, green: 0.92, blue: 0.81)
+    static let background = BayUI.paper
+    static let ink = BayUI.ink
+    static let green = BayUI.rust
+    static let lime = BayUI.blush
 }
 
 struct RootView: View {
     @EnvironmentObject private var model: AppModel
-    @State private var tab: AppTab = .journey
+    @State private var tab: AppTab = {
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("--preview-companion") { return .companion }
+        if args.contains("--preview-square") { return .square }
+        if args.contains("--preview-growth") { return .growth }
+        if args.contains("--preview-profile") { return .profile }
+        return .journey
+    }()
     var body: some View {
-        Group {
-            if tab == .journey {
-                // Reserve real layout space for the controls beneath the map.
-                VStack(spacing: 0) {
-                    content
-                    journeyTabs.fixedSize(horizontal: false, vertical: true)
-                }
-            } else {
-                content.safeAreaInset(edge: .bottom, spacing: 0) { regularTabs }
-            }
+        VStack(spacing: 0) {
+            content.frame(maxWidth: .infinity, maxHeight: .infinity)
+            journeyTabs.fixedSize(horizontal: false, vertical: true)
         }
-        .tint(Palette.green)
+        .background(BayUI.paper).foregroundStyle(BayUI.ink)
+        .groupBoxStyle(FieldGroupStyle()).tint(BayUI.rust)
         .sheet(item: Binding(get: { tab == .journey ? nil : model.celebration }, set: { if $0 == nil { model.dismissCelebration() } })) { event in
             GrowthCelebrationView(event: event, name: model.state.petName) { model.dismissCelebration() }
         }
@@ -72,7 +73,7 @@ struct RootView: View {
                 switch tab {
                 case .journey: BayJourneyView(tab: $tab)
                 case .companion: CompanionHomeView(tab: $tab)
-                case .square: FriendSquareView()
+                case .square: FriendSquareView(tab: $tab)
                 case .growth: GrowthRecordView()
                 case .profile: SettingsView()
                 }
@@ -95,72 +96,26 @@ struct RootView: View {
             .overlay(alignment: .top) { Rectangle().fill(BayUI.rim).frame(height: 1) }
     }
 
-    private var regularTabs: some View {
-        HStack(spacing: 4) {
-            ForEach(AppTab.allCases, id: \.self) { item in
-                Button { tab = item } label: {
-                    VStack(spacing: 5) {
-                        Image(systemName: item.symbol).font(.system(size: 21, weight: .semibold))
-                        Text(item.rawValue).font(.system(size: 10, weight: tab == item ? .semibold : .regular))
-                    }
-                    .frame(maxWidth: .infinity).padding(.vertical, 10)
-                    .background(tab == item ? Palette.lime.opacity(0.30) : .clear,
-                                in: RoundedRectangle(cornerRadius: 25))
-                    .foregroundStyle(tab == item ? Palette.green : .gray)
-                }
-                .accessibilityAddTraits(tab == item ? .isSelected : [])
-            }
-        }
-        .padding(5).background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 30))
-        .overlay(RoundedRectangle(cornerRadius: 30).stroke(.white.opacity(0.9), lineWidth: 1))
-        .shadow(color: .black.opacity(0.04), radius: 15, y: -3)
-        .padding(.horizontal, 15).padding(.bottom, 4)
-    }
 }
 
-// Original generated creature art, shared with the interactive preview.
 struct PetView: View {
     var stage: Int = 0
     var xp: Int? = nil
     var companion: CompanionKind = .legacy
     private var detailLevel: Int { xp.map { Growth.appearance($0) } ?? 0 }
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var floating = false
     var body: some View {
-        GeometryReader { proxy in
+        GeometryReader { geo in
             ZStack {
-                Ellipse().fill(Palette.green.opacity(0.12))
-                    .frame(width: proxy.size.width * 0.50, height: 12)
-                    .offset(y: proxy.size.height * 0.43)
-                Group {
-                    if companion == .legacy {
-                        Image("PetStage\(min(2, max(0, stage)))").resizable()
-                    } else {
-                        Image(uiImage: CompanionArt.image(kind: companion, xp: xp ?? 0)).resizable()
-                    }
-                }.scaledToFit()
-                    .padding(8)
-                    .scaleEffect(xp == nil ? 1 : (detailLevel == 0 ? 0.82 : 0.94))
-                    .saturation(detailLevel >= 2 ? 1.25 : 1)
-                    .overlay {
-                        if detailLevel >= 3 {
-                            Image(systemName: detailLevel >= 4 ? "sparkles" : "star.fill")
-                                .font(.system(size: detailLevel >= 6 ? 36 : 24))
-                                .foregroundStyle(Palette.green)
-                                .offset(x: proxy.size.width * 0.28, y: -proxy.size.height * 0.25)
-                        }
-                    }
-                    .offset(y: floating && !reduceMotion ? -4 : 2)
-                    .shadow(color: Palette.green.opacity(0.16), radius: 14, y: 8)
-            }
-            .frame(width: proxy.size.width, height: proxy.size.height)
-            .onAppear {
-                guard !reduceMotion else { return }
-                withAnimation(.easeInOut(duration: 2.8).repeatForever(autoreverses: true)) { floating = true }
-            }
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(companion.title)，成长中的伙伴")
+                Ellipse().fill(BayUI.ink.opacity(0.16)).frame(width: min(geo.size.width, geo.size.height) * 0.49, height: max(3, geo.size.height * 0.04)).offset(y: geo.size.height * 0.34)
+                BaySprite(kind: companion.rawValue, walking: false, grown: stage > 0 || detailLevel >= 3)
+                    .scaleEffect(stage >= 2 ? 1.06 : detailLevel == 0 && stage == 0 ? 0.84 : 0.96)
+                    .saturation(detailLevel >= 2 ? 1.16 : 1)
+                if detailLevel >= 3 || stage > 0 {
+                    Image(systemName: detailLevel >= 4 || stage >= 2 ? "sparkles" : "star.fill")
+                        .foregroundStyle(BayUI.rust).offset(x: geo.size.width * 0.31, y: -geo.size.height * 0.25)
+                }
+            }.frame(width: geo.size.width, height: geo.size.height)
+        }.accessibilityLabel("\(companion.title)，成长中的伙伴")
     }
 }
 
@@ -170,80 +125,71 @@ struct SettingsView: View {
     @State private var workout = 30.0
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    HStack(spacing: 18) {
-                        PetView(stage: model.stage, xp: model.xp, companion: model.companion).frame(width: 96, height: 104)
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(model.state.name).font(.title3.bold())
-                            Text("与\(model.state.petName)一起成长").font(.subheadline).foregroundStyle(.secondary)
-                            Text("\(model.xp) 成长经验").font(.caption).foregroundStyle(Palette.green)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    FieldCover(art: "BayShore", title: "旅行护照", caption: "深圳 · 海岸签发", height: 168) { EmptyView() }
+                    HStack(spacing: 16) {
+                        PetView(stage: model.stage, xp: model.xp, companion: model.companion)
+                            .frame(width: 68, height: 76).background(BayUI.blush).overlay(Rectangle().stroke(BayUI.rim))
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(model.state.name).font(BayUI.type(22))
+                            Text("同行伙伴　\(model.state.petName)").font(.subheadline)
+                            Text("\(model.xp) XP").font(.caption.monospacedDigit()).foregroundStyle(BayUI.rust)
                         }
-                    }.padding(.vertical, 7)
-                }
-                Section("伙伴档案") {
-                    TextField("我的昵称", text: $model.state.name)
-                        .onChange(of: model.state.name) { _, _ in model.save() }
-                    TextField("精灵名字", text: $model.state.petName)
-                        .onChange(of: model.state.petName) { _, _ in model.save() }
-                }
-                Section {
-                    Stepper("睡眠目标  \(sleep.formatted()) 小时", value: $sleep, in: 6...10, step: 0.5)
-                    Stepper("锻炼目标  \(workout.formatted()) 分钟", value: $workout, in: 10...90, step: 5)
-                    Button("保存目标，明天生效") {
-                        model.updateGoals(sleep: sleep, workout: workout)
-                        model.message = "目标已保存，从明天起生效。今天的奖励规则不变。"
-                    }.disabled(model.demo)
-                } header: { Text("按自己的节奏来") } footer: {
-                    Text("默认 8 小时与 30 分钟是可调整的游戏目标，并非个体健康建议。睡眠按前一日中午至当日中午归属，运动读取已记录的锻炼时段。")
-                }
-                Section("Apple 健康") {
-                    Text(model.status).font(.subheadline)
-                    if let last = model.state.lastSync, !model.demo {
-                        LabeledContent("上次读取", value: last.formatted(date: .abbreviated, time: .shortened))
+                    }.frame(maxWidth: .infinity, alignment: .leading).softPanel()
+                    GroupBox("旅人登记") {
+                        LabeledContent("我的昵称") { TextField("昵称", text: $model.state.name).multilineTextAlignment(.trailing) }
+                            .onChange(of: model.state.name) { _, _ in model.save() }
+                        LabeledContent("精灵名字") { TextField("名字", text: $model.state.petName).multilineTextAlignment(.trailing) }
+                            .onChange(of: model.state.petName) { _, _ in model.save() }
                     }
-                    if !model.demo, let report = model.sensorReport {
-                        Text(report).font(.caption).foregroundStyle(.secondary)
-                    }
-                    DisclosureGroup("华为手表有记录，栖灵没有？") {
-                        Text("请在 iPhone 自带的‘健康’里查看‘睡眠’、‘步数’或‘体能训练’，确认记录来自华为运动健康。步行与训练取高计分，睡眠单独结算。再到健康头像 → 隐私 → App → 栖灵检查读取权限，返回这里重新同步。成长从领养当天起计算。")
-                            .font(.footnote).foregroundStyle(.secondary)
-                    }
-                    Button("连接／检查健康授权") { Task { await model.connect() } }
-                    Button("重新同步") { Task { await model.sync() } }
-                        .disabled(model.syncing || model.demo || !model.state.requestedHealth)
-                    Text("没有记录不代表没有努力。权限、未佩戴和同步延迟都可能导致缺少数据；不会扣除精灵经验。可在系统健康权限设置中撤销读取。")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                Section("社交隐私") {
-                    Toggle("自动共享成长摘要", isOn: $model.state.sharing)
-                        .onChange(of: model.state.sharing) { _, enabled in
-                            model.save()
-                            if enabled { Task { await model.refreshSquad() } }
+                    GroupBox("每日目标") {
+                        Stepper("睡眠目标  \(sleep.formatted()) 小时", value: $sleep, in: 6...10, step: 0.5)
+                        Stepper("锻炼目标  \(workout.formatted()) 分钟", value: $workout, in: 10...90, step: 5)
+                        Button("保存目标，明天生效") {
+                            model.updateGoals(sleep: sleep, workout: workout)
+                            model.message = "目标已保存，从明天起生效。今天的奖励规则不变。"
                         }.disabled(model.demo)
-                    Text("只共享昵称、总经验和周积分。关闭后停止新的上传，已共享的记录仍保留。当前为邀请测试版，尚未提供云端删除和正式账号管理。")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                Section("体验预览") {
-                    if model.demo {
-                        Button("退出演示，返回真实数据") { Task { await model.leaveDemo() } }
-                    } else {
-                        Button("进入演示模式") { model.enterDemo() }
+                        Text("默认 8 小时与 30 分钟是可调整的游戏目标，并非个体健康建议。睡眠按前一日中午至当日中午归属，运动读取已记录的锻炼时段。").font(.footnote).foregroundStyle(BayUI.muted)
                     }
-                    Text("演示记录与真实成长账本隔离，不上传到小队。").font(.caption).foregroundStyle(.secondary)
-                }
-                Section {
-                    Text("栖灵 · 0.1 邀请测试版").foregroundStyle(.secondary)
-                }
-            }
-            .navigationTitle("我的")
+                    GroupBox("手表与健康") {
+                        Text(model.status).font(.subheadline)
+                        if let last = model.state.lastSync, !model.demo {
+                            LabeledContent("上次读取", value: last.formatted(date: .abbreviated, time: .shortened))
+                        }
+                        if !model.demo, let report = model.sensorReport {
+                            Text(report).font(.caption).foregroundStyle(.secondary)
+                        }
+                        DisclosureGroup("华为手表有记录，栖灵没有？") {
+                            Text("请在 iPhone 自带的‘健康’里查看‘睡眠’、‘步数’或‘体能训练’，确认记录来自华为运动健康。步行与训练取高计分，睡眠单独结算。再到健康头像 → 隐私 → App → 栖灵检查读取权限，返回这里重新同步。成长从领养当天起计算。")
+                                .font(.footnote).foregroundStyle(.secondary)
+                        }
+                        Button("连接／检查健康授权") { Task { await model.connect() } }
+                        Button("重新同步") { Task { await model.sync() } }
+                            .disabled(model.syncing || model.demo || !model.state.requestedHealth)
+                        Text("没有记录不代表没有努力。权限、未佩戴和同步延迟都可能导致缺少数据；不会扣除精灵经验。可在系统健康权限设置中撤销读取。")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    GroupBox("小队共享") {
+                        Toggle("自动共享成长摘要", isOn: $model.state.sharing)
+                            .onChange(of: model.state.sharing) { _, enabled in
+                                model.save()
+                                if enabled { Task { await model.refreshSquad() } }
+                            }.disabled(model.demo)
+                        Text("只共享昵称、总经验和周积分。关闭后停止新的上传，已共享的记录仍保留。当前为邀请测试版，尚未提供云端删除和正式账号管理。")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    GroupBox("演示模式") {
+                        if model.demo {
+                            Button("退出演示，返回真实数据") { Task { await model.leaveDemo() } }
+                        } else {
+                            Button("进入演示模式") { model.enterDemo() }
+                        }
+                        Text("演示记录与真实成长账本隔离，不上传到小队。").font(.caption).foregroundStyle(.secondary)
+                    }
+                }.padding(.horizontal, 14).padding(.bottom, 20)
+            }.background(BayUI.paper).toolbar(.hidden, for: .navigationBar)
             .onAppear { sleep = model.state.sleepGoal; workout = model.state.workoutGoal }
         }
-    }
-}
-
-extension View {
-    func card() -> some View {
-        padding(18).background(.white, in: RoundedRectangle(cornerRadius: 22))
     }
 }

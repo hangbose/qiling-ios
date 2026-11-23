@@ -32,7 +32,7 @@ struct InteractivePetView: View {
                     if let response {
                         Text(response).font(.caption.weight(.medium)).foregroundStyle(Palette.green)
                             .multilineTextAlignment(.center).padding(10)
-                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                            .fieldPlate(BayUI.cream)
                             .padding(.horizontal, 8).allowsHitTesting(false)
                     }
                 }
@@ -61,7 +61,7 @@ struct GrowthCelebrationView: View {
         VStack(spacing: 18) {
             Image(systemName: event.evolved ? "sparkles" : "heart.fill")
                 .font(.largeTitle).foregroundStyle(Palette.green)
-            Text(event.title).font(.title.bold())
+            Text(event.title).font(BayUI.type(24))
             PetView(stage: Growth.stage(event.current), xp: event.current, companion: model.companion).frame(height: 220)
             Text("\(name)获得了 \(event.current - event.previous) 成长能量")
                 .font(.headline).multilineTextAlignment(.center)
@@ -69,7 +69,7 @@ struct GrowthCelebrationView: View {
                 .foregroundStyle(Palette.green)
             Text("能量已自动保存，无需领取。")
                 .font(.caption).foregroundStyle(.secondary)
-            Button("一起继续成长", action: dismiss).buttonStyle(.borderedProminent).controlSize(.large)
+            Button("一起继续成长", action: dismiss).buttonStyle(BayKey(primary: true)).controlSize(.large)
         }.padding(24).frame(maxWidth: .infinity).background(Palette.background)
             .presentationDetents([.large]).presentationDragIndicator(.visible)
     }

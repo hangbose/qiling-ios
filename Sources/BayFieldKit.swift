@@ -30,7 +30,10 @@ extension View {
     }
 }
 struct BayKey: ButtonStyle {
-    var primary = false
+    @Environment(\.isEnabled) private var enabled
+    var primary: Bool = false
+
+    init(primary: Bool = false) { self.primary = primary }
     func makeBody(configuration: Configuration) -> some View {
         configuration.label.font(BayUI.type(16))
             .padding(.horizontal, 11).frame(minHeight: 44)
@@ -38,7 +41,7 @@ struct BayKey: ButtonStyle {
             .background(BayCut().fill(primary ? BayUI.navy : BayUI.cream))
             .overlay(BayCut().stroke(primary ? BayUI.ink : BayUI.rim, lineWidth: 1))
             .shadow(color: BayUI.ink.opacity(0.22), radius: 0, y: configuration.isPressed ? 0 : 2)
-            .offset(y: configuration.isPressed ? 2 : 0)
+            .offset(y: configuration.isPressed ? 2 : 0).opacity(enabled ? 1 : 0.52)
     }
 }
 

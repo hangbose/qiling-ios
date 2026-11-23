@@ -16,11 +16,12 @@ struct GrowthCalendarView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
+                    BayPostmarkEdge()
                     HStack {
                         Button { move(-1) } label: { Image(systemName: "chevron.left") }
                             .accessibilityLabel("上个月")
                         Spacer()
-                        Text(month.formatted(.dateTime.year().month())).font(.headline)
+                        Text(month.formatted(.dateTime.year().month())).font(BayUI.type(20))
                         Spacer()
                         Button { move(1) } label: { Image(systemName: "chevron.right") }
                             .disabled(cal.isDate(month, equalTo: Date(), toGranularity: .month))
@@ -38,7 +39,7 @@ struct GrowthCalendarView: View {
                                         Text("\(index - offset + 1)").font(.subheadline)
                                         Circle().fill(points > 0 ? Palette.green : Color.gray.opacity(0.2)).frame(width: 5, height: 5)
                                     }.frame(maxWidth: .infinity).frame(height: 46)
-                                        .background(cal.isDate(date, inSameDayAs: selected) ? Palette.lime : Color.clear, in: RoundedRectangle(cornerRadius: 12))
+                                        .background(cal.isDate(date, inSameDayAs: selected) ? Palette.lime : Color.clear, in: BayCut())
                                 }.buttonStyle(.plain).disabled(date > Date())
                                     .accessibilityLabel("\(date.formatted(date: .abbreviated, time: .omitted))，\(points)能量")
                             }
@@ -74,29 +75,30 @@ struct GrowthShareView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var image: Image?
     private var card: some View {
-        VStack(spacing: 18) {
-            Text("栖灵 · 每一点坚持，都看得见").font(.subheadline).foregroundStyle(Palette.green)
-            Image("PetStage\(model.stage)").resizable().scaledToFit().frame(height: 240)
-            Text(model.state.petName).font(.largeTitle.bold())
-            Text("Lv.\(1 + model.xp / 100) · \(model.companionStageName)").font(.title3)
-            Text("本周积累 \(model.weekPoints) 能量").font(.headline).foregroundStyle(Palette.green)
-            Text("一起养成好习惯，一起长大").foregroundStyle(.secondary)
-            if model.demo { Text("演示数据").font(.caption).foregroundStyle(.secondary) }
-        }.padding(28).frame(width: 340).background(Palette.background)
+        VStack(alignment: .leading, spacing: 14) {
+            FieldCover(art: "BayJourney", title: model.state.petName, caption: "深圳湾 · 成长明信片", height: 214) {
+                BaySprite(kind: model.companion.rawValue, walking: false, grown: model.stage > 0 || Growth.appearance(model.xp) >= 3)
+                    .frame(width: 116, height: 116)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing).padding(12)
+            }
+            Text("Lv.\(1 + model.xp / 100) · \(model.companionStageName)").font(BayUI.type(19))
+            Text("本周寄出 \(model.weekPoints) 点成长能量").foregroundStyle(BayUI.rust)
+            if model.demo { Text("演示数据").font(.caption) }
+        }.padding(16).frame(width: 320).background(BayUI.paper)
     }
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
                     if let image {
-                        image.resizable().scaledToFit().clipShape(RoundedRectangle(cornerRadius: 24))
+                        image.resizable().scaledToFit().clipShape(BayCut())
                         ShareLink(item: image, preview: SharePreview("我的栖灵伙伴", image: image)) {
                             Label("分享成长卡片", systemImage: "square.and.arrow.up")
-                        }.buttonStyle(.borderedProminent)
+                        }.buttonStyle(BayKey(primary: true))
                     } else { ProgressView("正在生成卡片") }
                     Text("卡片包含伙伴名字、等级与周积分，不包含睡眠和运动明细。").font(.caption).foregroundStyle(.secondary)
                 }.padding(20)
-            }.navigationTitle("晒晒我的伙伴").navigationBarTitleDisplayMode(.inline)
+            }.background(BayUI.paper).navigationTitle("伙伴明信片").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
                 .task {
                     let renderer = ImageRenderer(content: card.environment(\.colorScheme, .light))

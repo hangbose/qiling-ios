@@ -1,67 +1,56 @@
 import SwiftUI
-import UIKit
 
-// Static key poses from the approved concept atlas. This preview deliberately
-// does not change the user's existing pet or award growth for repeated taps.
 struct NewCompanionPreview: View {
     @EnvironmentObject private var model: AppModel
-    @State private var confirmingAdoption = false
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var species = 0
+    @State private var selected = CompanionKind.legacy
     @State private var pose = 0
-    private let names = ["芽芽", "小影"]
-    private let poses = ["摸摸", "开心", "睡觉"]
-    private static let sprites: [[UIImage?]] = {
-        guard let atlas = UIImage(named: "CompanionPoses")?.cgImage else { return [] }
-        let width = atlas.width / 3
-        let height = atlas.height / 2
-        return (0..<2).map { row in
-            (0..<3).map { column in
-                atlas.cropping(to: CGRect(x: column * width, y: row * height,
-                                         width: width, height: height)).map { UIImage(cgImage: $0) }
-            }
-        }
-    }()
+    @State private var confirming = false
+    private let species: [CompanionKind] = [.legacy, .yaya, .xiaoying]
+    private let poses = ["摸摸", "散步", "打盹"]
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
-                    Picker("预览伙伴", selection: $species) {
-                        ForEach(0..<2, id: \.self) { Text(names[$0]).tag($0) }
-                    }.pickerStyle(.segmented)
-                    Text(names[species]).font(.largeTitle.bold())
-                    Text(species == 0 ? "软乎乎的叶耳伙伴" : "爱追光点的小狐狸")
-                        .foregroundStyle(.secondary)
-                    Button {
-                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.2)) { pose = (pose + 1) % 3 }
-                    } label: {
-                        Group {
-                            if Self.sprites.indices.contains(species), let sprite = Self.sprites[species][pose] {
-                                Image(uiImage: sprite).resizable().scaledToFit()
-                            } else {
-                                Image(systemName: "pawprint.fill").resizable().scaledToFit().padding(60)
-                            }
-                        }.frame(maxWidth: .infinity).frame(height: 300)
-                            .contentShape(Rectangle())
-                    }.buttonStyle(.plain)
-                        .accessibilityLabel("\(names[species])，\(poses[pose])，轻点切换姿态")
+                VStack(alignment: .leading, spacing: 18) {
+                    FieldCover(art: "BayPark", title: selected.title, caption: "伙伴图鉴", height: 254) {
+                        Button { pose = (pose + 1) % poses.count } label: {
+                            ZStack(alignment: .topTrailing) {
+                                BaySprite(kind: selected.rawValue, walking: pose == 1 && !reduceMotion)
+                                    .rotationEffect(.degrees(pose == 2 ? -9 : 0))
+                                if pose == 2 { Text("z Z").font(BayUI.type(15)).padding(4).fieldPlate(BayUI.cream) }
+                            }.frame(width: 132, height: 132)
+                        }.buttonStyle(.plain).accessibilityLabel("\(selected.title)，\(poses[pose])，点按切换姿态")
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom).padding(.bottom, 8)
+                    }
+                    HStack(spacing: 8) {
+                        ForEach(species, id: \.rawValue) { kind in
+                            Button { selected = kind; pose = 0 } label: {
+                                VStack(spacing: 2) {
+                                    BaySprite(kind: kind.rawValue, walking: false).frame(height: 48)
+                                    Text(kind.title)
+                                }.frame(maxWidth: .infinity).padding(.vertical, 6)
+                            }.buttonStyle(BayKey(primary: selected == kind)).accessibilityAddTraits(selected == kind ? .isSelected : [])
+                        }
+                    }
                     Picker("互动姿态", selection: $pose) {
-                        ForEach(0..<3, id: \.self) { Text(poses[$0]).tag($0) }
+                        ForEach(poses.indices, id: \.self) { Text(poses[$0]).tag($0) }
                     }.pickerStyle(.segmented)
-                    Text(pose == 0 ? "摸摸收到啦，今天也陪着你。" : pose == 1 ? "见到你就很开心！" : "休息一会儿，醒来再一起玩。")
-                        .font(.headline).multilineTextAlignment(.center)
-                    Button("选择\(names[species])作为主宠") { confirmingAdoption = true }
-                        .buttonStyle(.borderedProminent).disabled(model.demo)
-                    Text("轻点精灵切换姿态。选择主宠会更新伙伴名字，已有经验完整保留；可再次选择。")
-                        .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                }.padding(24)
-            }.background(Palette.background)
-                .confirmationDialog("选择\(names[species])？经验保留，伙伴名字将更新。", isPresented: $confirmingAdoption, titleVisibility: .visible) {
-                    Button("选择\(names[species])") { model.adopt(species == 0 ? .yaya : .xiaoying); dismiss() }
-                }
-                .navigationTitle("认识新伙伴").navigationBarTitleDisplayMode(.inline)
+                    Text(selected == .legacy ? "星澜摇着星星尾巴，等你一起出发。" : selected == .yaya ? "芽芽抖抖长耳朵，从草坡上蹦了下来。" : "小影系好金围巾，沿着路灯去探险。")
+                        .font(.body).softPanel()
+                    Button { confirming = true } label: {
+                        Text(selected == model.companion ? "正在同行" : "带\(selected.title)同行").frame(maxWidth: .infinity)
+                    }.buttonStyle(BayKey(primary: true)).disabled(model.demo || selected == model.companion)
+                    Text(model.demo ? "演示模式可预览伙伴。退出演示后可更换主宠。" : "更换伙伴后保留全部经验，昵称会更新为伙伴的名字。")
+                        .font(.footnote).foregroundStyle(BayUI.muted)
+                }.padding(16)
+            }.background(BayUI.paper).navigationTitle("伙伴图鉴").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { dismiss() } } }
+                .onAppear { selected = model.companion }
+                .confirmationDialog("带\(selected.title)一起走？", isPresented: $confirming, titleVisibility: .visible) {
+                    Button("确认同行") { model.adopt(selected); dismiss() }
+                }
         }
     }
 }
