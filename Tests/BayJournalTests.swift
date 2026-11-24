@@ -2,6 +2,15 @@ import XCTest
 @testable import Qiling
 
 final class BayJournalTests: XCTestCase {
+    func testTrailTricksUsePersonalHabitDaysOrExistingExperience() {
+        XCTAssertEqual(BayTrick.learned(days: 0, xp: 0), .hop)
+        XCTAssertEqual(BayTrick.learned(days: 1, xp: 0), .tracks)
+        XCTAssertEqual(BayTrick.learned(days: 2, xp: 299).next, .fireflies)
+        XCTAssertEqual(BayTrick.learned(days: 0, xp: 300), .fireflies)
+        XCTAssertEqual(BayTrick.learned(days: 5, xp: 0), .constellation)
+        XCTAssertNil(BayTrick.learned(days: 0, xp: 1000).next)
+    }
+
     func testBenchWaitsForPersonalHabitAfterDepartureAndSurvivesAnAbsence() throws {
         var journal = try JSONDecoder().decode(BayJournal.self, from: JSONEncoder().encode(BayJournal()))
         XCTAssertNil(journal.keepsakes)

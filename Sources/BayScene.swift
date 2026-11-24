@@ -23,6 +23,10 @@ struct BayScene: View {
     var buddyGrown = false
     var focusX: Double?
     var onPan: ((Double) -> Void)?
+    var trick: BayTrick = .hop
+    var call: Date?
+    var onCall: (() -> Void)?
+    var petName = ""
     @State private var dragOrigin: Double?
     @Environment(\.accessibilityReduceMotion) private var reduced
     private let walkerX = [0.11, 0.25, 0.51, 0.86]
@@ -58,22 +62,19 @@ struct BayScene: View {
             ZStack {
                 BayPromenade(scene: self, travellers: false, ticks: ticks)
                     .id(district).transition(reduced ? .identity : .opacity)
+                if onCall != nil { BayBreeze(district: district) }
                 BayPromenade(scene: self, travellers: true, ticks: ticks)
                     .id(district).transition(.identity).zIndex(1)
-                if let onPan {
-                    Color.clear.contentShape(Rectangle())
-                        .simultaneousGesture(DragGesture(minimumDistance: 10)
+            }.contentShape(Rectangle())
+                .simultaneousGesture(DragGesture(minimumDistance: 10)
                             .onChanged { drag in
-                                guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
+                                guard let onPan, abs(drag.translation.width) > abs(drag.translation.height) else { return }
                                 if dragOrigin == nil { dragOrigin = layout.cameraLeft }
                                 let start = dragOrigin ?? layout.cameraLeft
                                 let left = min(max(0, start - drag.translation.width), max(0, layout.width - geo.size.width))
                                 onPan((left + geo.size.width * 0.40) / max(1, layout.width))
                             }.onEnded { _ in dragOrigin = nil })
-                        .accessibilityHidden(true).zIndex(2)
-                }
-            }
-        }.clipped().accessibilityLabel("\(BayDistrict.all[district].title)，已点亮 \(stop) 盏路灯")
+        }.clipped()
     }
 
     private var landscape: some View {

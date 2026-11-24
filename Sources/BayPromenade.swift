@@ -99,9 +99,15 @@ struct BayPromenade: View, Animatable {
         let x = guest ? max(0, layout.x - layout.unit * 0.14 / max(1, layout.width)) : layout.x
         let foot = layout.screenPoint(x)
         let size = layout.unit * (guest ? 0.15 : grown ? 0.21 : 0.17)
-        return BaySprite(kind: kind, walking: scene.walking && !reduced, grown: grown, phaseOffset: guest ? 0.19 : 0)
-            .frame(width: size, height: size)
-            .position(x: foot.x, y: foot.y - size * 0.44 + (guest ? layout.height * 0.009 : 0))
+        return Group {
+            if !guest, let summon = scene.onCall {
+                BayLivingPet(kind: kind, size: size, walking: scene.walking, trick: scene.trick,
+                             call: scene.call, summon: summon, name: scene.petName)
+            } else {
+                BaySprite(kind: kind, walking: scene.walking && !reduced, grown: grown, phaseOffset: guest ? 0.19 : 0)
+                    .frame(width: size, height: size)
+            }
+        }.position(x: foot.x, y: foot.y - size * 0.44 + (guest ? layout.height * 0.009 : 0))
     }
 
     private func lamplight(_ layout: BayPromenadeLayout) -> some View {

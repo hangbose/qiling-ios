@@ -33,6 +33,8 @@ struct BayJourneyView: View {
     @State private var editing: BaySouvenir?
     @State private var editDistrict = 0
     @State private var demoPet = "legacy"
+    @State private var lastCall: Date?
+    @State private var learnedMove = false
     private var relay: Bool {
         guard model.bay.relayPaused != true, let code = model.bay.relayCode else { return false }
         return model.demo ? code == "demo" : code == model.state.squadCode
@@ -52,7 +54,15 @@ struct BayJourneyView: View {
     private var shells: Int { model.bay.balance }
     private var souvenirs: [BaySouvenir] { BaySouvenir.catalog.filter { model.bay.owns($0) } }
     private var actor: String { model.demo ? demoPet : model.companion.rawValue }
-    private var grown: Bool { model.bay.days.count >= 5 }
+    private var grown: Bool { model.trailTrick == .constellation }
+    private var petName: String { model.demo ? (CompanionKind(rawValue: actor)?.title ?? "精灵") : model.state.petName }
+    private var growthNote: String {
+        let trick = model.trailTrick
+        if learnedMove { return petName + "学会了「" + trick.title + "」" }
+        guard let next = trick.next else { return "唤一声，" + petName + "会把身边的星星连起来" }
+        let days = max(1, next.days - model.bay.days.count)
+        return "再完成 \(days) 个习惯日，学会「" + next.title + "」"
+    }
     private var corner: BayKeepsakes { model.bay.keepsakes ?? BayKeepsakes() }
     private var friend: BayRelayStep? {
         guard relay else { return nil }
@@ -72,7 +82,10 @@ struct BayJourneyView: View {
             walking: follows && previewFocus == nil && walking, follows: follows, souvenirs: souvenirs,
             district: region, fraction: progress, placements: model.bay.placements ?? [:], keepsakes: corner, grown: grown,
             buddyGrown: friend.map { f in model.bay.relaySteps.filter { $0.key.split(separator: "|").first == f.key.split(separator: "|").first }.count >= 5 } ?? false,
-            focusX: previewFocus ?? (follows ? cameraFocus : nil), onPan: follows && previewFocus == nil ? { cameraFocus = $0 } : nil)
+            focusX: previewFocus ?? (follows ? cameraFocus : nil), onPan: follows && previewFocus == nil ? { cameraFocus = $0 } : nil,
+            trick: model.trailTrick, call: lastCall, onCall: follows && previewFocus == nil ? {
+                lastCall = Date()
+            } : nil, petName: petName)
     }
 
     var body: some View {
@@ -92,6 +105,17 @@ struct BayJourneyView: View {
                 .task { await model.refreshBay() }
                 .onChange(of: phase) { _, value in if value == .active { Task { await model.refreshBay() } } }
                 .task(id: "\(model.demo)|\(route)|\(count)") { await playArrival() }
+                .onChange(of: model.trailTrick) { old, new in
+                    guard new.rawValue > old.rawValue else { return }
+                    learnedMove = true
+                    lastCall = Date()
+                }
+                .task(id: lastCall) {
+                    guard lastCall != nil else { return }
+                    do { try await Task.sleep(for: .seconds(2.6)) } catch { return }
+                    lastCall = nil
+                    learnedMove = false
+                }
                 .sheet(item: $sheet) { item in
                     NavigationStack {
                         Group {
@@ -143,8 +167,12 @@ struct BayJourneyView: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("深圳旅图  \(ticks)/\(area.length) 程 ›").font(.caption.weight(.medium).monospacedDigit()).foregroundStyle(BayUI.blush)
                             Text(area.title).font(BayUI.heading(area.title.count > 4 ? 24 : 30)).foregroundStyle(BayUI.cream)
+                            if litCount < area.stops.count {
+                                Text("下一盏 · " + area.stops[litCount] + "　\((litCount + 1) * area.length / 3 - ticks) 程")
+                                    .font(.caption2.weight(.semibold)).foregroundStyle(BayUI.cream)
+                            }
                         }.padding(.horizontal, 11).padding(.vertical, 7).fieldPlate()
-                    }.buttonStyle(.plain).accessibilityLabel("打开深圳旅图，当前在" + area.title)
+                    }.buttonStyle(.plain).accessibilityHint("打开深圳旅图")
                     Spacer()
                     VStack(alignment: .trailing, spacing: 4) {
                         Button { sheet = .shop } label: {
@@ -181,6 +209,8 @@ struct BayJourneyView: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text(lastEntry).font(.headline.weight(.semibold))
                         Text(voice).font(.subheadline).foregroundStyle(BayUI.muted).lineSpacing(3).fixedSize(horizontal: false, vertical: true)
+                        Label(growthNote, systemImage: "pawprint.fill")
+                            .font(.caption.weight(.medium)).foregroundStyle(BayUI.rust)
                         if !model.demo && !model.state.requestedHealth {
                             Button { Task { await model.connect() } } label: {
                                 Label(model.connectingHealth ? "正在连接…" : "连接 Apple 健康", systemImage: "heart")
@@ -213,8 +243,7 @@ struct BayJourneyView: View {
     }
 
     private var voice: String {
-        if !model.demo && !model.state.requestedHealth && count == 0 { return "记下一件好习惯，精灵就会出发。连接健康后，步数、睡眠和训练也能自动点亮路程。" }
-        if shown == 0 { return "从树荫下出发，点亮深圳的第一盏灯。" }
+        if shown == 0 { return "记下今天的好习惯，陪" + petName + "走第一程。再走 \(area.length / 3) 程，长椅边的灯就亮了。" }
         if visiting != nil || litCount == 3 { return area.notes[max(0, litCount-1)] }
         if fraction != Double(litCount) { return "再走 \((litCount + 1) * area.length / 3 - ticks) 程，到" + area.stops[litCount] + "。" }
         return area.notes[max(0,litCount-1)]
@@ -351,7 +380,7 @@ struct BayJourneyView: View {
                 Button("回到当前进度") { visiting = nil; cameraFocus = nil; sheet = nil }
                 if earnedTrail.lap > 1 || ticks == area.length { Button("收藏这站的明信片") { makeCard(); sheet = .card } }
             }
-            Section(grown ? "同行的精灵 · 已长大" : "同行的精灵 · 再走 \(5-model.bay.days.count) 个习惯日长大") {
+            Section("同行的精灵 · " + model.trailTrick.title) {
                 ForEach([CompanionKind.legacy, .yaya, .xiaoying], id: \.rawValue) { kind in
                     Button {
                         if model.demo { demoPet = kind.rawValue } else { model.adopt(kind) }

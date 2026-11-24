@@ -62,7 +62,7 @@ struct BayBenchView: View {
     @State private var postcard: Image?
     private var corner: BayKeepsakes { model.bay.keepsakes ?? BayKeepsakes() }
     private var ready: Bool { corner.isReady(days: model.bay.days) }
-    private var grown: Bool { model.bay.days.count >= 5 }
+    private var grown: Bool { model.trailTrick == .constellation }
 
     var body: some View {
         ScrollView {

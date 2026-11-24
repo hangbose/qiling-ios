@@ -1,6 +1,8 @@
 import Foundation
 
 extension AppModel {
+    var trailTrick: BayTrick { .learned(days: bay.days.count, xp: demo ? 0 : xp) }
+
     func switchDemoRelay(_ enabled: Bool) {
         guard demo else { return }
         demoBay.relayCode = "demo"

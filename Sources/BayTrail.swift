@@ -1,5 +1,19 @@
 import Foundation
 
+/// Habits and existing companion XP are two ways to learn the same trail tricks.
+/// Only the owner's progress counts, even on a relay route.
+enum BayTrick: Int, CaseIterable {
+    case hop, tracks, fireflies, constellation
+
+    var days: Int { [0, 1, 3, 5][rawValue] }
+    var xp: Int { [0, 50, 300, 1000][rawValue] }
+    var title: String { ["轻轻一跃", "发光脚印", "引来流萤", "点出星座"][rawValue] }
+    var next: Self? { Self(rawValue: rawValue + 1) }
+    static func learned(days: Int, xp: Int) -> Self {
+        allCases.last { days >= $0.days || xp >= $0.xp } ?? .hop
+    }
+}
+
 struct BayDistrict: Identifiable {
     let id: String
     let title: String
