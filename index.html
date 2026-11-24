@@ -11,7 +11,7 @@
 <body>
 <main class="game">
 <div id="journeyPage">
-  <div id="frame" class="scene" tabindex="0" title="左右滑动探索，也可以按方向键" role="img" aria-label="深圳湾海堤，星澜在树荫下等你。">
+  <div id="frame" class="scene" tabindex="0" title="左右滑动探索，也可以按方向键" role="group" aria-label="深圳湾海堤，星澜在树荫下等你。">
     <div id="world" class="world">
       <img id="plate" class="plate" src="assets/Assets.xcassets/BayJourneyWideWest.imageset/trail.jpg" alt="" draggable="false">
       <img id="farPlate" class="plate east" src="assets/Assets.xcassets/BayJourneyWideEast.imageset/trail.jpg" alt="" draggable="false">
@@ -25,15 +25,21 @@
       <img alt="" id="pennant" class="souvenir" hidden src="assets/Assets.xcassets/BayPennant.imageset/sprite.png">
       <img alt="" id="cottage" class="souvenir" hidden src="assets/Assets.xcassets/BayCottage.imageset/sprite.png">
     </div>
+    <div class="breeze" aria-hidden="true"><i></i><i></i><i></i></div>
     <div id="walkers" class="world travelers" aria-hidden="true">
       <img class="pet resting" id="me" alt=""><span class="pet gait" id="me-walk" aria-hidden="true"></span>
       <img class="pet guest resting" id="pal" alt="" hidden><span class="pet guest gait" id="pal-walk" aria-hidden="true" hidden></span>
     </div>
+    <div class="trail-magic" aria-hidden="true">
+      <i class="tracks"></i><i class="firefly f1"></i><i class="firefly f2"></i>
+      <svg class="constellation" viewBox="0 0 100 80"><path d="m12 42 22-23 21 8 15-17 21 23" fill="none" stroke="currentColor"/><g fill="currentColor"><circle cx="12" cy="42" r="2"/><circle cx="34" cy="19" r="2"/><circle cx="55" cy="27" r="2"/><circle cx="70" cy="10" r="2"/><circle cx="91" cy="33" r="2"/></g></svg>
+    </div>
+    <button id="callPet" type="button"><span>唤一声</span></button>
   </div>
   <button class="key" id="follow" hidden>回到精灵</button>
   <button class="key" id="benchEntry" aria-haspopup="dialog">拾起长椅边的白贝</button>
   <header class="hud">
-    <button class="sign" id="atlas" aria-haspopup="dialog"><small id="chapter">深圳路线图 ↗</small><span id="districtName">深圳湾</span></button>
+    <button class="sign" id="atlas" aria-haspopup="dialog"><small id="chapter">深圳路线图 ↗</small><span id="districtName">深圳湾</span><small id="nextLight"></small></button>
     <div class="purse">
       <button class="key wallet" id="wallet" aria-label="海湾小铺，余额 0 枚贝壳" aria-haspopup="dialog">
         <span>小铺</span><canvas class="icon" data-icon="shell" aria-hidden="true"></canvas><span id="balance">0</span>
@@ -47,7 +53,7 @@
     </ol>
     <article class="paper" aria-live="polite" aria-atomic="true">
       <button class="portrait" id="companion" aria-label="选择旅行伙伴" aria-haspopup="dialog"><img id="face" alt=""></button>
-      <div class="dialogue"><h2 id="speaker">星澜在海边等你</h2><p id="voice">长椅边还有个位子。明早一起沿着海堤走吧。</p></div>
+      <div class="dialogue"><h2 id="speaker">星澜在海边等你</h2><p id="voice">长椅边还有个位子。明早一起沿着海堤走吧。</p><small id="trailGrowth"></small></div>
     </article>
     <div class="controls">
       <button id="advance" class="key primary"><canvas class="icon" id="actionIcon" data-icon="foot"></canvas><span id="action">同步昨夜记录</span></button>

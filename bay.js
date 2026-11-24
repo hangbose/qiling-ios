@@ -116,6 +116,10 @@ function camera() {
   haze.style.opacity = Math.min(1, Math.max(0, districts[i].length - displayTicks));
   lamps.forEach((lamp, n) => lamp.classList.toggle("on", displayTicks * 3 >= (n + 1) * districts[i].length));
   frame.style.setProperty("--scene-unit", unit + "px");
+  frame.style.setProperty("--pet-x", (x * width - left) + "px");
+  frame.style.setProperty("--pet-y", (promenadeY(i,x)*height - top) + "px");
+  frame.style.setProperty("--pet-side", (unit * (frame.dataset.trick === "3" ? .21 : .17)) + "px");
+  byId("callPet").hidden = edge < 18 || edge > w - 18;
   byId("follow").hidden = focusX === null;
   byId("follow").style.top = h - 56 + "px";
   byId("benchEntry").style.top = h - 56 + "px";
@@ -233,6 +237,15 @@ function render() {
     d = districts[i],
     ticks = r.at(i),
     lit = Math.floor((3 * ticks) / d.length);
+  const trick = learnedTrick(), nextTrick = trailTricks[trick+1];
+  const previousTrick = frame.dataset.trick;
+  frame.dataset.trick = String(trick);
+  frame.dataset.coast = String(i === 0 || i === 4);
+  byId("callPet").setAttribute("aria-label", "呼唤" + pets[book.pet][0] + "，" + trailTricks[trick].name);
+  byId("trailGrowth").textContent = nextTrick
+    ? "再完成 " + (nextTrick.days - personalDays()) + " 个习惯日，学会「" + nextTrick.name + "」"
+    : "唤一声，" + pets[book.pet][0] + "会把身边的星星连起来";
+  if (previousTrick !== undefined && trick > Number(previousTrick)) callPet(true);
   const crossing = shown >= 0 && i !== shown;
   const advances =
     lastTeam === book.team && lastTotal !== null && r.total > lastTotal && visit === null;
@@ -250,6 +263,7 @@ function render() {
   lastTeam = book.team;
   byId("districtName").textContent = d.name;
   byId("chapter").textContent = "深圳旅图 ↗ · " + ticks + "/" + d.length + " 程";
+  byId("nextLight").textContent = lit < 3 ? "下一盏 · " + d.stops[lit] + "　" + ((lit+1)*d.length/3-ticks) + " 程" : "本站的三盏灯都亮了";
   byId("tide").hidden = i !== 0 && i !== 4;
   byId("face").src = petImg(book.pet, personalDays() >= 5).src;
   setWalker("me", book.pet, personalDays() >= 5, personalDays() >= 5 ? 0.21 : 0.17);
@@ -301,7 +315,7 @@ function render() {
   byId("voice").textContent =
     notice ||
     summary + (ticks === 0
-      ? "试一次手表同步，或记下今天的阅读，向第一盏灯出发。"
+      ? "试同步手表或记一次" + book.habit + "，陪" + name + "沿海堤走第一程。"
       : between
         ? "再走 " + (((lit + 1) * d.length) / 3 - ticks) + " 程，到" + next + "。"
         : d.notes[Math.max(0, lit - 1)]);
@@ -317,6 +331,20 @@ function render() {
   drawIcon(byId("actionIcon"), "foot", true);
   camera();
   if (crossing) revealArrival(i);
+}
+let callTimer;
+function callPet(newTrick = false) {
+  const action = trailTricks[learnedTrick()].name;
+  const tag = byId("callPet").firstElementChild;
+  clearTimeout(callTimer);
+  frame.classList.remove("calling");
+  void frame.offsetWidth;
+  frame.classList.add("calling");
+  tag.textContent = newTrick ? "学会了 · " + action : action;
+  callTimer = setTimeout(() => {
+    frame.classList.remove("calling");
+    tag.textContent = "唤一声";
+  }, 2600);
 }
 reduce.addEventListener("change", () => {
   if (reduce.matches) {
@@ -742,6 +770,7 @@ byId("wallet").onclick = () => {
   byId("shop").showModal();
 };
 byId("advance").onclick = () => walk("watch");
+byId("callPet").onclick = () => callPet();
 byId("benchEntry").onclick = () => showBench();
 byId("mark").onclick = () => walk("manual");
 byId("earning").onclick = teamSheet;
