@@ -243,7 +243,7 @@ function render() {
   frame.dataset.coast = String(i === 0 || i === 4);
   byId("callPet").setAttribute("aria-label", "呼唤" + pets[book.pet][0] + "，" + trailTricks[trick].name);
   byId("trailGrowth").textContent = nextTrick
-    ? "再完成 " + (nextTrick.days - personalDays()) + " 个习惯日，学会「" + nextTrick.name + "」"
+    ? "再记 " + (nextTrick.days - personalDays()) + " 天好习惯，" + pets[book.pet][0] + "就能" + (nextTrick.days === 1 ? "留下发光的脚印" : nextTrick.name) + "。"
     : "唤一声，" + pets[book.pet][0] + "会把身边的星星连起来";
   if (previousTrick !== undefined && trick > Number(previousTrick)) callPet(true);
   const crossing = shown >= 0 && i !== shown;
@@ -315,7 +315,7 @@ function render() {
   byId("voice").textContent =
     notice ||
     summary + (ticks === 0
-      ? "试同步手表或记一次" + book.habit + "，陪" + name + "沿海堤走第一程。"
+      ? "同步手表，或记一次" + book.habit + "，" + name + "就会沿海堤出发。"
       : between
         ? "再走 " + (((lit + 1) * d.length) / 3 - ticks) + " 程，到" + next + "。"
         : d.notes[Math.max(0, lit - 1)]);
@@ -323,8 +323,8 @@ function render() {
   byId("earning").textContent = (book.team ? "小队" : "独行") + " · 第 " + book.day + " 天 ›";
   byId("balance").textContent = walletBalance();
   byId("wallet").setAttribute("aria-label", "小铺，余额 " + walletBalance() + " 贝壳");
-  byId("action").textContent = book.watch && !book.days[book.day] ? "试同步手表" : "试玩下一天";
-  byId("mark").textContent = book.days[book.day] ? "今日已走" : "记" + book.habit;
+  byId("action").textContent = book.watch && !book.days[book.day] ? "模拟手表同步" : "试玩下一天";
+  byId("mark").textContent = book.days[book.day] ? "今天已走一程" : "记一次" + book.habit;
   byId("mark").disabled = !!book.days[book.day];
   renderBenchEntry(i);
   frame.setAttribute("aria-label", d.name + "，已点亮 " + lit + " 处，" + name + "在小径上。");
@@ -372,7 +372,7 @@ function walk(action) {
         : "新的一天，可以点一下记" + book.habit + "。";
   commit(
     personalDays() === 5 && latest?.day === book.day
-      ? "第五个习惯日，" + pets[book.pet][0] + "长大了一点！"
+      ? "你已经记了五天好习惯。" + pets[book.pet][0] + "长大了一点！"
       : message,
   );
 }

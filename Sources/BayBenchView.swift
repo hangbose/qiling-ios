@@ -20,6 +20,7 @@ struct BayBenchArt: View {
     var ringing = false
     var settled = false
     var reacting = false
+    var showLooseGlass = false
 
     var body: some View {
         GeometryReader { geo in
@@ -44,7 +45,10 @@ struct BayBenchArt: View {
                         .frame(width: w * 0.16, height: w * 0.16)
                         .position(x: w * 0.71, y: h * 0.706 - w * 0.08)
                 }
-                if corner.glass == .chime {
+                if showLooseGlass && corner.glass == nil {
+                    Image(systemName: "diamond.fill").font(.system(size: w * 0.03))
+                        .foregroundStyle(Color.mint).position(x: w * 0.54, y: h * 0.75)
+                } else if corner.glass == .chime {
                     Image(systemName: "diamond.fill").font(.system(size: w * 0.022))
                         .foregroundStyle(Color.cyan)
                         .position(x: w * (ringing ? 0.242 : 0.235), y: h * 0.65)
@@ -87,15 +91,16 @@ struct BayBenchView: View {
         switch corner.glass {
         case nil: return name + "低头嗅了嗅。潮水退去的地方，有一片蓝玻璃。"
         case .pocket: return "海玻璃在你手里。挂在风里，还是让它透出一点蓝光？"
-        case .chime: return settled ? name + "一听见昨天的风铃，就举起了前爪。" : "海玻璃碰着白贝，" + name + "竖起了耳朵。"
-        case .lamp: return settled ? "昨晚来了三只萤火虫，今天又多了两只。" : "草尖映着蓝光。三只萤火虫停在灯下。"
+        case .chime: return settled ? name + "又蹲在风铃旁，举起了一只前爪。" : "海玻璃碰着白贝，" + name + "竖起了耳朵。"
+        case .lamp: return settled ? "上次灯下有三只萤火虫，这回有五只了。" : "草尖映着蓝光。三只萤火虫停在灯下。"
         }
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                BayBenchArt(corner: corner, pet: pet, grown: grown, ringing: ringing, settled: settled, reacting: reacting)
+                BayBenchArt(corner: corner, pet: pet, grown: grown, ringing: ringing, settled: settled,
+                            reacting: reacting, showLooseGlass: hasGlassStory)
                     .overlay(alignment: .topLeading) {
                         Text("深圳湾 · 海边长椅").font(BayUI.heading(20)).foregroundStyle(BayUI.cream)
                             .padding(8).fieldPlate().padding(9)
@@ -123,7 +128,8 @@ struct BayBenchView: View {
                             message = route.notes[max(0, corner.level(route) - 1)]
                         }.buttonStyle(BayKey(primary: true))
                     } else {
-                        Text("明天起，手表同步或你记下一个习惯，" + name + "就会带回" + find + "。晚几天来，它也会等你。")
+                        let when = model.keepsakeDay > errand.departure ? "今天" : "明天起"
+                        Text(when + "，手表同步或你记下一个习惯，" + name + "就会带回" + find + "。晚几天来，它也会等你。")
                         if model.demo {
                             Button("试玩下一天") { model.demoBayDay(kind: pet, relay: relay); message = "" }.buttonStyle(BayKey(primary: true))
                         }
@@ -166,7 +172,7 @@ struct BayBenchView: View {
                 }
             } else {
                 if corner.glass != .lamp {
-                    glassButton(corner.glass == .pocket ? "挂上风铃" : "拨一下风铃", x: 0.22, y: 0.84, size: size) { touchGlass(.chime) }
+                    glassButton(corner.glass == .pocket ? "挂到风铃上" : "拨一下风铃", x: 0.22, y: 0.84, size: size) { touchGlass(.chime) }
                 }
                 if corner.glass != .chime {
                     glassButton(corner.glass == .pocket ? "嵌进灯罩" : "碰碰路灯", x: 0.73, y: 0.78, size: size) { touchGlass(.lamp) }

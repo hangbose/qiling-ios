@@ -65,6 +65,25 @@ test("nine finds complete three distinct scenes and the same habit cannot be reu
   assert.equal(game("book.bench.cool=true; benchTile(1).join(',')"),"3,3");
 });
 
+test("sea glass can wait in a pocket and belongs to one decoration across visits", () => {
+  for (const place of ["chime", "lamp"]) {
+    const storage = new Map(), game = start(storage);
+    game("book.bench.shell=true; book.bench.levels.post=2; relay('friend')");
+    assert.equal(game("pickSeaGlass()"), false);
+    game("record('阅读');pickSeaGlass();persist()");
+    const restored = start(storage);
+    assert.equal(restored("book.bench.glass"), "pocket");
+    assert.equal(restored("placeSeaGlass('"+place+"')"), true);
+    restored("book.day++;persist()");
+    const next = start(storage);
+    assert.equal(next("book.day>book.bench.glassDay"), true);
+    assert.equal(next("pickSeaGlass() || placeSeaGlass('other') || placeSeaGlass('"+place+"')"), false);
+    assert.equal(next("readBenchLink('#'+benchLink().split('#')[1]).corner.glass"), place);
+    assert.equal(next("findLevel(outings[2])"), 2);
+    assert.equal(next("walletBalance()"), 50);
+  }
+});
+
 test("a bench invitation is a decorative snapshot and opening it never imports the sender's progress", () => {
   const game = start();
   game("book.bench.shell=true;book.bench.levels={tide:1,light:2,post:1};book.bench.cool=true;book.pet='yaya'");
