@@ -82,15 +82,18 @@ struct BayLivingPet: View {
                     .frame(width: size, height: size)
                     .scaleEffect(x: 1, y: walking || reduced ? 1 : 1 + sin(t * 2) * 0.024, anchor: .bottom)
                     .offset(y: -jump)
-                Text(call == nil ? "唤一声" : trick.title)
-                    .font(.caption2.bold()).fixedSize()
-                    .foregroundStyle(BayUI.ink).padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(BayUI.cream.opacity(0.94), in: Capsule())
-                    .offset(y: -size * 0.65 - jump)
             }
         }.frame(width: size * 1.65, height: size * 2)
         .overlay {
-            Button(action: summon) { Color.clear.frame(width: max(48, size), height: max(48, size * 1.7)).contentShape(Rectangle()) }
+            Text(call == nil ? "唤一声" : trick.title)
+                .font(.caption.weight(.semibold)).fixedSize()
+                .foregroundStyle(BayUI.ink).padding(.horizontal, 6).padding(.vertical, 2)
+                .background(BayUI.cream, in: Capsule())
+                .offset(y: -size * 0.86)
+                .allowsHitTesting(false).accessibilityHidden(true)
+        }
+        .overlay {
+            Button(action: summon) { Color.clear.frame(width: max(48, size), height: max(48, size * 2)).contentShape(Rectangle()) }
                 .buttonStyle(.plain).accessibilityLabel("呼唤" + name + "，" + trick.title)
         }
         .accessibilityElement(children: .contain)

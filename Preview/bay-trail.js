@@ -165,6 +165,14 @@ function walletBalance() {
 function personalDays() {
   return Object.keys(book.days).length;
 }
+const trailTricks = [
+  {days:0, name:"轻轻一跃"}, {days:1, name:"发光脚印"},
+  {days:3, name:"引来流萤"}, {days:5, name:"点出星座"}
+];
+function learnedTrick() {
+  const days = personalDays();
+  return trailTricks.findLastIndex(trick => days >= trick.days);
+}
 const outings = [
   { id: "tide", title: "退潮的小径", finds: ["一枚蓝贝", "两片海玻璃", "珊瑚色坠子"],
     notes: ["蓝贝碰上白贝，听见第一声海风。", "海玻璃碰在一起，多了一对清亮的音。", "坠子接住海风，这串风铃终于齐了。"] },

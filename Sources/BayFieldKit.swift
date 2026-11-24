@@ -25,7 +25,6 @@ struct BayCut: Shape {
 extension View {
     func fieldPlate(_ fill: Color = BayUI.navy, edge: Color = BayUI.rim) -> some View {
         background(BayCut().fill(fill))
-            .shadow(color: BayUI.ink.opacity(0.30), radius: 0, y: 2)
             .overlay(BayCut().stroke(edge, lineWidth: 1))
     }
 }
@@ -35,13 +34,15 @@ struct BayKey: ButtonStyle {
 
     init(primary: Bool = false) { self.primary = primary }
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label.font(.subheadline.weight(.semibold)).monospacedDigit()
+        let fill: Color = !enabled ? BayUI.paper : primary ? BayUI.navy : BayUI.cream
+        return configuration.label.font(.subheadline.weight(.semibold)).monospacedDigit()
             .padding(.horizontal, 11).frame(minHeight: 44)
-            .foregroundStyle(primary ? BayUI.cream : BayUI.ink)
-            .background(BayCut().fill(primary ? BayUI.navy : BayUI.cream))
-            .overlay(BayCut().stroke(primary ? BayUI.ink : BayUI.rim, lineWidth: 1))
-            .shadow(color: BayUI.ink.opacity(0.22), radius: 0, y: configuration.isPressed ? 0 : 2)
-            .offset(y: configuration.isPressed ? 2 : 0).opacity(enabled ? 1 : 0.52)
+            .foregroundStyle(!enabled ? BayUI.muted : primary ? BayUI.cream : BayUI.ink)
+            .background {
+                BayCut().fill(fill)
+                    .overlay { if configuration.isPressed && enabled { BayCut().fill(BayUI.ink.opacity(0.12)) } }
+            }
+            .overlay(BayCut().stroke(primary && enabled ? BayUI.ink : BayUI.rim, lineWidth: 1))
     }
 }
 

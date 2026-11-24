@@ -6,6 +6,18 @@ const vm = require("node:vm");
 
 const model = readFileSync(path.join(__dirname, "../Preview/bay-trail.js"), "utf8");
 
+test("only personal habit days unlock trail actions, including on previous saves", () => {
+  const storage = new Map(), game = start(storage);
+  game("book.team=true; relay('friend')");
+  assert.equal(game("learnedTrick()"), 0);
+  for (const [day,expected] of [[1,1],[2,1],[5,2],[7,2],[9,3]]) {
+    game("book.day="+day+";record('阅读');record('步行千步');relay('friend')");
+    assert.equal(game("learnedTrick()"), expected);
+  }
+  game("persist()");
+  assert.equal(start(storage)("learnedTrick()"), 3);
+});
+
 test("each habit day covers a visible stretch with room at both ends of every panorama", () => {
   const game = start();
   for (const [width, height] of [[325, 470], [390, 645], [430, 700], [720, 430]]) {
