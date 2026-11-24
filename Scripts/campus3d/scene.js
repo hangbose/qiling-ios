@@ -1,11 +1,13 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
+import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
 
 export const sites = [
-  {name:"桑田广场边", x:-18, z:15},
-  {name:"连廊树下", x:-27, z:0},
-  {name:"楼间小庭院", x:6, z:0},
+  {name:"桑田广场边", x:-18, z:23},
+  {name:"连廊树下", x:-34, z:12},
+  {name:"楼间小庭院", x:4, z:21},
 ];
 export const colors = {jade:0x298c80, apricot:0xbd673f, violet:0x8671b2};
 export const radius = total => total >= 80 ? 7.2 : total >= 50 ? 5.7 : 4.2;
@@ -15,19 +17,27 @@ export function campusScene(host, select, enter, busy) {
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.8));
   renderer.setClearColor(0x000000,0);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
   host.prepend(renderer.domElement);
   const scene=new THREE.Scene(), camera=new THREE.PerspectiveCamera(32,1,.5,700);
   const control=new OrbitControls(camera,renderer.domElement);
-  control.enablePan=false;control.minPolarAngle=.12;control.maxPolarAngle=Math.PI*.46;
+  control.enablePan=false;control.minPolarAngle=.12;control.maxPolarAngle=Math.PI*.51;
   control.addEventListener("change",requestDraw);
-  scene.add(new THREE.HemisphereLight(0xfff4dc,0xbec7ad,2.15));
-  const sun=new THREE.DirectionalLight(0xffe1b1,2.45);
+  const skyBytes=Uint8Array.from(atob(document.getElementById("coastalSky").textContent.trim()),ch=>ch.charCodeAt(0));
+  const hdr=new HDRLoader().parse(skyBytes.buffer);
+  const sky=new THREE.DataTexture(hdr.data,hdr.width,hdr.height,THREE.RGBAFormat,hdr.type);
+  sky.flipY=true;sky.colorSpace=THREE.LinearSRGBColorSpace;sky.mapping=THREE.EquirectangularReflectionMapping;sky.needsUpdate=true;
+  const pmrem=new THREE.PMREMGenerator(renderer);
+  scene.environment=pmrem.fromEquirectangular(sky).texture;scene.environmentIntensity=.56;
+  pmrem.dispose();
+  scene.add(new THREE.HemisphereLight(0xe1ebee,0xb6aa91,1.00));
+  const sun=new THREE.DirectionalLight(0xffe6c9,2.7);
   sun.position.set(-68,110,62);sun.castShadow=true;
   Object.assign(sun.shadow.camera,{left:-92,right:92,top:90,bottom:-90,far:300});
   sun.shadow.mapSize.set(1024,1024);sun.shadow.bias=-.00065;sun.shadow.normalBias=.11;scene.add(sun);
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(1200,1200),new THREE.ShadowMaterial({opacity:.16}));
   floor.rotation.x=-Math.PI/2;floor.position.y=-3.45;floor.receiveShadow=true;scene.add(floor);
-  const assets={}, promises={}, loader=new GLTFLoader();
+  const assets={}, promises={}, loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   let current="Zhili",selected=0,plotRows=[],prior=[],history=false,frame=0,revision=0;
   const marks=new THREE.Group();scene.add(marks);
   const chip=document.createElement("button");chip.className="place-label";host.append(chip);
@@ -36,9 +46,10 @@ export function campusScene(host, select, enter, busy) {
   function draw(){
     frame=0;
     const wide=current==="Yuehai";
-    chip.hidden=!assets[current]?.visible;
     const s=sites[selected],p=new THREE.Vector3(wide?29:s.x,wide?3:2,wide?18:s.z);
+    camera.updateMatrixWorld();
     p.project(camera);
+    chip.hidden=!assets[current]?.visible||p.z < -1||p.z > 1||Math.abs(p.x)>1||Math.abs(p.y)>1;
     chip.style.left=(50+50*p.x)+"%";chip.style.top="calc("+(50-50*p.y)+"% - 12px)";
     chip.textContent=wide?"致理楼 ↗":s.name;
     renderer.render(scene,camera);
@@ -74,9 +85,20 @@ export function campusScene(host, select, enter, busy) {
     stopFlight();
     const wide=current==="Yuehai";
     const scale=Math.max(1,1.25/Math.max(.5,camera.aspect));
-    camera.position.copy(wide?new THREE.Vector3(38,147,144):new THREE.Vector3(-70,70,108)).multiplyScalar(scale);
-    control.target.set(0,wide?0:4,0);control.minDistance=wide?72:23;control.maxDistance=340;
+    camera.fov=wide?32:35;camera.updateProjectionMatrix();
+    scene.background=null;
+    camera.position.copy(wide?new THREE.Vector3(38,147,144):new THREE.Vector3(-38,33,105)).multiplyScalar(scale);
+    control.target.set(0,wide?0:16,0);control.minDistance=wide?72:14;control.maxDistance=340;
     control.update();requestDraw();
+  }
+  function entrance(){
+    if(current!=="Zhili")return;
+    stopFlight();
+    scene.background=sky;scene.backgroundIntensity=.66;
+    const aspect=Math.max(.6,camera.aspect);
+    camera.fov=THREE.MathUtils.radToDeg(2*Math.atan((36/46)/Math.min(2.28,aspect)));
+    camera.updateProjectionMatrix();camera.position.set(.15,3.35,43);
+    control.target.set(.55,6.25,2);control.update();requestDraw();
   }
   async function load(which){
     if(!promises[which]) promises[which]=(async()=>{
@@ -165,5 +187,5 @@ export function campusScene(host, select, enter, busy) {
     if(hit){let o=hit.object;while(o&&o.userData.site===undefined)o=o.parent;if(o)select(o.userData.site)}
   });
   resize();
-  return {show,reset,focus,update(i,rows,past,showPast){selected=i;plotRows=rows;prior=past;history=showPast;paint()}};
+  return {show,reset,focus,entrance,update(i,rows,past,showPast){selected=i;plotRows=rows;prior=past;history=showPast;paint()}};
 }

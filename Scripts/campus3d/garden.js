@@ -18,14 +18,21 @@ let snapshot=null, site=0, wide=false, showPast=true, editorKey="", waiting=fals
 let canvasError="";
 function modelStatus(text){$("loading").textContent=text;$("loading").hidden=!text}
 function say(text){$("status").textContent=text}
+const study=$("study"),reference=$("campus-photo");
+study.addEventListener("toggle",()=>{
+  if(study.open&&!reference.hasAttribute("src"))reference.src="https://psy.szu.edu.cn/en/images/ba1d0f55f4c605d9ad5a93fcd850442.jpg";
+});
+if(location.hash==="#study"){study.open=true;requestAnimationFrame(()=>study.scrollIntoView())}
 function mapView(value){
   wide=value;$("title").textContent=wide?"粤海校园全景":"致理楼";
+  $("entrance").hidden=wide;
   $("overview").textContent=wide?"走近致理楼":"校园全景";
   if(scene)scene.show(wide?"Yuehai":"Zhili").catch(()=>{});else if(canvasError)modelStatus(canvasError);
 }
 function selectSite(value){site=value;if(wide)mapView(false);say("");paint();scene?.focus(site)}
 try{scene=campusScene($("stage"),selectSite,()=>mapView(false),modelStatus)}catch{canvasError="当前设备暂时无法显示三维模型，可以在下方选择角落。";modelStatus(canvasError)}
 $("overview").onclick=()=>mapView(!wide);$("reset").onclick=()=>scene?.reset();
+$("entrance").onclick=()=>scene?.entrance();
 sites.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s.name;b.onclick=()=>selectSite(i);$("sites").append(b)});
 function loadDay(day){return local.days[day]??={plots:[],habits:{}}}
 function health(board){const habits=board.habits[local.actor]??{};return 20+(habits.steps?25:0)+(habits.workout?35:0)}

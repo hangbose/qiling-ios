@@ -9,10 +9,8 @@ import sys
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
 
-OUT = Path(sys.argv[sys.argv.index("--") + 1])
-OUT.mkdir(parents=True, exist_ok=True)
+OUT = None
 palette = {
     "stone":"e5dfcc", "trim":"faf0d7", "sand":"c9ad87", "pave":"dfceb1", "joint":"c3ae92",
     "glass":"4d7176", "reflect":"92b7b0", "recess":"334c50", "steel":"6a7c73", "roof":"adc2b1",
@@ -30,7 +28,7 @@ def linear(v):
     return n/12.92 if n < .04045 else ((n+.055)/1.055)**2.4
 
 def start():
-    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.ops.wm.read_homefile(use_empty=True, use_factory_startup=True)
     mesh_objects.clear()
     materials.clear()
     rng.seed(90453)
@@ -95,108 +93,12 @@ def tree(x,y,s=1):
     crown(group,rng.choice(["leaf","leaf","tip"]),x-.5*s,y+.25*s,3.5*s,2*s,2.9*s)
     crown(group,"leaf",x+1.25*s,y-.4*s,2.85*s,1.5*s,2.6*s)
 
-def bench(x,y):
-    for dx in (-1.15,1.15):
-        box("Seats","steel",x+dx,y,.12,.18,.85,.64)
-        box("Seats","steel",x+dx,y+.42,.7,.14,.15,.96)
-    for i in range(4):
-        box("Seats","wood",x,y-.36+.23*i,.75,3.1,.18,.11)
-    for i in range(2):
-        box("Seats","wood",x,y+.45,1.12+.26*i,3.1,.12,.19)
-
-def text(group,body,x,y,z,size):
-    data=bpy.data.curves.new(body,'FONT'); data.body=body; data.size=size
-    data.align_x='CENTER';data.extrude=.015;data.materials.append(materials["trim"])
-    obj=bpy.data.objects.new(group+"-"+body,data);bpy.context.collection.objects.link(obj)
-    obj.location=(x,y,z);obj.rotation_euler.x=math.pi/2
-    bpy.context.view_layer.objects.active=obj;obj.select_set(True)
-    bpy.ops.object.convert(target="MESH");obj.select_set(False)
-
-def wing(group,x,y,w,d,floors):
-    floor=2.55; bottom=3.15; height=bottom+floor*floors
-    box(group,"pave",x,y,.14,w+2,d+1.8,.3)
-    box(group,"recess",x,y+.5,.43,w*.77,d*.65,2.5)
-    for sign in (-1,1):
-        for i in range(round(w/4)+1):
-            xx=x+(w-1)*(i/round(w/4)-.5)
-            box(group,"stone",xx,y+sign*(d/2-.5),.43,.59,.66,2.72)
-    box(group,"glass",x,y,bottom,w-.58,d-.64,height-bottom)
-    for k in range(floors+1):
-        z=bottom+k*floor
-        box(group,"stone",x,y,z,w,d,.48)
-        box(group,"trim",x,y,z+.47,w+.18,d+.18,.12)
-    for sign in (-1,1):
-        for i in range(round(w/2)+1):
-            xx=x+(w-.38)*(i/round(w/2)-.5)
-            box(group,"stone",xx,y+sign*(d/2-.03),bottom,.23,.58,height-bottom+.62)
-            if i%3==0:
-                box(group,"reflect",xx+.55,y+sign*(d/2-.25),bottom+.62,.46,.13,height-bottom-.72)
-        for j in range(round(d/2)+1):
-            yy=y+(d-.38)*(j/round(d/2)-.5)
-            box(group,"stone",x+sign*(w/2-.03),yy,bottom,.58,.24,height-bottom+.62)
-    box(group,"roof",x,y,height+.6,w-.52,d-.52,.12)
-    for sign in (-1,1):
-        box(group,"stone",x,y+sign*(d/2-.18),height+.61,w,.24,.48)
-        box(group,"stone",x+sign*(w/2-.18),y,height+.61,.24,d,.48)
-    box(group,"stone",x-w*.18,y,height+.73,min(5,w*.4),min(4,d*.45),1.55)
-    box(group,"roof",x-w*.18,y,height+2.28,min(5.35,w*.43),min(4.4,d*.48),.18)
-    for i in range(3):
-        box(group,"steel",x+w*.16+i*.94,y,height+.75,.68,1.45,.55)
-    box(group,"clay",x+w*.24,y-d/2-.31,height-3.3,3.4,.32,2.15)
-    text(group,group,x+w*.24,y-d/2-.51,height-2.88,1.53)
-
-def bridge(x,y,w,d,z):
-    box("Gallery","stone",x,y,z,w,d,.33)
-    for sign in (-1,1):
-        yy=y+sign*d/2
-        box("Gallery","reflect",x,yy,z+.33,w,.1,.88)
-        box("Gallery","trim",x,yy,z+1.23,w,.2,.13)
-        for i in range(int(w/2)+1):
-            box("Gallery","steel",x-w/2+w*i/int(w/2),yy,z+.33,.12,.14,2.5)
-    box("Gallery","trim",x,y,z+2.9,w+.3,d+.45,.28)
-
 def finish(name):
     for (group,col),(verts,faces) in mesh_objects.items():
         mesh=bpy.data.meshes.new(group+"-"+col);mesh.from_pydata(verts,[],faces);mesh.update()
         ob=bpy.data.objects.new(mesh.name,mesh);bpy.context.collection.objects.link(ob);mesh.materials.append(materials[col])
     bpy.ops.export_scene.gltf(filepath=str(OUT/(name+".glb")),export_format="GLB",export_materials="EXPORT",
                               export_animations=False,export_cameras=False,export_lights=False)
-
-def campus_block():
-    start()
-    outline=[(-54,-32),(-49,-38),(45,-38),(53,-30),(53,30),(46,37),(-46,37),(-54,29)]
-    prism("Site","rim",outline,-3.2,2.4);prism("Site","base",outline,-.8,.8)
-    prism("Site","lawn",[(x*.988,y*.985) for x,y in outline],0,.13)
-    box("Walks","pave",-1,-13,.13,91,17,.08)
-    box("Walks","pave",-15,6,.13,13,43,.08)
-    box("Walks","pave",7,6,.13,32,22,.08)
-    for i in range(-45,44,3):
-        line("Walks","joint",i,-21,i,-5,.048,.213,.01)
-    for j in range(-20,-4,3):
-        line("Walks","joint",-45,j,43,j,.048,.213,.011)
-    wing("L1",-11,17,39,10,6)
-    wing("L2",26,10,11,34,7)
-    wing("L3",18,-13,24,9,5)
-    bridge(14.3,16,12.5,4,6.85);bridge(26,-6.9,6.3,3.8,7.65)
-    for n in range(4):
-        box("Entry","stone",9,-18.6-n*.42,.2,8.2,.5,max(.12,.6-n*.14))
-    for x,y in [(-38,-28),(-29,-28),(-20,-28),(-10,-28),(0,-28),(11,-29),(22,-29),(39,-26),
-                (-45,-15),(-46,-4),(-44,8),(-42,20),(-32,28),(-20,29),(-7,29),(7,29),(20,29),(36,26),
-                (43,15),(43,5),(43,-7),(-28,3),(1,7),(5,4)]:
-        tree(x,y,rng.uniform(.78,1.2))
-    for x,y in [(-30,-8),(-3,-7),(4,10),(39,-13),(-35,14)]:
-        box("Garden","stone",x,y,.14,8,2,.5);box("Garden","soil",x,y,.64,7.6,1.6,.09)
-        for n in range(10):
-            crown("Garden",rng.choice(["leaf","petal","petal"]),x-3.4+n*.75,y,.7,.64,.95)
-    for x,y in [(-32,-10),(-19,-10),(-3,-9),(1,1),(9,1),(-27,10)]:
-        bench(x,y)
-    for x in [-35,-12,9,34]:
-        prism("Lighting","steel",oval(x,-23,.13,.13,8),.13,3.7)
-        box("Lighting","ink",x+.47,-23,3.8,1.15,.45,.15)
-        box("Lighting","yellow",x+.72,-23,3.71,.55,.4,.09)
-    # A row of stepping stones and seating along the tree-lined approach.
-    for i in range(21):box("Walks","sand",-47+i*4.5,-24,.14,3.6,1.4,.075)
-    finish("Zhili")
 
 def overview():
     start()
@@ -231,5 +133,10 @@ def overview():
         tree(x,y,rng.uniform(.30,.52))
     finish("Yuehai")
 
-campus_block()
-overview()
+if __name__ == "__main__":
+    OUT = Path(sys.argv[sys.argv.index("--") + 1])
+    OUT.mkdir(parents=True, exist_ok=True)
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import zhili
+    zhili.build(OUT)
+    overview()
