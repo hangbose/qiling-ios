@@ -284,7 +284,11 @@ dialog::backdrop { background:#252638ad }
 #benchEntry {position:absolute;left:12px;min-height:42px;font-size:15px;border-left:4px solid var(--rust);background:#fff7e9}
 #benchProps canvas {position:absolute;width:calc(var(--scene-unit) * .12);transform:translate(-50%,-100%);image-rendering:pixelated}
 .bench-scene {display:block;width:100%;height:auto;image-rendering:pixelated;border:1px solid var(--rule)}
-.bench-note {width:100%;font-size:14px;color:var(--rust)}
+.bench-map {position:relative;width:100%}
+.glass-target {position:absolute;transform:translate(-50%,-50%);background:transparent;color:var(--ink);border:0;padding:0 5px;min-height:44px;min-width:44px;font:600 14px/1.3 var(--ui);isolation:isolate;white-space:nowrap}
+.glass-target::before {content:"";position:absolute;z-index:-1;inset:8px 0;background:#fff8e8;border:1px solid var(--rule)}
+.glass-target.pick {left:54%;top:83%}.glass-target.chime {left:22%;top:84%}.glass-target.lamp {left:73%;top:78%}
+.bench-note {width:100%;font-size:15px;line-height:1.5;color:var(--ink)}
 .bench-note:empty {display:none}
 #choices:has(.bench-scene) h3 {color:var(--navy);font:600 18px/1.45 var(--ui);margin:6px 0 2px}
 #choices .bench-status {margin:0 0 5px;font-size:15px}

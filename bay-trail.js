@@ -182,6 +182,17 @@ const outings = [
     notes: ["长椅旁有了自己的信箱。可以寄张海湾明信片。", "海鸥邮戳落在了你的明信片上。", "小红旗升起来了，今天也有一封海边来信。"] },
 ];
 function findLevel(route) { return book.bench.levels[route.id] || 0; }
+function pickSeaGlass() {
+  if (!book.bench.shell || !personalDays() || book.bench.glass) return false;
+  book.bench.glass = "pocket";
+  return true;
+}
+function placeSeaGlass(place) {
+  if (book.bench.glass !== "pocket" || !["chime", "lamp"].includes(place)) return false;
+  book.bench.glass = place;
+  book.bench.glassDay = book.day;
+  return true;
+}
 function sendOuting(route) {
   if (!book.bench.shell || book.bench.errand || findLevel(route) >= route.finds.length) return false;
   book.bench.errand = { id: route.id, departure: Math.max(book.day, book.bench.lastUsed) };
@@ -211,13 +222,16 @@ function keepsakeTile(corner,row) {
   return row === 1 && corner.cool ? [level,3] : [level-1,row];
 }
 function benchLink() {
-  const code = [book.pet,Number(personalDays()>=5),...outings.map(findLevel),Number(book.bench.cool)].join(".");
+  const parts = [book.pet,Number(personalDays()>=5),...outings.map(findLevel),Number(book.bench.cool)];
+  if (["chime","lamp"].includes(book.bench.glass)) parts.push(book.bench.glass === "chime" ? "c" : "l");
+  const code = parts.join(".");
   return "https://hangbose.github.io/qiling-ios/#bench=" + code;
 }
 function readBenchLink(hash) {
-  const match = /^#bench=(legacy|yaya|xiaoying)\.([01])\.([0-3])\.([0-3])\.([0-3])\.([01])$/.exec(hash);
+  const match = /^#bench=(legacy|yaya|xiaoying)\.([01])\.([0-3])\.([0-3])\.([0-3])\.([01])(?:\.([cl]))?$/.exec(hash);
   if (!match) return null;
   return {pet:match[1],grown:match[2]==="1",corner:{shell:true,cool:match[6]==="1",
+    glass:match[7] === "c" ? "chime" : match[7] === "l" ? "lamp" : null,
     levels:{tide:Number(match[3]),light:Number(match[4]),post:Number(match[5])}}};
 }
 function rollCalendar(now = new Date()) {
