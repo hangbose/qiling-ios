@@ -26,6 +26,10 @@ enum BayOuting: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum BayGlass: String, Codable {
+    case pocket, chime, lamp
+}
+
 // Stored in the personal journal. Only a habit on a later local calendar day can bring a find home.
 struct BayKeepsakes: Codable {
     struct Errand: Codable {
@@ -37,6 +41,21 @@ struct BayKeepsakes: Codable {
     var errand: Errand?
     var lastUsedDay: String?
     var seaGlassLamp = false
+    var glass: BayGlass?
+    var glassPlacedOn: String?
+
+    mutating func pickGlass(hasHabit: Bool) {
+        guard hasShell, hasHabit, glass == nil else { return }
+        glass = .pocket
+    }
+    mutating func placeGlass(_ place: BayGlass, on day: String) {
+        guard glass == .pocket, place != .pocket else { return }
+        glass = place
+        glassPlacedOn = day
+    }
+    func glassHasSettled(on day: String) -> Bool {
+        glassPlacedOn.map { day > $0 } ?? false
+    }
 
     func level(_ route: BayOuting) -> Int { min(route.finds.count, max(0, levels[route.rawValue] ?? 0)) }
     var finished: Bool { BayOuting.allCases.allSatisfy { level($0) == $0.finds.count } }
@@ -64,8 +83,9 @@ struct BayKeepsakes: Codable {
     }
     var entry: String {
         if !hasShell { return "拾起长椅边的白贝" }
-        if errand != nil { return "看看精灵的行囊" }
-        return finished ? "回我的海边长椅" : "选一条寻宝小径"
+        if glass == .pocket { return "安放海玻璃" }
+        if errand != nil { return "看看行囊" }
+        return finished ? "回长椅坐坐" : "去长椅寻宝"
     }
     func benchTile(_ route: BayOuting) -> (column: Int, row: Int)? {
         if route == .tide && hasShell && level(.tide) == 0 { return (0, 3) }
@@ -74,7 +94,8 @@ struct BayKeepsakes: Codable {
     func visitURL(pet: String, grown: Bool) -> URL? {
         guard hasShell else { return nil }
         let traveler = ["legacy","yaya","xiaoying"].contains(pet) ? pet : "legacy"
-        let parts = [traveler, grown ? "1" : "0"] + BayOuting.allCases.map { String(level($0)) } + [seaGlassLamp ? "1" : "0"]
+        var parts = [traveler, grown ? "1" : "0"] + BayOuting.allCases.map { String(level($0)) } + [seaGlassLamp ? "1" : "0"]
+        if glass == .chime || glass == .lamp { parts.append(glass == .chime ? "c" : "l") }
         return URL(string: "https://hangbose.github.io/qiling-ios/#bench=" + parts.joined(separator: "."))
     }
 }

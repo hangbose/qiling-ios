@@ -61,9 +61,15 @@ struct BayJourneyView: View {
         if learnedMove { return petName + "学会了「" + trick.title + "」" }
         guard let next = trick.next else { return "唤一声，" + petName + "会把身边的星星连起来" }
         let days = max(1, next.days - model.bay.days.count)
-        return "再完成 \(days) 个习惯日，学会「" + next.title + "」"
+        let move = next == .tracks ? "留下发光的脚印" : next.title
+        return "再记 \(days) 天好习惯，" + petName + "就能" + move + "。"
     }
     private var corner: BayKeepsakes { model.bay.keepsakes ?? BayKeepsakes() }
+    private var benchTitle: String {
+        if corner.isReady(days: model.bay.days) { return "打开寻宝行囊" }
+        if corner.hasShell && corner.glass == nil && !model.bay.days.isEmpty { return "去潮边捡海玻璃" }
+        return corner.entry
+    }
     private var friend: BayRelayStep? {
         guard relay else { return nil }
         return model.bay.relaySteps.last(where: { !$0.key.hasPrefix((model.demo ? "me" : model.bay.relayUser ?? "") + "|") })
@@ -153,7 +159,7 @@ struct BayJourneyView: View {
                     .clipped()
                     .overlay(alignment: .bottomLeading) {
                         Button { sheet = .bench } label: {
-                            Label(corner.isReady(days: model.bay.days) ? "精灵带回了礼物" : corner.entry,
+                            Label(benchTitle,
                                   systemImage: corner.errand == nil ? "fossil.shell" : "bag")
                         }.buttonStyle(BayKey()).padding(12)
                     }
@@ -230,11 +236,11 @@ struct BayJourneyView: View {
                         Button {
                             if habit == "专注" { sheet = .focus } else { model.rewardHabit(habit) }
                         } label: {
-                            Label(model.habitDone(habit) ? "已记" + habit : habit == "专注" ? "开始专注" : habit + "打卡",
+                            Label(model.habitDone(habit) ? "今天已记" + habit : habit == "专注" ? "开始专注" : "记一次" + habit,
                                   systemImage: model.habitDone(habit) ? "checkmark" : habit == "专注" ? "timer" : "plus")
                         }.buttonStyle(BayKey(primary: true)).disabled(model.habitDone(habit))
                     }
-                    Button { sheet = .journal } label: { Text("手记") }.buttonStyle(BayKey())
+                    Button { sheet = .journal } label: { Text("看手记") }.buttonStyle(BayKey())
                     Button { sheet = .travel } label: { Label(relay ? "小队接力" : "结伴同行", systemImage: "person.2") }
                         .buttonStyle(BayKey())
                 }

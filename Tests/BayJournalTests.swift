@@ -2,6 +2,25 @@ import XCTest
 @testable import Qiling
 
 final class BayJournalTests: XCTestCase {
+    func testSeaGlassChoiceSurvivesReloadAndDoesNotConsumeOrAwardASecondHabit() throws {
+        let legacy = Data(#"{"hasShell":true,"levels":{"post":1},"seaGlassLamp":false}"#.utf8)
+        for place in [BayGlass.chime, .lamp] {
+            var corner = try JSONDecoder().decode(BayKeepsakes.self, from: legacy)
+            corner.pickGlass(hasHabit: false)
+            XCTAssertNil(corner.glass)
+            corner.pickGlass(hasHabit: true)
+            corner = try JSONDecoder().decode(BayKeepsakes.self, from: JSONEncoder().encode(corner))
+            XCTAssertEqual(corner.glass, .pocket)
+            corner.placeGlass(place, on: "2026-11-24")
+            corner.pickGlass(hasHabit: true)
+            corner.placeGlass(place == .chime ? .lamp : .chime, on: "2026-11-28")
+            XCTAssertEqual(corner.glass, place)
+            XCTAssertFalse(corner.glassHasSettled(on: "2026-11-24"))
+            XCTAssertTrue(corner.glassHasSettled(on: "2026-11-25"))
+            XCTAssertEqual(corner.level(.post), 1)
+            XCTAssertTrue(corner.visitURL(pet: "legacy", grown: false)!.absoluteString.hasSuffix(place == .chime ? ".c" : ".l"))
+        }
+    }
     func testTrailTricksUsePersonalHabitDaysOrExistingExperience() {
         XCTAssertEqual(BayTrick.learned(days: 0, xp: 0), .hop)
         XCTAssertEqual(BayTrick.learned(days: 1, xp: 0), .tracks)
