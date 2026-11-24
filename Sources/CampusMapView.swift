@@ -7,6 +7,7 @@ struct CampusMapView: View {
     @State private var confirming = false
     @State private var sharingCard = false
     @State private var showingGuide = false
+    @State private var showingGarden = false
     @State private var now = Date()
     private let dayTimer = Timer.publish(every: 30, on: .main, in: .common).autoconnect()
     static func title(_ index: Int) -> String {
@@ -61,6 +62,13 @@ struct CampusMapView: View {
         .toolbarColorScheme(.light, for: .navigationBar)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingGuide) { guide }
+        .sheet(isPresented: $showingGarden) {
+            NavigationStack {
+                CampusGardenView().ignoresSafeArea(.container, edges: .bottom)
+                    .navigationTitle("深大 · 三维校园").navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("完成") { showingGarden = false } } }
+            }
+        }
         .sheet(isPresented: $sharingCard) { CampusShareView() }
         .task {
             await model.refreshCampus()
@@ -91,6 +99,9 @@ struct CampusMapView: View {
                         .font(.caption).foregroundStyle(BayUI.muted)
                 }
                 Spacer()
+                Button { showingGarden = true } label: {
+                    Label("3D 校园", systemImage: "cube").font(.caption.weight(.semibold)).frame(minHeight: 44)
+                }.accessibilityHint("打开致理楼领地")
                 Button { showingGuide = true } label: {
                     Image(systemName: "info.circle").font(.title3).frame(width: 44, height: 44)
                 }.accessibilityLabel("守护规则与校园足迹")
