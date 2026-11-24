@@ -31,7 +31,7 @@ export function campusScene(host, select, enter, busy) {
   let current="Zhili",selected=0,plotRows=[],prior=[],history=false,frame=0,revision=0;
   const marks=new THREE.Group();scene.add(marks);
   const chip=document.createElement("button");chip.className="place-label";host.append(chip);
-  chip.onclick=()=>current==="Yuehai"?enter():select(selected);
+  chip.onclick=()=>current==="Yuehai"?enter():focus(selected);
   function requestDraw(){if(!frame)frame=requestAnimationFrame(draw)}
   function draw(){
     frame=0;
@@ -39,7 +39,7 @@ export function campusScene(host, select, enter, busy) {
     chip.hidden=!assets[current]?.visible;
     const s=sites[selected],p=new THREE.Vector3(wide?29:s.x,wide?3:2,wide?18:s.z);
     p.project(camera);
-    chip.style.left=(50+50*p.x)+"%";chip.style.top=(50-50*p.y)+"%";
+    chip.style.left=(50+50*p.x)+"%";chip.style.top="calc("+(50-50*p.y)+"% - 12px)";
     chip.textContent=wide?"致理楼 ↗":s.name;
     renderer.render(scene,camera);
   }
@@ -52,7 +52,26 @@ export function campusScene(host, select, enter, busy) {
     requestDraw();
   }
   new ResizeObserver(resize).observe(host);
+  let flight=0;
+  function stopFlight(){cancelAnimationFrame(flight);flight=0}
+  control.addEventListener("start",stopFlight);
+  function focus(index){
+    if(current!=="Zhili")return;
+    stopFlight();
+    const s=sites[index],dest=new THREE.Vector3(s.x,1.4,s.z);
+    const eye=dest.clone().add(new THREE.Vector3(-17,18,29));
+    const from=camera.position.clone(),origin=control.target.clone(),start=performance.now();
+    const duration=matchMedia("(prefers-reduced-motion: reduce)").matches?0:480;
+    function move(now){
+      const t=duration?Math.min(1,(now-start)/duration):1;
+      const amount=t*t*(3-2*t);
+      camera.position.lerpVectors(from,eye,amount);control.target.lerpVectors(origin,dest,amount);control.update();requestDraw();
+      if(t<1)flight=requestAnimationFrame(move);
+    }
+    move(start);
+  }
   function reset(){
+    stopFlight();
     const wide=current==="Yuehai";
     const scale=Math.max(1,1.25/Math.max(.5,camera.aspect));
     camera.position.copy(wide?new THREE.Vector3(38,147,144):new THREE.Vector3(-70,70,108)).multiplyScalar(scale);
@@ -125,6 +144,13 @@ export function campusScene(host, select, enter, busy) {
       }
       if(p?.ornament)ornament(p.ornament,group,s.x,s.z);
       if(old&&history)ornament(old.ornament,group,s.x+2.9,s.z+.5,.72);
+      if(p){
+        for(let j=0;j<6;j++){
+          const a=j*Math.PI/3,px=s.x+Math.cos(a)*rad,pz=s.z+Math.sin(a)*rad;
+          primitive("box",0xb89670,px,.52,pz,.22,.65,.22,group);
+          primitive("ball",color,px,.91,pz,.22,.22,.22,group);
+        }
+      }
     }
     requestDraw();
   }
@@ -139,5 +165,5 @@ export function campusScene(host, select, enter, busy) {
     if(hit){let o=hit.object;while(o&&o.userData.site===undefined)o=o.parent;if(o)select(o.userData.site)}
   });
   resize();
-  return {show,reset,update(i,rows,past,showPast){selected=i;plotRows=rows;prior=past;history=showPast;paint()}};
+  return {show,reset,focus,update(i,rows,past,showPast){selected=i;plotRows=rows;prior=past;history=showPast;paint()}};
 }

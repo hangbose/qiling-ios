@@ -23,7 +23,7 @@ function mapView(value){
   $("overview").textContent=wide?"走近致理楼":"校园全景";
   if(scene)scene.show(wide?"Yuehai":"Zhili").catch(()=>{});else if(canvasError)modelStatus(canvasError);
 }
-function selectSite(value){site=value;if(wide)mapView(false);say("");paint()}
+function selectSite(value){site=value;if(wide)mapView(false);say("");paint();scene?.focus(site)}
 try{scene=campusScene($("stage"),selectSite,()=>mapView(false),modelStatus)}catch{canvasError="当前设备暂时无法显示三维模型，可以在下方选择角落。";modelStatus(canvasError)}
 $("overview").onclick=()=>mapView(!wide);$("reset").onclick=()=>scene?.reset();
 sites.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s.name;b.onclick=()=>selectSite(i);$("sites").append(b)});
