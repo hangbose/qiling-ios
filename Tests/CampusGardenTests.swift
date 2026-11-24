@@ -12,7 +12,7 @@ final class CampusGardenTests: XCTestCase {
         view.loadFileURL(entry, allowingReadAccessTo: entry)
         var ready = false
         for _ in 0..<150 {
-            if (try? await view.evaluateJavaScript("typeof window.showGarden === 'function' && !document.getElementById('claim').disabled")) as? Bool == true {
+            if (try? await view.evaluateJavaScript("typeof window.showGarden === 'function' && !document.getElementById('claim').disabled && !document.querySelector('.night-next').disabled && document.querySelector('.night-cube').style.visibility === 'visible'")) as? Bool == true {
                 ready = true
                 break
             }
@@ -20,8 +20,21 @@ final class CampusGardenTests: XCTestCase {
         }
         XCTAssertTrue(ready)
         guard ready else { return }
+        let stop = try await view.callAsyncJavaScript("""
+            const label = document.querySelector('.night-stop');
+            const result = new Promise(resolve => {
+              const observer = new MutationObserver(() => { observer.disconnect(); resolve(label.textContent); });
+              observer.observe(label, { childList: true });
+              setTimeout(() => { observer.disconnect(); resolve(label.textContent); }, 8000);
+            });
+            document.querySelector('.night-next').click();
+            return await result;
+            """, arguments: [:], in: nil, contentWorld: .page)
+        XCTAssertEqual(stop as? String, "窗边长椅 · 2/3")
         let claimed = try await view.evaluateJavaScript("document.getElementById('claim').click(); document.getElementById('claim').textContent")
         XCTAssertEqual(claimed as? String, "我的角落")
+        let showingMap = try await view.evaluateJavaScript("document.getElementById('rain').hidden && !document.getElementById('stage').hidden")
+        XCTAssertEqual(showingMap as? Bool, true)
     }
 
     func testDailyProtectionAndNextDay() throws {

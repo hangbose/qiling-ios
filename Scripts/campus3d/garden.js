@@ -1,4 +1,5 @@
 import {campusScene,sites} from "./scene.js";
+import {nightWalk} from "./corridor.js";
 
 const $=id=>document.getElementById(id);
 const live=window.gardenLive===true;
@@ -23,14 +24,25 @@ study.addEventListener("toggle",()=>{
   if(study.open&&!reference.hasAttribute("src"))reference.src="https://psy.szu.edu.cn/en/images/ba1d0f55f4c605d9ad5a93fcd850442.jpg";
 });
 if(location.hash==="#study"){study.open=true;requestAnimationFrame(()=>study.scrollIntoView())}
+const corridor=nightWalk($("rain"));
+function enterWalk(){
+  $("stage").hidden=true;
+  $("title").textContent="致理楼 · 雨夜连廊";
+  corridor.show();
+}
 function mapView(value){
+  corridor.hide();$("stage").hidden=false;
+  if(!scene&&!canvasError){
+    try{scene=campusScene($("stage"),selectSite,()=>mapView(false),modelStatus);paint()}
+    catch{canvasError="当前设备暂时无法显示三维模型，可以在下方选择角落。"}
+  }
   wide=value;$("title").textContent=wide?"粤海校园全景":"致理楼";
   $("entrance").hidden=wide;
   $("overview").textContent=wide?"走近致理楼":"校园全景";
   if(scene)scene.show(wide?"Yuehai":"Zhili").catch(()=>{});else if(canvasError)modelStatus(canvasError);
 }
-function selectSite(value){site=value;if(wide)mapView(false);say("");paint();scene?.focus(site)}
-try{scene=campusScene($("stage"),selectSite,()=>mapView(false),modelStatus)}catch{canvasError="当前设备暂时无法显示三维模型，可以在下方选择角落。";modelStatus(canvasError)}
+function selectSite(value){site=value;if(wide||$("stage").hidden)mapView(false);say("");paint();scene?.focus(site)}
+$("walk-in").onclick=enterWalk;$("go-garden").onclick=()=>mapView(false);
 $("overview").onclick=()=>mapView(!wide);$("reset").onclick=()=>scene?.reset();
 $("entrance").onclick=()=>scene?.entrance();
 sites.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s.name;b.onclick=()=>selectSite(i);$("sites").append(b)});
@@ -99,7 +111,7 @@ function paint(){
     ["steps","workout"].forEach(k=>$(k).disabled=!!habits[k]);$("swap").textContent="换成"+names[local.actor==="me"?"pal":"me"];}
   scene?.update(site,snapshot.plots,snapshot.previous,showPast);
 }
-$("claim").onclick=()=>send("claim");$("save").onclick=()=>send("decorate",{ornament:$("decor").value,note:$("note").value,tint:$("tint").value});
+$("claim").onclick=()=>{if($("stage").hidden)selectSite(site);send("claim")};$("save").onclick=()=>send("decorate",{ornament:$("decor").value,note:$("note").value,tint:$("tint").value});
 $("histToggle").onclick=()=>{showPast=!showPast;paint()};
 $("sync").onclick=()=>send("refresh",{sync:true});$("refresh").onclick=()=>send("refresh");
 for(const k of ["steps","workout"]){$(k).onclick=()=>{const b=loadDay(dateAt(local.offset));(b.habits[local.actor]??={})[k]=true;const mine=b.plots.find(x=>x.owner===local.actor);if(mine)mine.health=health(b);demoState();say("示例活动已同步。")}}
@@ -109,4 +121,5 @@ function refresh(){if(live){if(!waiting)send("refresh")}else demoState()}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});
 window.addEventListener("storage",e=>{if(!live&&e.key===key&&e.newValue){try{local=JSON.parse(e.newValue);demoState()}catch{}}});
 setInterval(()=>{if(!document.hidden&&(live||snapshot?.day!==dateAt(local.offset)))refresh()},60000);
-mapView(false);refresh();
+if(location.hash==="#garden"||location.hash==="#study")mapView(false);else enterWalk();
+refresh();

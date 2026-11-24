@@ -13,4 +13,12 @@
 
 ## 重建
 
+### 雨夜连廊
+
+用户提供的深夜洗衣房画面作为明暗、材质与镜头尺度的标准。根据[ハヤシモン本人关于此作品的制作记录](https://x.com/hayashimon1/status/2108913484805406859)，先确定人眼高度的空间和构图，再做器物、印刷品、玻璃反光与表面磨损。场景延续致理楼 C 座的校园语境。连廊布局、饮水点、陈设和夜间色温均为游戏创作，室内无现场测绘依据。
+
+用 Python 和 Pillow 执行 `corridor_prints.py <输出目录>/prints`，生成四张原创印刷品。在 Blender 5.1 的新进程中执行 `rain_corridor.py -- <输出目录>`，保存含六组可编辑构件、摄影机和内嵌印刷品的工程。用 Blender 打开该工程并执行 `render_corridor.py -- <输出目录> final`。Cycles 输出入口、公告栏两张透视图，以及三个 4096 × 2048 的球面全景。`corridor_atlas.py <输出目录> <本脚本所在目录>` 将全景转换为移动端使用的 WebP 立方体贴图，需要 NumPy 和 Pillow。每步对应独立的相机位置，三个位置可以环看，上述素材都随试玩页离线保存。
+
+### 致理楼外景
+
 使用 Blender 5.1 运行 `model.py`，在 `--` 后传入 GLB 输出目录。需要含中日韩字形的字体，构建脚本会将楼名转为网格。调用 `zhili.build(output_dir, studio=True)` 还会保存包含相机和材质节点的 Blender 工程。在该工程上运行 `render_views.py` 得到三幅图片。将入口和傍晚两张转换成 `front.webp` 及 `evening.webp`，放在本目录。随后用 `export.cjs` 压缩几何并生成独立的试玩页。
