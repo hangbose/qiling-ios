@@ -10,15 +10,19 @@ const js = buildSync({ entryPoints:[path.join(__dirname,"garden.js")], bundle:tr
   format:"iife", target:["safari17","chrome110"], write:false, legalComments:"inline", nodePaths:[modules] }).outputFiles[0].text;
 let html = fs.readFileSync(path.join(__dirname,"page.html.in"),"utf8");
 html=html.replace("@@sky@@",()=>fs.readFileSync(path.join(__dirname,"coastal-sky.hdr")).toString("base64"));
-for(const photo of ["arrival","front","shelter","evening","corridor-front","corridor-0","corridor-1","corridor-2"]) {
+html=html.replace("@@court-shade@@",()=>fs.readFileSync(path.join(__dirname,"court-shade.png")).toString("base64"));
+for(const photo of ["arrival","front","shelter","evening","street","corridor-front","corridor-0","corridor-1","corridor-2"]) {
   const image=fs.readFileSync(path.join(__dirname,photo+".webp")).toString("base64");
   html=html.replaceAll("@@"+photo+"@@",()=>image);
 }
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(),"zhili-pack-"));
 try {
-  for (const name of ["Zhili","Yuehai"]) {
+  for (const name of ["Zhili","Yuehai","Street"]) {
     const packed=path.join(scratch,name+".glb");
-    execFileSync(process.execPath,[path.join(modules,"gltfpack/cli.js"),"-i",path.join(models,name+".glb"),"-o",packed,"-cc","-vp","16"]);
+    // A millimetre-wide spoke and the 1.2 km horizon share the street asset.
+    // A single integer quantization grid collapses wires and coplanar sign layers.
+    const positions = name === "Street" ? ["-vpf","-vp","16"] : ["-vp","16"];
+    execFileSync(process.execPath,[path.join(modules,"gltfpack/cli.js"),"-i",path.join(models,name+".glb"),"-o",packed,"-cc",...positions]);
     html=html.replace("@@"+name+"@@",()=>fs.readFileSync(packed).toString("base64"));
   }
 } finally {

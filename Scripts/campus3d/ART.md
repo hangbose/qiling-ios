@@ -26,3 +26,11 @@
 ### 致理楼外景
 
 使用 Blender 5.1 运行 `model.py`，在 `--` 后传入 GLB 输出目录。需要含中日韩字形的字体，构建脚本会将楼名转为网格。调用 `zhili.build(output_dir, studio=True)` 还会保存包含相机与内嵌材质的 Blender 工程。加载该工程运行 `render_views.py -- proof` 快速核对画面，省略 `-- proof` 时输出四张成片。将 C-court、C-entry、C-shelter 和 C-evening 依次转为本目录的 `arrival.webp`、`front.webp`、`shelter.webp` 和 `evening.webp`。运行 `export.cjs` 压缩几何并生成独立试玩页。
+
+### 从自行车架走进庭院
+
+把本目录加入 Blender Python 的 `sys.path`，在上一步生成的致理楼工程中运行 `groups = zhili_street.build()`。返回的集合包含通勤自行车、铺地、导向牌、展柜与远景。用 `zhili_street.export(groups, output_dir / "Street.glb")` 导出街景图层。对刚生成的建筑 GLB 执行一次 `zhili_street_leaves.refine_glb(base_dir / "Zhili.glb", output_dir / "Zhili.glb")`，同步入口绿篱。保存工程，选用 `05 | Campus cycle lane` 摄影机渲染首页的 `street.webp`。`export.cjs` 一起读取 `Yuehai.glb`、`Zhili.glb` 和 `Street.glb`。街面试玩从 `#walk/street` 进入，B 座台阶可从 `#walk/steps` 直接进入。
+
+自行车停放的依据是[设计院庭院实拍](https://suiadr.com/u_file/fileUpload/2021-05/10/2021051064218.jpg)中左侧柱边的车轮，通道宽度和台阶前的铺地另据骑行者经过 B 座的现场照片。入口柱牌参照[心理学院的入口照片](https://psy.szu.edu.cn/en/images/ba1d0f55f4c605d9ad5a93fcd850442.jpg)。三辆车的车型、配色和停车架，以及导向牌、展柜、座椅和地下检修件为游戏陈设。展柜图版由项目绘制，楼层用途参照[深大信息中心](https://it.szu.edu.cn/zzjg/xxfwb.htm)。
+
+街面镜头的远景树列和低层楼仅供环境衬景，位置按庭院视线推定。Blender 摄影机和游戏版本复用自行车及建筑几何。游戏另用五块有米制 UV 的草坪和曲面短草降低绘制成本，街景压缩保留浮点坐标，以免车轮辐条和展柜玻璃在缩放时重叠。柱廊地面采用模型烘焙的照度图。修改建筑后，在 Blender 中用 `zhili_court_shade.bake(scene, script_dir / "court-shade.png")` 重新计算，再打包网页。

@@ -15,7 +15,7 @@ const questions=[
 const question=day=>questions[Number(day.slice(-2))%3];
 let local={days:{},actor:"me",offset:0};
 if(!live){try{local=JSON.parse(localStorage.getItem(key))??local}catch{}}
-let snapshot=null, site=0, wide=false, showPast=true, editorKey="", pending=null, scene;
+let snapshot=null, site=0, wide=false, walking=false, showPast=true, editorKey="", pending=null, scene;
 // Late native replies can outlive a page reload as well as a single request.
 let nextRequestId=Date.now()*1000;
 let canvasError="";
@@ -33,7 +33,8 @@ const exterior=$("exterior");
 const shotButtons=exterior.querySelectorAll("[data-shot]");
 for(const button of shotButtons){
   button.addEventListener("click",()=>{
-    exterior.querySelector(".enter-3d").hash="garden/"+button.dataset.shot;
+    exterior.querySelector(".enter-3d").hash="walk/"+button.dataset.shot;
+    exterior.querySelector(".enter-map").hash=button.dataset.shot==="street"?"garden":"garden/"+button.dataset.shot;
     for(const other of shotButtons){
       const selected=button===other;
       other.setAttribute("aria-pressed",String(selected));
@@ -42,36 +43,38 @@ for(const button of shotButtons){
   });
 }
 function showExterior(){
-  corridor.hide();
+  scene?.suspend();walking=false;corridor.hide();
   $("stage").hidden=true;$("scene-header").hidden=true;exterior.hidden=false;
 }
 function enterWalk(){
+  scene?.suspend();walking=false;
   exterior.hidden=true;$("scene-header").hidden=false;$("stage").hidden=true;
   $("title").textContent="致理楼 · 雨夜连廊";
   corridor.show();
 }
-function mapView(value,shot){
+function mapView(value,shot,street=false){
+  walking=street;
   exterior.hidden=true;$("scene-header").hidden=false;corridor.hide();$("stage").hidden=false;
   if(!scene&&!canvasError){
-    try{scene=campusScene($("stage"),selectSite,()=>mapView(false),modelStatus);paint()}
+    try{scene=campusScene($("stage"),selectSite,()=>{location.hash="garden"},modelStatus);paint()}
     catch{canvasError="当前设备暂时无法显示三维模型，可以在下方选择角落。"}
   }
-  wide=value;$("title").textContent=wide?"粤海校园全景":"致理楼";
+  wide=value;$("title").textContent=street?"致理楼 · 步行":wide?"粤海校园全景":"致理楼";
   $("entrance").hidden=wide;
   $("overview").textContent=wide?"走近致理楼":"校园全景";
-  if(scene)scene.show(wide?"Yuehai":"Zhili",shot).catch(()=>{});else if(canvasError)modelStatus(canvasError);
+  if(scene)scene.show(wide?"Yuehai":"Zhili",shot,street).catch(()=>{});else if(canvasError)modelStatus(canvasError);
 }
 function selectSite(value){
   site=value;
-  if($("stage").hidden){
+  if($("stage").hidden||walking||wide){
     // A claim can open the map while the player is still editing below it.
     history.pushState(null,"","#garden");
     mapView(false);
-  }else if(wide)mapView(false);
+  }
   say("");paint();scene?.focus(site);
 }
-$("walk-in").onclick=()=>{location.hash="rain"};
-$("overview").onclick=()=>mapView(!wide);$("reset").onclick=()=>scene?.reset();
+$("street-in").onclick=()=>{location.hash="walk"};
+$("overview").onclick=()=>{location.hash=wide?"garden":"campus"};$("reset").onclick=()=>scene?.reset();
 $("entrance").onclick=()=>scene?.entrance();
 sites.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s.name;b.onclick=()=>selectSite(i);$("sites").append(b)});
 function loadDay(day){return local.days[day]??={plots:[],habits:{}}}
@@ -155,7 +158,7 @@ function paint(){
     ["steps","workout"].forEach(k=>$(k).disabled=!!habits[k]);$("swap").textContent="换成"+names[local.actor==="me"?"pal":"me"];}
   scene?.update(site,snapshot.plots,snapshot.previous,showPast);
 }
-$("claim").onclick=()=>{if($("stage").hidden)selectSite(site);send("claim")};$("save").onclick=()=>send("decorate",{ornament:$("decor").value,note:$("note").value,tint:$("tint").value});
+$("claim").onclick=()=>{if($("stage").hidden||walking||wide)selectSite(site);send("claim")};$("save").onclick=()=>send("decorate",{ornament:$("decor").value,note:$("note").value,tint:$("tint").value});
 $("histToggle").onclick=()=>{showPast=!showPast;paint()};
 $("sync").onclick=()=>send("refresh",{sync:true});$("refresh").onclick=()=>send("refresh");
 for(const k of ["steps","workout"]){$(k).onclick=()=>{const b=loadDay(dateAt(local.offset));(b.habits[local.actor]??={})[k]=true;const mine=b.plots.find(x=>x.owner===local.actor);if(mine)mine.health=health(b);demoState();say("示例活动已同步。")}}
@@ -170,15 +173,26 @@ function route(moveFocus=false){
   switch(location.hash){
     case "#rain":
       enterWalk();target=$("rain");break;
+    case "#walk":
+    case "#walk/street":
+    case "#walk/arrival":
+    case "#walk/front":
+    case "#walk/shelter":
+    case "#walk/gallery":
+    case "#walk/steps":
+      mapView(false,location.hash.split("/")[1]||"street",true);target=$("stage");break;
+    case "#campus":
+      mapView(true);target=$("stage");break;
     case "#garden":
     case "#garden/arrival":
     case "#garden/front":
     case "#garden/shelter":
       mapView(false,location.hash.split("/")[1]);target=$("stage");break;
     case "#study":
-      if($("stage").hidden)mapView(false);
+      if($("stage").hidden||walking)mapView(false);
       study.open=true;target=study.querySelector("summary");break;
     case "#gameplay":
+      if(walking)mapView(false);
       target=$("gameplay");break;
     default:
       showExterior();target=exterior;

@@ -21,7 +21,7 @@ final class CampusGardenTests: XCTestCase {
         view.loadFileURL(entry, allowingReadAccessTo: entry)
         var ready = false
         for _ in 0..<150 {
-            if (try? await view.evaluateJavaScript("typeof window.showGarden === 'function' && !document.getElementById('claim').disabled && !document.getElementById('exterior').hidden && document.getElementById('shot-arrival').naturalWidth > 0")) as? Bool == true {
+            if (try? await view.evaluateJavaScript("typeof window.showGarden === 'function' && !document.getElementById('claim').disabled && !document.getElementById('exterior').hidden && document.querySelector('#shot-street:not([hidden])')?.naturalWidth > 0")) as? Bool == true {
                 ready = true
                 break
             }
@@ -49,6 +49,75 @@ final class CampusGardenTests: XCTestCase {
         XCTAssertEqual(claimed as? String, "我的角落")
         let showingMap = try await view.evaluateJavaScript("document.getElementById('rain').hidden && !document.getElementById('stage').hidden")
         XCTAssertEqual(showingMap as? Bool, true)
+    }
+
+    @MainActor
+    func testBundledStreetWalkEntersTheColonnadeAndReturnsToTheMap() async throws {
+        let entry = try XCTUnwrap(Bundle.main.url(forResource: "CampusGarden", withExtension: "html"))
+        let config = WKWebViewConfiguration()
+        config.websiteDataStore = .nonPersistent()
+        let view = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 844), configuration: config)
+        view.loadFileURL(entry, allowingReadAccessTo: entry)
+        func waitFor(_ condition: String) async throws -> Bool {
+            for _ in 0..<200 {
+                if (try? await view.evaluateJavaScript(condition)) as? Bool == true { return true }
+                try await Task.sleep(nanoseconds: 100_000_000)
+            }
+            return false
+        }
+
+        let ready = try await waitFor("typeof window.showGarden === 'function'")
+        guard ready else { return XCTFail("The bundled campus page did not initialize") }
+        let hasWalk = try await view.evaluateJavaScript("""
+            document.querySelector('#exterior .enter-3d')?.hash === '#walk/street' &&
+            ['Zhili','Street'].every(id => atob(document.getElementById(id)?.textContent.trim().slice(0,16) || '').slice(0,4) === 'glTF')
+            """)
+        guard hasWalk as? Bool == true else { return XCTFail("Missing the walk entry or embedded GLB assets") }
+
+        let supportsWebGL = try await view.evaluateJavaScript("""
+            (() => {
+                const gl = document.createElement('canvas').getContext('webgl2');
+                gl?.getExtension('WEBGL_lose_context')?.loseContext();
+                return Boolean(gl);
+            })()
+            """)
+        _ = try await view.evaluateJavaScript("document.querySelector('#exterior .enter-3d').click()")
+        if supportsWebGL as? Bool != true {
+            let fallback = try await waitFor("""
+                location.hash === '#walk/street' && !document.getElementById('stage').hidden &&
+                /设备暂时无法显示三维模型/.test(document.getElementById('loading').textContent) &&
+                !document.getElementById('claim').disabled
+                """)
+            XCTAssertTrue(fallback, "The garden controls should remain usable without WebGL")
+            return
+        }
+
+        let walking = try await waitFor("""
+            location.hash === '#walk/street' && !!document.querySelector('#stage.walking canvas') &&
+            document.getElementById('loading').hidden
+            """)
+        guard walking else {
+            let status = try await view.evaluateJavaScript("document.getElementById('loading').textContent")
+            return XCTFail("The bundled street scene failed to open: \(status)")
+        }
+        let places = try await view.evaluateJavaScript("""
+            (() => {
+                const label = document.querySelector('.walk-place'), initial = label.textContent;
+                document.querySelector('.walk-help summary').click();
+                const ahead = document.querySelector('[data-walk-command="ahead"]');
+                for (let i = 0; i < 18 && label.textContent === initial; i++) ahead.click();
+                return [initial, label.textContent];
+            })()
+            """)
+        XCTAssertEqual(places as? [String], ["致理楼 · 前庭", "C 座 · 檐下柱廊"])
+        _ = try await view.evaluateJavaScript("document.querySelector('.walk-exit').click()")
+        let onMap = try await waitFor("""
+            location.hash === '#garden' && !document.getElementById('stage').hidden &&
+            !document.getElementById('stage').classList.contains('walk-mode') &&
+            !document.getElementById('stage').classList.contains('walking') &&
+            document.getElementById('loading').hidden
+            """)
+        XCTAssertTrue(onMap, "The player should be able to return to the courtyard map")
     }
 
     @MainActor

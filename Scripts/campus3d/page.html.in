@@ -34,25 +34,53 @@ main:has(.exterior:not([hidden])){max-width:none}
 .folio-actions .enter-3d{background:#254536;color:#fffdf1;border-color:#254536}.folio-actions a:hover{box-shadow:inset 0 0 0 1px currentColor}
 .scene-links{gap:14px;flex-wrap:wrap}.scene-links a{color:var(--pine)}.scene-header{row-gap:2px}.night-tools a{display:inline-flex;align-items:center;min-height:40px;background:#19221edb;color:#fffdf1;border:1px solid #d1d5bd66;padding:6px 12px;border-radius:7px;text-decoration:none;font-size:13px}
 #gameplay:focus,#exterior:focus,#stage:focus,#rain:focus{outline:none}
+#stage.walk-mode{height:clamp(420px,78svh,810px);background:#c8d2d1}
+.walk-ui,.walk-mode .map-tools,.walk-mode>.hint,.walk-mode>.place-label{display:none}
+.walk-mode .walk-ui{display:block}.walk-mode canvas{cursor:grab}.walk-mode canvas:active{cursor:grabbing}
+.walk-top,.walk-nav{position:absolute;display:flex;align-items:center;gap:8px;z-index:2}
+.walk-top{inset:14px 14px auto;justify-content:space-between;pointer-events:none}
+.walk-place,.walk-exit,.walk-help summary,.walk-buttons{background:#192e29ec;color:#fffcf0;border:1px solid #faf8e35c;border-radius:6px}
+.walk-place{font-size:13px;padding:6px 10px}.walk-exit{display:grid;place-items:center;min-height:42px;text-decoration:none;padding:6px 12px;font-size:13px;pointer-events:auto}
+.walk-nav{bottom:16px;right:14px;align-items:flex-end}.walk-help{position:relative}.walk-help summary{padding:7px 12px;min-height:42px;display:flex;align-items:center;cursor:pointer;font-size:13px;list-style:none}.walk-help summary::-webkit-details-marker{display:none}
+.walk-buttons{position:absolute;bottom:calc(100% + 8px);right:0;width:220px;padding:10px;display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
+.walk-buttons p{grid-column:1/-1;font-size:12px;line-height:1.55}.walk-buttons button{min-height:44px;font-size:13px}.walk-buttons a{display:grid;place-items:center;min-height:40px;color:#fff6da;text-decoration:underline;text-underline-offset:3px;font-size:13px}
+.walk-pad{position:absolute;left:16px;bottom:16px;width:84px;aspect-ratio:1;border:1px solid #fff9;border-radius:50%;background:#21352b85;touch-action:none;user-select:none;-webkit-user-select:none;display:grid;place-items:center;cursor:grab;color:white}
+.walk-pad::before{content:"";position:absolute;inset:9%;border:1px dashed #f0ecd186;border-radius:50%}.walk-nub{width:36%;height:36%;border:1px solid #fff9;border-radius:50%;background:#faf8e2d9;pointer-events:none}
+.walk-keyhint{position:absolute;left:14px;bottom:18px;color:#fffdf2;background:#20312aab;padding:4px 8px;border-radius:4px;font-size:12px;pointer-events:none}
+@media(hover:hover) and (pointer:fine){.walk-pad{display:none}}
+@media(hover:none),(pointer:coarse){.walk-keyhint{display:none}}
+#stage:not(.walking) .walk-nav,#stage:not(.walking) .walk-pad,#stage:not(.walking) .walk-keyhint{visibility:hidden}
+@media(max-width:440px){.shot-switch{flex-wrap:wrap}.walk-top{inset:10px 10px auto}}
 @media(max-width:650px){.folio-head{min-height:54px}.folio-mark{transform:scale(.88);transform-origin:left center;width:21px}.folio-brand{font-size:21px}.folio-image{height:clamp(320px,58svh,550px);object-position:var(--mobile-crop,var(--crop-x,50%)) var(--crop-y,50%)}.folio-caption{gap:10px;bottom:18px}.folio-location{margin-bottom:5px}.folio-credit{font-size:10px}.folio-controls{display:grid;gap:1px;padding-bottom:14px;padding-top:3px}.shot-switch{gap:24px}.folio-actions{gap:8px}.folio-actions a{min-height:44px}.scene-links{gap:10px}.scene-links a{font-size:13px}}
 </style></head><body><main>
 <section id="exterior" class="exterior" tabindex="-1" aria-labelledby="exterior-title">
   <div class="folio-head"><div class="folio-id"><span class="folio-mark" aria-hidden="true"></span><span class="folio-brand">栖灵</span><span class="folio-context">校园漫游</span></div><a href="#gameplay" class="folio-jump">今日角落 <span aria-hidden="true">↓</span></a></div>
   <figure class="folio-frame">
-    <img class="folio-image" id="shot-arrival" src="data:image/webp;base64,@@arrival@@" alt="从庭院望向致理楼教学楼群" style="--mobile-crop:48%;--crop-y:9%">
+    <img class="folio-image" id="shot-street" src="data:image/webp;base64,@@street@@" alt="从人行道望向致理楼 C 座柱廊与停靠的自行车" style="--mobile-crop:47%">
+    <img class="folio-image" id="shot-arrival" src="data:image/webp;base64,@@arrival@@" alt="从庭院望向致理楼教学楼群" style="--mobile-crop:48%;--crop-y:9%" hidden>
     <img class="folio-image" id="shot-front" src="data:image/webp;base64,@@front@@" alt="致理楼 C 座入口正面，横梁下可见立柱与折返楼梯" style="--mobile-crop:54%" hidden>
     <img class="folio-image" id="shot-shelter" src="data:image/webp;base64,@@shelter@@" alt="从致理楼檐下看柱廊与庭院" style="--mobile-crop:51%" hidden>
     <figcaption class="folio-caption"><div><p class="folio-location">深圳大学 · 粤海校区</p><h1 id="exterior-title" class="folio-title">致理楼</h1></div><span class="folio-credit">建筑场景渲染</span></figcaption>
   </figure>
   <div class="folio-controls"><div class="shot-switch" role="group" aria-label="白天建筑渲染机位">
-    <button type="button" data-shot="arrival" aria-controls="shot-arrival" aria-pressed="true">庭院</button>
+    <button type="button" data-shot="street" aria-controls="shot-street" aria-pressed="true">街边</button>
+    <button type="button" data-shot="arrival" aria-controls="shot-arrival" aria-pressed="false">庭院</button>
     <button type="button" data-shot="front" aria-controls="shot-front" aria-pressed="false">入口正面</button>
     <button type="button" data-shot="shelter" aria-controls="shot-shelter" aria-pressed="false">檐下</button>
-  </div><nav class="folio-actions" aria-label="进入校园场景"><a class="enter-3d" href="#garden/arrival">从这里进入三维 <span aria-hidden="true">↗</span></a><a href="#rain">雨夜连廊 <span aria-hidden="true">↗</span></a></nav></div>
+  </div><nav class="folio-actions" aria-label="进入校园场景"><a class="enter-3d" href="#walk/street">走进校园 <span aria-hidden="true">↗</span></a><a class="enter-map" href="#garden">庭院地图</a><a href="#rain">雨夜连廊</a></nav></div>
 </section>
 <header id="scene-header" class="scene-header" hidden><div><p class="area">栖灵 · 深圳大学粤海校区</p><h1 id="title">致理楼</h1></div><nav class="scene-links" aria-label="校园导航"><a href="#exterior">建筑外景</a><a href="#gameplay">今日角落 ↓</a></nav></header>
 <section id="rain" class="night" hidden tabindex="-1" aria-label="致理楼 C 座 · 雨夜连廊"><div class="night-view" tabindex="0" aria-label="雨夜连廊全景，拖动或用方向键环看"><div class="night-cube" aria-hidden="true"></div></div><div class="night-tools"><a id="go-garden" href="#garden">庭院地图 ↗</a></div><div class="night-foot"><div><p class="night-stop" aria-live="polite">入口地垫 · 1/3</p><p class="night-hint">正在展开全景…</p></div><div class="night-steps"><button class="night-prev" disabled>往回走</button><button class="night-next">往前走</button></div></div></section>
-<section id="stage" hidden aria-label="可旋转和缩放的三维校园" style="background:linear-gradient(#c4d6df,#e7e9df 53%,#d3d2c5)"><div class="map-tools"><button id="walk-in">雨夜连廊</button><button id="overview">校园全景</button><button id="entrance">C 座入口</button><button id="reset">复位</button></div><span class="hint">拖动旋转 · 双指或滚轮缩放</span><div id="loading" role="status">正在展开校园模型…</div></section>
+<section id="stage" hidden tabindex="-1" aria-label="三维校园" style="background:linear-gradient(#c4d6df,#e7e9df 53%,#d3d2c5)">
+  <div class="map-tools"><button id="street-in">步行探索</button><button id="overview">校园全景</button><button id="entrance">C 座入口</button><button id="reset">复位</button></div>
+  <span class="hint">拖动旋转 · 双指或滚轮缩放</span>
+  <div class="walk-ui">
+    <div class="walk-top"><span class="walk-place">致理楼 · 前庭</span><a class="walk-exit" href="#garden">返回地图 ↗</a></div>
+    <div class="walk-pad" aria-hidden="true"><span class="walk-nub"></span></div>
+    <span class="walk-keyhint">WASD 移动 · 拖动环看</span>
+    <div class="walk-nav"><details class="walk-help"><summary>步行操作</summary><div class="walk-buttons"><p>拖动画面环看，拖动圆盘移动。键盘可用 WASD 行走，左右方向键转身，Shift 快走。</p>
+    <button type="button" data-walk-command="left">向左转</button><button type="button" data-walk-command="right">向右转</button><button type="button" data-walk-command="ahead">向前一步</button><button type="button" data-walk-command="back">后退一步</button><a href="#walk/steps">从 B 座出发</a><a href="#walk/gallery">从展廊出发</a></div></details></div>
+  </div><div id="loading" role="status">正在展开校园模型…</div></section>
 <div class="panel" id="gameplay" tabindex="-1" role="region" aria-label="今日角落"><div class="row"><small><span id="day"></span> · <span id="mode"></span></small><span class="score" id="score"></span></div>
 <div id="sites" class="options" aria-label="选择活动点"></div>
 <section class="stack"><div class="row"><h2 id="spot">今天的角落</h2><button id="claim" class="primary" disabled>认领到今晚</button></div><p class="sub" id="rule"></p><p id="current"></p></section>
@@ -67,4 +95,4 @@ main:has(.exterior:not([hidden])){max-width:none}
 <details id="demo" class="line" hidden><summary>试玩控制 · 两人和换日</summary><div class="stack"><p class="sub">这里使用本机示例数据。可以替另一位玩家选地，再到明天看看今天留下的东西。</p><div class="tools"><button id="steps">模拟步行 +25</button><button id="workout">模拟锻炼 +35</button><button id="swap">换位体验</button><button id="next">到明天</button></div></div></details>
 <div id="liveControls" class="tools line" hidden><button id="sync">同步今日贡献</button><button id="refresh">刷新校园</button></div>
 <p class="sub">每天北京时间零点重新开放领地，摆设和留言再展出一天。C 座外景参照校园实拍；雨夜连廊的陈设和灯光为游戏创作。</p>
-</div></main><script type="application/octet-stream" id="rain-0">@@corridor-0@@</script><script type="application/octet-stream" id="rain-1">@@corridor-1@@</script><script type="application/octet-stream" id="rain-2">@@corridor-2@@</script><script type="application/octet-stream" id="coastalSky">@@sky@@</script><script type="application/octet-stream" id="Zhili">@@Zhili@@</script><script type="application/octet-stream" id="Yuehai">@@Yuehai@@</script><!--SCRIPT--></body></html>
+</div></main><script type="application/octet-stream" id="rain-0">@@corridor-0@@</script><script type="application/octet-stream" id="rain-1">@@corridor-1@@</script><script type="application/octet-stream" id="rain-2">@@corridor-2@@</script><script type="application/octet-stream" id="coastalSky">@@sky@@</script><script type="application/octet-stream" id="courtShade">@@court-shade@@</script><script type="application/octet-stream" id="Zhili">@@Zhili@@</script><script type="application/octet-stream" id="Street">@@Street@@</script><script type="application/octet-stream" id="Yuehai">@@Yuehai@@</script><!--SCRIPT--></body></html>
