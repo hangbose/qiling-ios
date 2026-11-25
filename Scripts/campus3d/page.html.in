@@ -49,6 +49,10 @@ main:has(.exterior:not([hidden])){max-width:none}
 .walk-keyhint{position:absolute;left:14px;bottom:18px;color:#fffdf2;background:#20312aab;padding:4px 8px;border-radius:4px;font-size:12px;pointer-events:none}
 @media(hover:hover) and (pointer:fine){.walk-pad{display:none}}
 @media(hover:none),(pointer:coarse){.walk-keyhint{display:none}}
+#stage.loading-model::after{content:"";position:absolute;inset:0;z-index:3;background:#314038 var(--stage-poster) center/cover no-repeat;pointer-events:none}
+#loading{z-index:4;font-size:14px;line-height:1.5;min-width:180px;box-shadow:0 2px 12px #16271c20}
+#loading a{display:inline-block;color:var(--pine);padding:6px 5px;font-size:13px}
+#model-retry{min-height:36px;margin-right:8px;padding:4px 10px;font-size:13px}
 #stage:not(.walking) .walk-nav,#stage:not(.walking) .walk-pad,#stage:not(.walking) .walk-keyhint{visibility:hidden}
 @media(max-width:440px){.shot-switch{flex-wrap:wrap}.walk-top{inset:10px 10px auto}}
 @media(max-width:650px){.folio-head{min-height:54px}.folio-mark{transform:scale(.88);transform-origin:left center;width:21px}.folio-brand{font-size:21px}.folio-image{height:clamp(320px,58svh,550px);object-position:var(--mobile-crop,var(--crop-x,50%)) var(--crop-y,50%)}.folio-caption{gap:10px;bottom:18px}.folio-location{margin-bottom:5px}.folio-credit{font-size:10px}.folio-controls{display:grid;gap:1px;padding-bottom:14px;padding-top:3px}.shot-switch{gap:24px}.folio-actions{gap:8px}.folio-actions a{min-height:44px}.scene-links{gap:10px}.scene-links a{font-size:13px}}
@@ -70,7 +74,7 @@ main:has(.exterior:not([hidden])){max-width:none}
   </div><nav class="folio-actions" aria-label="进入校园场景"><a class="enter-3d" href="#walk/street">走进校园 <span aria-hidden="true">↗</span></a><a class="enter-map" href="#garden">庭院地图</a><a href="#rain">雨夜连廊</a></nav></div>
 </section>
 <header id="scene-header" class="scene-header" hidden><div><p class="area">栖灵 · 深圳大学粤海校区</p><h1 id="title">致理楼</h1></div><nav class="scene-links" aria-label="校园导航"><a href="#exterior">建筑外景</a><a href="#gameplay">今日角落 ↓</a></nav></header>
-<section id="rain" class="night" hidden tabindex="-1" aria-label="致理楼 C 座 · 雨夜连廊"><div class="night-view" tabindex="0" aria-label="雨夜连廊全景，拖动或用方向键环看"><div class="night-cube" aria-hidden="true"></div></div><div class="night-tools"><a id="go-garden" href="#garden">庭院地图 ↗</a></div><div class="night-foot"><div><p class="night-stop" aria-live="polite">入口地垫 · 1/3</p><p class="night-hint">正在展开全景…</p></div><div class="night-steps"><button class="night-prev" disabled>往回走</button><button class="night-next">往前走</button></div></div></section>
+<section id="rain" class="night" hidden tabindex="-1" aria-label="致理楼 C 座 · 雨夜连廊"><div class="night-view" tabindex="0" aria-label="雨夜连廊全景，拖动或用方向键环看"><div class="night-cube" aria-hidden="true"></div></div><div class="night-tools"><a id="go-garden" href="#garden">庭院地图 ↗</a></div><div class="night-foot"><div><p class="night-stop" aria-live="polite">入口地垫 · 1/3</p><p class="night-hint">正在展开全景…</p></div><div class="night-steps"><button class="night-retry" hidden>重新载入</button><button class="night-prev" disabled>往回走</button><button class="night-next">往前走</button></div></div></section>
 <section id="stage" hidden tabindex="-1" aria-label="三维校园" style="background:linear-gradient(#c4d6df,#e7e9df 53%,#d3d2c5)">
   <div class="map-tools"><button id="street-in">步行探索</button><button id="overview">校园全景</button><button id="entrance">C 座入口</button><button id="reset">复位</button></div>
   <span class="hint">拖动旋转 · 双指或滚轮缩放</span>
@@ -80,7 +84,7 @@ main:has(.exterior:not([hidden])){max-width:none}
     <span class="walk-keyhint">WASD 移动 · 拖动环看</span>
     <div class="walk-nav"><details class="walk-help"><summary>步行操作</summary><div class="walk-buttons"><p>拖动画面环看，拖动圆盘移动。键盘可用 WASD 行走，左右方向键转身，Shift 快走。</p>
     <button type="button" data-walk-command="left">向左转</button><button type="button" data-walk-command="right">向右转</button><button type="button" data-walk-command="ahead">向前一步</button><button type="button" data-walk-command="back">后退一步</button><a href="#walk/steps">从 B 座出发</a><a href="#walk/gallery">从展廊出发</a></div></details></div>
-  </div><div id="loading" role="status">正在展开校园模型…</div></section>
+  </div><div id="loading"><span id="loading-label" role="status">正在展开校园模型…</span><div><button type="button" id="model-retry" hidden>重新载入</button><a href="#exterior">返回建筑外景</a></div></div></section>
 <div class="panel" id="gameplay" tabindex="-1" role="region" aria-label="今日角落"><div class="row"><small><span id="day"></span> · <span id="mode"></span></small><span class="score" id="score"></span></div>
 <div id="sites" class="options" aria-label="选择活动点"></div>
 <section class="stack"><div class="row"><h2 id="spot">今天的角落</h2><button id="claim" class="primary" disabled>认领到今晚</button></div><p class="sub" id="rule"></p><p id="current"></p></section>

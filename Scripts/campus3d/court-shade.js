@@ -4,10 +4,11 @@ import * as THREE from "three";
 // low curbs. Matching in world space keeps the stone joints and the shade aligned
 // across both exported roots, including gltfpack's instanced geometry.
 export async function loadCourtShade(renderer) {
-  const source=document.getElementById("courtShade")?.textContent.trim();
-  if(!source||source.startsWith("@@"))return null;
+  const tag=document.getElementById("courtShade"),source=tag?.textContent.trim();
+  const url=tag?.dataset.src||(source&&!source.startsWith("@@")?"data:image/png;base64,"+source:null);
+  if(!url)return null;
   try{
-    const texture=await new THREE.TextureLoader().loadAsync("data:image/png;base64,"+source);
+    const texture=await new THREE.TextureLoader().loadAsync(url);
     const image=texture.image, limit=Math.min(renderer.capabilities.maxTextureSize,matchMedia("(pointer:coarse)").matches?1024:2048);
     if(Math.max(image.width,image.height)>limit){
       const scale=limit/Math.max(image.width,image.height), canvas=document.createElement("canvas");
@@ -19,7 +20,7 @@ export async function loadCourtShade(renderer) {
     // PNG rows start at the north edge. Texture flipY places v=0 at the south.
     texture.flipY=true;texture.needsUpdate=true;
     return texture;
-  }catch{return null}
+  }catch(error){if(tag?.dataset.src)throw error;return null}
 }
 const groundFinishes=new Set(["paver1","paver2","paver3","sand","kerb","meadow","loam","granite","granite2","stairrose","stairrose2","stairnosing","Cycle finish | Distant paving"]);
 export function shadeGround(root,texture){

@@ -1,5 +1,7 @@
 // Six perspective-correct Cycles views per position. CSS compositing keeps the
 // photographic lighting available offline without a second WebGL context.
+import {imageAsset} from "./asset-source.js";
+
 const stops = ["入口地垫", "窗边长椅", "公告栏旁"];
 
 export function nightWalk(host) {
@@ -8,7 +10,8 @@ export function nightWalk(host) {
   const status = host.querySelector(".night-stop");
   const previous = host.querySelector(".night-prev");
   const next = host.querySelector(".night-next");
-  const hint = host.querySelector(".night-hint");
+  const hint = host.querySelector(".night-hint"),retry=host.querySelector(".night-retry");
+  let failedStop=0;
   const faces = ["", "rotateY(-90deg)", "rotateY(180deg)", "rotateY(90deg)", "rotateX(-90deg)", "rotateX(90deg)"];
   faces.forEach((direction, index) => {
     const face = document.createElement("div");
@@ -30,7 +33,7 @@ export function nightWalk(host) {
   function load(index) {
     if (!cache.has(index)) {
       const img = new Image();
-      img.src = "data:image/webp;base64,"+document.getElementById("rain-"+index).textContent.trim();
+      img.src = imageAsset("rain-"+index,"image/webp");
       cache.set(index, img.decode().then(()=>img).catch(e=>{cache.delete(index);throw e}));
     }
     return cache.get(index);
@@ -38,7 +41,7 @@ export function nightWalk(host) {
   async function go(index) {
     if(index<0||index>=stops.length)return;
     const id=++request;
-    previous.disabled=true;next.disabled=true;
+    retry.hidden=true;previous.disabled=true;next.disabled=true;hint.textContent="正在展开全景…";
     host.classList.add("moving");
     try {
       const changing=ready&&index!==at;
@@ -55,7 +58,7 @@ export function nightWalk(host) {
       orient();
     } catch {
       if(id!==request||!active)return;
-      hint.textContent="全景未载入，可切换庭院地图";
+      failedStop=index;retry.hidden=false;hint.textContent="全景暂未载入";
     } finally {
       if(id===request&&active) {
         previous.disabled=at===0;next.disabled=at===stops.length-1;
@@ -63,6 +66,7 @@ export function nightWalk(host) {
       }
     }
   }
+  retry.onclick=()=>go(failedStop);
   previous.onclick=()=>go(at-1);next.onclick=()=>go(at+1);
   viewport.addEventListener("pointerdown",e=>{
     if(pointer||!ready||e.button!==0)return;

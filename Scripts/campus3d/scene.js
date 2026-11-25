@@ -3,16 +3,13 @@ import {streetWalk} from "./walk.js";
 import {streetExhibit} from "./exhibit.js";
 import {streetLight} from "./street-light.js";
 import {loadCourtShade,shadeGround} from "./court-shade.js";
+import {readAsset} from "./asset-source.js";
+import {sites} from "./campus-plots.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
 
-export const sites = [
-  {name:"桑田广场边", x:-18, z:23},
-  {name:"连廊树下", x:-34, z:12},
-  {name:"楼间小庭院", x:4, z:21},
-];
 export const colors = {jade:0x298c80, apricot:0xbd673f, violet:0x8671b2};
 export const radius = total => total >= 80 ? 7.2 : total >= 50 ? 5.7 : 4.2;
 // Blender study cameras, in Three's Y-up coordinates. The film offset preserves verticals.
@@ -34,13 +31,18 @@ export function campusScene(host, select, enter, busy) {
   const control=new OrbitControls(camera,renderer.domElement);
   control.enablePan=false;control.minPolarAngle=.12;control.maxPolarAngle=Math.PI*.51;
   control.addEventListener("change",requestDraw);
-  const skyBytes=Uint8Array.from(atob(document.getElementById("coastalSky").textContent.trim()),ch=>ch.charCodeAt(0));
-  const hdr=new HDRLoader().parse(skyBytes.buffer);
-  const sky=new THREE.DataTexture(hdr.data,hdr.width,hdr.height,THREE.RGBAFormat,hdr.type);
-  sky.flipY=true;sky.colorSpace=THREE.LinearSRGBColorSpace;sky.mapping=THREE.EquirectangularReflectionMapping;sky.needsUpdate=true;
-  const pmrem=new THREE.PMREMGenerator(renderer);
-  scene.environment=pmrem.fromEquirectangular(sky).texture;scene.environmentIntensity=.56;
-  pmrem.dispose();
+  let sky=null,skyLoading;
+  function loadSky(){
+    if(!skyLoading)skyLoading=readAsset("coastalSky",recordBytes).then(bytes=>{
+      const hdr=new HDRLoader().parse(bytes);
+      sky=new THREE.DataTexture(hdr.data,hdr.width,hdr.height,THREE.RGBAFormat,hdr.type);
+      sky.flipY=true;sky.colorSpace=THREE.LinearSRGBColorSpace;sky.mapping=THREE.EquirectangularReflectionMapping;sky.needsUpdate=true;
+      const pmrem=new THREE.PMREMGenerator(renderer);
+      scene.environment=pmrem.fromEquirectangular(sky).texture;
+      pmrem.dispose();
+    }).catch(error=>{skyLoading=null;throw error});
+    return skyLoading;
+  }
   const daylight=new THREE.HemisphereLight(0xe1ebee,0xb6aa91,1.0);
   scene.add(daylight);
   const sun=new THREE.DirectionalLight(0xffe6c9,2.7);
@@ -63,7 +65,18 @@ export function campusScene(host, select, enter, busy) {
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(1200,1200),new THREE.ShadowMaterial({opacity:.16}));
   floor.rotation.x=-Math.PI/2;floor.position.y=-3.45;floor.receiveShadow=true;scene.add(floor);
   const assets={}, promises={}, loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-  let courtTexture;
+  let courtTexture, activeDownloads=null;
+  const byteCounts=new Map();
+  function recordBytes(id,n){
+    byteCounts.set(id,n);
+    if(!activeDownloads?.ids.includes(id))return;
+    const {ids,total}=activeDownloads;
+    if(!total)return;
+    const amount=ids.reduce((sum,k)=>sum+Math.min(byteCounts.get(k)||0,Number(document.getElementById(k).dataset.bytes)||0),0);
+    const mb=n=>(n/1000000).toFixed(1);
+    const label=amount===total?"正在准备三维画面…":"正在载入场景 · "+mb(amount)+" / "+mb(total)+" MB";
+    if(activeDownloads.label!==label){activeDownloads.label=label;busy(label)}
+  }
   let current="Zhili",selected=0,plotRows=[],prior=[],history=false,frame=0,revision=0;
   const marks=new THREE.Group();scene.add(marks);
   const chip=document.createElement("button");chip.className="place-label";host.append(chip);
@@ -136,19 +149,17 @@ export function campusScene(host, select, enter, busy) {
   }
   async function load(which){
     if(!promises[which]) promises[which]=(async()=>{
-      const source=document.getElementById(which).textContent.trim();
-      const raw=atob(source),bytes=new Uint8Array(raw.length);
-      for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
-      const shade=which==="Yuehai"?null:(courtTexture??=loadCourtShade(renderer));
-      const [gltf,texture]=await Promise.all([loader.parseAsync(bytes.buffer,""),shade]);
+      const shade=which==="Yuehai"?null:(courtTexture??=loadCourtShade(renderer).catch(error=>{courtTexture=null;throw error}));
+      const model=readAsset(which,recordBytes).then(bytes=>loader.parseAsync(bytes,""));
+      const [gltf,texture]=await Promise.all([model,shade]);
       shadeGround(gltf.scene,texture);
       gltf.scene.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});
       gltf.scene.visible=false;scene.add(gltf.scene);assets[which]=gltf.scene;
-    })();
+    })().catch(error=>{delete promises[which];byteCounts.delete(which);throw error});
     return promises[which];
   }
   function suspend(){
-    ++revision;stopFlight();walker.stop();control.enabled=true;
+    ++revision;activeDownloads=null;stopFlight();walker.stop();control.enabled=true;
     for(const group of marks.children)group.visible=true;
     host.classList.remove("walk-mode");
   }
@@ -158,12 +169,14 @@ export function campusScene(host, select, enter, busy) {
     lightCourt(walking);marks.visible=which==="Zhili";chip.hidden=true;
     Object.values(assets).forEach(o=>o.visible=false);
     reset();
-    if(which==="Zhili" && !walking && Object.hasOwn(cameras,shot))photograph(shot);
+    const ids=which==="Zhili"?["Zhili","Street","coastalSky"]:["Yuehai","coastalSky"];
+    activeDownloads={ids,total:ids.reduce((sum,id)=>sum+Number(document.getElementById(id).dataset.bytes||0),0)};
     requestDraw();
     try {
-      if(which==="Zhili")await Promise.all([load(which),load("Street")]);else await load(which);
+      await Promise.all([loadSky(),load(which),which==="Zhili"?load("Street"):null]);
       if(seq!==revision)return;
-      assets[which].visible=true;if(which==="Zhili")assets.Street.visible=true;
+      activeDownloads=null;assets[which].visible=true;if(which==="Zhili")assets.Street.visible=true;
+      if(which==="Zhili"&&!walking&&Object.hasOwn(cameras,shot))photograph(shot);
       if(walking){
         control.enabled=false;camera.clearViewOffset();camera.near=.1;camera.fov=62;camera.updateProjectionMatrix();
         scene.background=sky;scene.backgroundIntensity=.88;scene.backgroundBlurriness=.13;
@@ -173,7 +186,7 @@ export function campusScene(host, select, enter, busy) {
       }
       renderer.shadowMap.needsUpdate=true;busy("");requestDraw();
     }
-    catch(e){if(seq===revision)busy("模型暂时没有打开，刷新后可以再试。");throw e}
+    catch(e){if(seq===revision){activeDownloads=null;throw e}}
   }
   const solids=new Map(), geometry=new Map();
   function mat(color) {

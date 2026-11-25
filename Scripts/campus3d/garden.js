@@ -1,4 +1,4 @@
-import {campusScene,sites} from "./scene.js";
+import {sites} from "./campus-plots.js";
 import {nightWalk} from "./corridor.js";
 
 const $=id=>document.getElementById(id);
@@ -18,21 +18,34 @@ if(!live){try{local=JSON.parse(localStorage.getItem(key))??local}catch{}}
 let snapshot=null, site=0, wide=false, walking=false, showPast=true, editorKey="", pending=null, scene;
 // Late native replies can outlive a page reload as well as a single request.
 let nextRequestId=Date.now()*1000;
-let canvasError="";
-function modelStatus(text){$("loading").textContent=text;$("loading").hidden=!text}
+let sceneLoading,viewRevision=0,lastView=null,focusWhenReady=null,failedModule=false;
+function modelStatus(text,retry=false){
+  $("loading-label").textContent=text;$("model-retry").hidden=!retry;
+  $("loading").hidden=!text;$("stage").classList.toggle("loading-model",Boolean(text));
+}
+function activateImage(img){
+  if(img?.dataset.src&&(img.getAttribute("src")!==img.dataset.src||(img.complete&&!img.naturalWidth)))img.src=img.dataset.src;
+}
+function sceneForPage(){
+  if(!sceneLoading)sceneLoading=import("./scene.js").catch(error=>{failedModule=true;throw error}).then(({campusScene})=>{
+    scene=campusScene($("stage"),selectSite,()=>{location.hash="garden"},modelStatus);paint();return scene;
+  }).catch(error=>{sceneLoading=null;throw error});
+  return sceneLoading;
+}
 function say(text){$("status").textContent=text}
 const study=$("study"),reference=$("campus-photo");
 study.addEventListener("toggle",()=>{
-  if(study.open&&!reference.hasAttribute("src")){
-    reference.src="https://psy.szu.edu.cn/en/images/ba1d0f55f4c605d9ad5a93fcd850442.jpg";
-    $("study-front").src=$("shot-front").src;
-  }
+  if(!study.open)return;
+  if(!reference.hasAttribute("src"))reference.src="https://psy.szu.edu.cn/en/images/ba1d0f55f4c605d9ad5a93fcd850442.jpg";
+  const front=$("shot-front");$("study-front").src=front.dataset.src||front.src;
+  study.querySelectorAll("img[data-src]").forEach(activateImage);
 });
 const corridor=nightWalk($("rain"));
 const exterior=$("exterior");
 const shotButtons=exterior.querySelectorAll("[data-shot]");
 for(const button of shotButtons){
   button.addEventListener("click",()=>{
+    activateImage($("shot-"+button.dataset.shot));
     exterior.querySelector(".enter-3d").hash="walk/"+button.dataset.shot;
     exterior.querySelector(".enter-map").hash=button.dataset.shot==="street"?"garden":"garden/"+button.dataset.shot;
     for(const other of shotButtons){
@@ -43,35 +56,43 @@ for(const button of shotButtons){
   });
 }
 function showExterior(){
-  scene?.suspend();walking=false;corridor.hide();
+  ++viewRevision;focusWhenReady=null;scene?.suspend();walking=false;corridor.hide();
   $("stage").hidden=true;$("scene-header").hidden=true;exterior.hidden=false;
 }
 function enterWalk(){
-  scene?.suspend();walking=false;
+  ++viewRevision;focusWhenReady=null;scene?.suspend();walking=false;
   exterior.hidden=true;$("scene-header").hidden=false;$("stage").hidden=true;
   $("title").textContent="致理楼 · 雨夜连廊";
   corridor.show();
 }
-function mapView(value,shot,street=false){
-  walking=street;
+async function mapView(value,shot,street=false,focusAfter=null){
+  const id=++viewRevision;
+  lastView=[value,shot,street];focusWhenReady=focusAfter;walking=street;wide=value;
   exterior.hidden=true;$("scene-header").hidden=false;corridor.hide();$("stage").hidden=false;
-  if(!scene&&!canvasError){
-    try{scene=campusScene($("stage"),selectSite,()=>{location.hash="garden"},modelStatus);paint()}
-    catch{canvasError="当前设备暂时无法显示三维模型，可以在下方选择角落。"}
+  $("title").textContent=street?"致理楼 · 步行":wide?"粤海校园全景":"致理楼";
+  $("entrance").hidden=wide;$("overview").textContent=wide?"走近致理楼":"校园全景";
+  const poster=$("shot-"+shot)||$("shot-street");
+  $("stage").style.setProperty("--stage-poster",'url("'+(poster.dataset.src||poster.src)+'")');
+  modelStatus("正在载入三维场景…");
+  try{
+    const view=scene||await sceneForPage();
+    if(id!==viewRevision)return;
+    await view.show(value?"Yuehai":"Zhili",shot,street);
+    if(id===viewRevision&&focusWhenReady!==null){view.focus(focusWhenReady);focusWhenReady=null}
+  }catch{
+    if(id===viewRevision)modelStatus("三维场景暂未载入。",true);
   }
-  wide=value;$("title").textContent=street?"致理楼 · 步行":wide?"粤海校园全景":"致理楼";
-  $("entrance").hidden=wide;
-  $("overview").textContent=wide?"走近致理楼":"校园全景";
-  if(scene)scene.show(wide?"Yuehai":"Zhili",shot,street).catch(()=>{});else if(canvasError)modelStatus(canvasError);
 }
+$("model-retry").onclick=()=>{if(failedModule)location.reload();else if(lastView)mapView(...lastView,focusWhenReady)};
 function selectSite(value){
   site=value;
   if($("stage").hidden||walking||wide){
     // A claim can open the map while the player is still editing below it.
     history.pushState(null,"","#garden");
-    mapView(false);
-  }
-  say("");paint();scene?.focus(site);
+    mapView(false,undefined,false,site);
+  }else if(!$("loading").hidden)focusWhenReady=site;
+  else scene?.focus(site);
+  say("");paint();
 }
 $("street-in").onclick=()=>{location.hash="walk"};
 $("overview").onclick=()=>{location.hash=wide?"garden":"campus"};$("reset").onclick=()=>scene?.reset();
@@ -189,10 +210,10 @@ function route(moveFocus=false){
     case "#garden/shelter":
       mapView(false,location.hash.split("/")[1]);target=$("stage");break;
     case "#study":
-      if($("stage").hidden||walking)mapView(false);
+      if(walking)showExterior();
       study.open=true;target=study.querySelector("summary");break;
     case "#gameplay":
-      if(walking)mapView(false);
+      if(walking)showExterior();
       target=$("gameplay");break;
     default:
       showExterior();target=exterior;

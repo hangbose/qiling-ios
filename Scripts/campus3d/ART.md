@@ -34,3 +34,5 @@
 自行车停放的依据是[设计院庭院实拍](https://suiadr.com/u_file/fileUpload/2021-05/10/2021051064218.jpg)中左侧柱边的车轮，通道宽度和台阶前的铺地另据骑行者经过 B 座的现场照片。入口柱牌参照[心理学院的入口照片](https://psy.szu.edu.cn/en/images/ba1d0f55f4c605d9ad5a93fcd850442.jpg)。三辆车的车型、配色和停车架，以及导向牌、展柜、座椅和地下检修件为游戏陈设。展柜图版由项目绘制，楼层用途参照[深大信息中心](https://it.szu.edu.cn/zzjg/xxfwb.htm)。
 
 街面镜头的远景树列和低层楼仅供环境衬景，位置按庭院视线推定。Blender 摄影机和游戏版本复用自行车及建筑几何。游戏另用五块有米制 UV 的草坪和曲面短草降低绘制成本，街景压缩保留浮点坐标，以免车轮辐条和展柜玻璃在缩放时重叠。柱廊地面采用模型烘焙的照度图。修改建筑后，在 Blender 中用 `zhili_court_shade.bake(scene, script_dir / "court-shade.png")` 重新计算，再打包网页。
+
+iOS 随包保留完整的 `Resources/CampusGarden.html`。发布网页时再运行 `node Scripts/campus3d/web-site.cjs Resources/CampusGarden.html <网站输出目录> <node_modules>`，将生成的 `index.html` 和 `assets/` 放在同一目录。首屏只取街口海报和导航脚本，进入相应场景后再下载模型或全景。
