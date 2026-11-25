@@ -24,14 +24,22 @@ struct CampusGardenView: UIViewRepresentable {
 
     @MainActor final class Coordinator: NSObject, WKScriptMessageHandler {
         let model: AppModel
+        private var lastMutation: Task<Void, Never>?
         init(model: AppModel) { self.model = model }
         func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
             guard message.frameInfo.isMainFrame, message.frameInfo.request.url?.isFileURL == true,
                   let view = message.webView, let args = message.body as? [String: Any],
-                  let action = args["action"] as? String, !model.demo, model.state.campusSharing == true else { return }
-            Task {
+                  let action = args["action"] as? String, let requestID = args["requestId"] as? Int,
+                  !model.demo, model.state.campusSharing == true else { return }
+            // After a timeout a retry or refresh must observe the previous player's
+            // edit. Read-only refreshes need not hold up a subsequent edit.
+            let priorMutation = lastMutation
+            let operation = Task {
+                await priorMutation?.value
                 do {
+                    guard !model.demo, model.state.campusSharing == true else { return }
                     if args["sync"] as? Bool == true { await model.sync() }
+                    guard !model.demo, model.state.campusSharing == true else { return }
                     let (current, past, user) = try await model.campus.gardenSnapshot(action: action,
                         expectedDay: args["day"] as? String ?? "", site: args["site"] as? Int ?? -1,
                         name: model.state.name, health: model.campusScore, ornament: args["ornament"] as? String,
@@ -48,13 +56,14 @@ struct CampusGardenView: UIViewRepresentable {
                     }
                     let snapshot: [String: Any] = ["day":current.day,"health":model.campusScore,"plots":publicRows(current),
                                                    "previous":publicRows(past)]
-                    _ = try await view.callAsyncJavaScript("window.showGarden(snapshot)", arguments: ["snapshot": snapshot],
+                    _ = try await view.callAsyncJavaScript("window.showGarden(snapshot, requestId)", arguments: ["snapshot": snapshot, "requestId": requestID],
                                                         in: nil, contentWorld: .page)
                 } catch {
-                    _ = try? await view.callAsyncJavaScript("window.gardenError(reason)", arguments: ["reason":error.localizedDescription],
+                    _ = try? await view.callAsyncJavaScript("window.gardenError(reason, requestId)", arguments: ["reason":error.localizedDescription, "requestId":requestID],
                                                              in: nil, contentWorld: .page)
                 }
             }
+            if action != "refresh" { lastMutation = operation }
         }
     }
 }

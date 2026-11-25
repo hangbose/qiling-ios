@@ -15,7 +15,9 @@ const questions=[
 const question=day=>questions[Number(day.slice(-2))%3];
 let local={days:{},actor:"me",offset:0};
 if(!live){try{local=JSON.parse(localStorage.getItem(key))??local}catch{}}
-let snapshot=null, site=0, wide=false, showPast=true, editorKey="", waiting=false, pendingAction="", timer, scene;
+let snapshot=null, site=0, wide=false, showPast=true, editorKey="", pending=null, scene;
+// Late native replies can outlive a page reload as well as a single request.
+let nextRequestId=Date.now()*1000;
 let canvasError="";
 function modelStatus(text){$("loading").textContent=text;$("loading").hidden=!text}
 function say(text){$("status").textContent=text}
@@ -72,18 +74,34 @@ function feedback(action){
   if(action==="quiz")say(snapshot?.plots.find(x=>x.mine)?.bonus?"答对了，领地加 5 分。":"答案已收好，明天再来试试。");
 }
 function send(action,extras={}){
-  if(waiting)return;
+  if(pending)return;
   if(!live){demoAction(action,extras);return}
-  waiting=true;pendingAction=action;paint();say("正在同步…");
-  clearTimeout(timer);timer=setTimeout(()=>window.gardenError("暂时没有收到校园回信。请刷新后确认刚才的操作。"),40000);
-  try{window.webkit.messageHandlers.garden.postMessage({action,day:snapshot?.day??"",site,...extras})}
-  catch{window.gardenError("暂时无法连接校园，请刷新。")}
+  const requestId=++nextRequestId;
+  const timer=setTimeout(()=>window.gardenError("暂时没有收到校园回信。请刷新后确认刚才的操作。",requestId),40000);
+  pending={requestId,action,site,timer};
+  paint();say("正在同步…");
+  try{window.webkit.messageHandlers.garden.postMessage({action,day:snapshot?.day??"",site,...extras,requestId})}
+  catch{window.gardenError("暂时无法连接校园，请刷新。",requestId)}
 }
-window.showGarden=data=>{
-  clearTimeout(timer);const action=pendingAction;waiting=false;pendingAction="";snapshot=data;say("");paint();feedback(action);
+function finishRequest(requestId){
+  if(!pending||pending.requestId!==requestId)return null;
+  const completed=pending;
+  clearTimeout(completed.timer);
+  pending=null;
+  return completed;
+}
+window.showGarden=(data,requestId)=>{
+  const completed=finishRequest(requestId);
+  if(!completed)return;
+  snapshot=data;say("");paint();
+  if(completed.site===site)feedback(completed.action);
 };
-window.gardenError=reason=>{clearTimeout(timer);waiting=false;pendingAction="";say(reason);paint()};
+window.gardenError=(reason,requestId)=>{
+  if(!finishRequest(requestId))return;
+  say(reason);paint();
+};
 function paint(){
+  const waiting=pending!==null;
   $("mode").textContent=live?"共享校园":"本机试玩 · "+names[local.actor];
   $("demo").hidden=live;$("liveControls").hidden=!live;
   [...$("sites").children].forEach((b,i)=>b.setAttribute("aria-pressed",String(i===site)));
@@ -117,7 +135,7 @@ $("sync").onclick=()=>send("refresh",{sync:true});$("refresh").onclick=()=>send(
 for(const k of ["steps","workout"]){$(k).onclick=()=>{const b=loadDay(dateAt(local.offset));(b.habits[local.actor]??={})[k]=true;const mine=b.plots.find(x=>x.owner===local.actor);if(mine)mine.health=health(b);demoState();say("示例活动已同步。")}}
 $("swap").onclick=()=>{local.actor=local.actor==="me"?"pal":"me";say("");demoState()};
 $("next").onclick=()=>{local.offset++;say("新的一天到了，看看谁留下了印记。");demoState()};
-function refresh(){if(live){if(!waiting)send("refresh")}else demoState()}
+function refresh(){if(live)send("refresh");else demoState()}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});
 window.addEventListener("storage",e=>{if(!live&&e.key===key&&e.newValue){try{local=JSON.parse(e.newValue);demoState()}catch{}}});
 setInterval(()=>{if(!document.hidden&&(live||snapshot?.day!==dateAt(local.offset)))refresh()},60000);
