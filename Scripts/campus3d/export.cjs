@@ -8,7 +8,7 @@ const [models, modules, output] = process.argv.slice(2).map(p => path.resolve(p)
 const {buildSync} = require(path.join(modules, "esbuild"));
 const js = buildSync({ entryPoints:[path.join(__dirname,"garden.js")], bundle:true, minify:true,
   format:"iife", target:["safari17","chrome110"], write:false, legalComments:"inline", nodePaths:[modules] }).outputFiles[0].text;
-let html = fs.readFileSync(path.join(__dirname,"page.html"),"utf8");
+let html = fs.readFileSync(path.join(__dirname,"page.html.in"),"utf8");
 html=html.replace("@@sky@@",()=>fs.readFileSync(path.join(__dirname,"coastal-sky.hdr")).toString("base64"));
 for(const photo of ["front","evening","corridor-front","corridor-0","corridor-1","corridor-2"]) {
   html=html.replace("@@"+photo+"@@",()=>fs.readFileSync(path.join(__dirname,photo+".webp")).toString("base64"));
