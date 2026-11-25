@@ -11,6 +11,12 @@ export const sites = [
 ];
 export const colors = {jade:0x298c80, apricot:0xbd673f, violet:0x8671b2};
 export const radius = total => total >= 80 ? 7.2 : total >= 50 ? 5.7 : 4.2;
+// Blender study cameras, in Three's Y-up coordinates. The film offset preserves verticals.
+const cameras = {
+  arrival:{eye:[19,1.72,54], target:[0,4.5,-6], lens:22.5, shift:.19, aspect:1840/1200},
+  front:{eye:[.04,3.30,42.5], target:[.04,3.30,0], lens:23, shift:.124, aspect:1440/632},
+  shelter:{eye:[-17.1,1.6,11], target:[9,2.3,4.5], lens:22, shift:.04, aspect:1560/1040},
+};
 
 export function campusScene(host, select, enter, busy) {
   const renderer = new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:"low-power"});
@@ -69,6 +75,7 @@ export function campusScene(host, select, enter, busy) {
   function focus(index){
     if(current!=="Zhili")return;
     stopFlight();
+    camera.clearViewOffset();
     const s=sites[index],dest=new THREE.Vector3(s.x,1.4,s.z);
     const eye=dest.clone().add(new THREE.Vector3(-17,18,29));
     const from=camera.position.clone(),origin=control.target.clone(),start=performance.now();
@@ -83,6 +90,7 @@ export function campusScene(host, select, enter, busy) {
   }
   function reset(){
     stopFlight();
+    camera.clearViewOffset();
     const wide=current==="Yuehai";
     const scale=Math.max(1,1.25/Math.max(.5,camera.aspect));
     camera.fov=wide?32:35;camera.updateProjectionMatrix();
@@ -91,14 +99,17 @@ export function campusScene(host, select, enter, busy) {
     control.target.set(0,wide?0:16,0);control.minDistance=wide?72:14;control.maxDistance=340;
     control.update();requestDraw();
   }
-  function entrance(){
+  function photograph(name){
     if(current!=="Zhili")return;
     stopFlight();
-    scene.background=sky;scene.backgroundIntensity=.66;
-    const aspect=Math.max(.6,camera.aspect);
-    camera.fov=THREE.MathUtils.radToDeg(2*Math.atan((36/46)/Math.min(2.28,aspect)));
-    camera.updateProjectionMatrix();camera.position.set(.15,3.35,43);
-    control.target.set(.55,6.25,2);control.update();requestDraw();
+    const shot=cameras[name];
+    const width=host.clientWidth,height=host.clientHeight;
+    const fitAspect=Math.max(shot.aspect,width/height);
+    camera.fov=THREE.MathUtils.radToDeg(2*Math.atan(18/(shot.lens*fitAspect)));
+    camera.setViewOffset(width,height,0,-height*fitAspect*shot.shift,width,height);
+    scene.background=sky;scene.backgroundIntensity=.90;scene.backgroundBlurriness=.14;
+    camera.position.fromArray(shot.eye);control.target.fromArray(shot.target);
+    control.minDistance=3;control.update();requestDraw();
   }
   async function load(which){
     if(!promises[which]) promises[which]=(async()=>{
@@ -111,11 +122,13 @@ export function campusScene(host, select, enter, busy) {
     })();
     return promises[which];
   }
-  async function show(which){
+  async function show(which, shot){
     const seq=++revision;current=which;busy("正在展开校园模型…");
     marks.visible=which==="Zhili";chip.hidden=true;
     Object.values(assets).forEach(o=>o.visible=false);
-    reset();requestDraw();
+    reset();
+    if(which==="Zhili" && Object.hasOwn(cameras,shot))photograph(shot);
+    requestDraw();
     try {await load(which);if(seq!==revision)return;assets[which].visible=true;busy("");requestDraw()}
     catch(e){if(seq===revision)busy("模型暂时没有打开，刷新后可以再试。");throw e}
   }
@@ -187,5 +200,5 @@ export function campusScene(host, select, enter, busy) {
     if(hit){let o=hit.object;while(o&&o.userData.site===undefined)o=o.parent;if(o)select(o.userData.site)}
   });
   resize();
-  return {show,reset,focus,entrance,update(i,rows,past,showPast){selected=i;plotRows=rows;prior=past;history=showPast;paint()}};
+  return {show,reset,focus,entrance:()=>photograph("front"),update(i,rows,past,showPast){selected=i;plotRows=rows;prior=past;history=showPast;paint()}};
 }

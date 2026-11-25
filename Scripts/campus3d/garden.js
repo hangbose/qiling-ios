@@ -23,17 +23,35 @@ function modelStatus(text){$("loading").textContent=text;$("loading").hidden=!te
 function say(text){$("status").textContent=text}
 const study=$("study"),reference=$("campus-photo");
 study.addEventListener("toggle",()=>{
-  if(study.open&&!reference.hasAttribute("src"))reference.src="https://psy.szu.edu.cn/en/images/ba1d0f55f4c605d9ad5a93fcd850442.jpg";
+  if(study.open&&!reference.hasAttribute("src")){
+    reference.src="https://psy.szu.edu.cn/en/images/ba1d0f55f4c605d9ad5a93fcd850442.jpg";
+    $("study-front").src=$("shot-front").src;
+  }
 });
-if(location.hash==="#study"){study.open=true;requestAnimationFrame(()=>study.scrollIntoView())}
 const corridor=nightWalk($("rain"));
+const exterior=$("exterior");
+const shotButtons=exterior.querySelectorAll("[data-shot]");
+for(const button of shotButtons){
+  button.addEventListener("click",()=>{
+    exterior.querySelector(".enter-3d").hash="garden/"+button.dataset.shot;
+    for(const other of shotButtons){
+      const selected=button===other;
+      other.setAttribute("aria-pressed",String(selected));
+      $("shot-"+other.dataset.shot).hidden=!selected;
+    }
+  });
+}
+function showExterior(){
+  corridor.hide();
+  $("stage").hidden=true;$("scene-header").hidden=true;exterior.hidden=false;
+}
 function enterWalk(){
-  $("stage").hidden=true;
+  exterior.hidden=true;$("scene-header").hidden=false;$("stage").hidden=true;
   $("title").textContent="致理楼 · 雨夜连廊";
   corridor.show();
 }
-function mapView(value){
-  corridor.hide();$("stage").hidden=false;
+function mapView(value,shot){
+  exterior.hidden=true;$("scene-header").hidden=false;corridor.hide();$("stage").hidden=false;
   if(!scene&&!canvasError){
     try{scene=campusScene($("stage"),selectSite,()=>mapView(false),modelStatus);paint()}
     catch{canvasError="当前设备暂时无法显示三维模型，可以在下方选择角落。"}
@@ -41,10 +59,18 @@ function mapView(value){
   wide=value;$("title").textContent=wide?"粤海校园全景":"致理楼";
   $("entrance").hidden=wide;
   $("overview").textContent=wide?"走近致理楼":"校园全景";
-  if(scene)scene.show(wide?"Yuehai":"Zhili").catch(()=>{});else if(canvasError)modelStatus(canvasError);
+  if(scene)scene.show(wide?"Yuehai":"Zhili",shot).catch(()=>{});else if(canvasError)modelStatus(canvasError);
 }
-function selectSite(value){site=value;if(wide||$("stage").hidden)mapView(false);say("");paint();scene?.focus(site)}
-$("walk-in").onclick=enterWalk;$("go-garden").onclick=()=>mapView(false);
+function selectSite(value){
+  site=value;
+  if($("stage").hidden){
+    // A claim can open the map while the player is still editing below it.
+    history.pushState(null,"","#garden");
+    mapView(false);
+  }else if(wide)mapView(false);
+  say("");paint();scene?.focus(site);
+}
+$("walk-in").onclick=()=>{location.hash="rain"};
 $("overview").onclick=()=>mapView(!wide);$("reset").onclick=()=>scene?.reset();
 $("entrance").onclick=()=>scene?.entrance();
 sites.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s.name;b.onclick=()=>selectSite(i);$("sites").append(b)});
@@ -139,5 +165,31 @@ function refresh(){if(live)send("refresh");else demoState()}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)refresh()});
 window.addEventListener("storage",e=>{if(!live&&e.key===key&&e.newValue){try{local=JSON.parse(e.newValue);demoState()}catch{}}});
 setInterval(()=>{if(!document.hidden&&(live||snapshot?.day!==dateAt(local.offset)))refresh()},60000);
-if(location.hash==="#garden"||location.hash==="#study")mapView(false);else enterWalk();
+function route(moveFocus=false){
+  let target;
+  switch(location.hash){
+    case "#rain":
+      enterWalk();target=$("rain");break;
+    case "#garden":
+    case "#garden/arrival":
+    case "#garden/front":
+    case "#garden/shelter":
+      mapView(false,location.hash.split("/")[1]);target=$("stage");break;
+    case "#study":
+      if($("stage").hidden)mapView(false);
+      study.open=true;target=study.querySelector("summary");break;
+    case "#gameplay":
+      target=$("gameplay");break;
+    default:
+      showExterior();target=exterior;
+  }
+  if(moveFocus||location.hash==="#study"||location.hash==="#gameplay"){
+    if(target===$("stage"))target.tabIndex=-1;
+    if(moveFocus)target.focus({preventScroll:true});
+    if(target===exterior||target===$("stage")||target===$("rain"))window.scrollTo(0,0);
+    else target.scrollIntoView({block:"start"});
+  }
+}
+window.addEventListener("hashchange",()=>route(true));
+route();
 refresh();

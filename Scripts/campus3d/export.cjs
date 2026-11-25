@@ -10,8 +10,9 @@ const js = buildSync({ entryPoints:[path.join(__dirname,"garden.js")], bundle:tr
   format:"iife", target:["safari17","chrome110"], write:false, legalComments:"inline", nodePaths:[modules] }).outputFiles[0].text;
 let html = fs.readFileSync(path.join(__dirname,"page.html.in"),"utf8");
 html=html.replace("@@sky@@",()=>fs.readFileSync(path.join(__dirname,"coastal-sky.hdr")).toString("base64"));
-for(const photo of ["front","evening","corridor-front","corridor-0","corridor-1","corridor-2"]) {
-  html=html.replace("@@"+photo+"@@",()=>fs.readFileSync(path.join(__dirname,photo+".webp")).toString("base64"));
+for(const photo of ["arrival","front","shelter","evening","corridor-front","corridor-0","corridor-1","corridor-2"]) {
+  const image=fs.readFileSync(path.join(__dirname,photo+".webp")).toString("base64");
+  html=html.replaceAll("@@"+photo+"@@",()=>image);
 }
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(),"zhili-pack-"));
 try {

@@ -29,6 +29,8 @@ def linear(v):
 
 def start():
     bpy.ops.wm.read_homefile(use_empty=True, use_factory_startup=True)
+    # Keep default node names stable in batch builds on localized Blender installs.
+    bpy.context.preferences.view.use_translate_new_dataname = False
     mesh_objects.clear()
     materials.clear()
     rng.seed(90453)
@@ -93,11 +95,14 @@ def tree(x,y,s=1):
     crown(group,rng.choice(["leaf","leaf","tip"]),x-.5*s,y+.25*s,3.5*s,2*s,2.9*s)
     crown(group,"leaf",x+1.25*s,y-.4*s,2.85*s,1.5*s,2.6*s)
 
-def finish(name):
+def finish(name, prepare_mesh=None):
     for (group,col),(verts,faces) in mesh_objects.items():
         mesh=bpy.data.meshes.new(group+"-"+col);mesh.from_pydata(verts,[],faces);mesh.update()
         ob=bpy.data.objects.new(mesh.name,mesh);bpy.context.collection.objects.link(ob);mesh.materials.append(materials[col])
+    if prepare_mesh:
+        prepare_mesh(OUT)
     bpy.ops.export_scene.gltf(filepath=str(OUT/(name+".glb")),export_format="GLB",export_materials="EXPORT",
+                              export_vertex_color="ACTIVE" if prepare_mesh else "MATERIAL",
                               export_animations=False,export_cameras=False,export_lights=False)
 
 def overview():

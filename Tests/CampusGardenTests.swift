@@ -21,7 +21,7 @@ final class CampusGardenTests: XCTestCase {
         view.loadFileURL(entry, allowingReadAccessTo: entry)
         var ready = false
         for _ in 0..<150 {
-            if (try? await view.evaluateJavaScript("typeof window.showGarden === 'function' && !document.getElementById('claim').disabled && !document.querySelector('.night-next').disabled && document.querySelector('.night-cube').style.visibility === 'visible'")) as? Bool == true {
+            if (try? await view.evaluateJavaScript("typeof window.showGarden === 'function' && !document.getElementById('claim').disabled && !document.getElementById('exterior').hidden && document.getElementById('shot-arrival').naturalWidth > 0")) as? Bool == true {
                 ready = true
                 break
             }
@@ -29,6 +29,11 @@ final class CampusGardenTests: XCTestCase {
         }
         XCTAssertTrue(ready)
         guard ready else { return }
+        _ = try await view.evaluateJavaScript("document.querySelector('#exterior a[href=\"#rain\"]').click()")
+        for _ in 0..<100 {
+            if (try? await view.evaluateJavaScript("document.querySelector('.night-cube').style.visibility === 'visible'")) as? Bool == true { break }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
         let stop = try await view.callAsyncJavaScript("""
             const label = document.querySelector('.night-stop');
             const result = new Promise(resolve => {

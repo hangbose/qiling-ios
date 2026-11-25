@@ -6,6 +6,10 @@
 
 ## 制作方法
 
+对照 [实景照片及各自可核对的细节](REFERENCES.md)。正面机位用横梁、柱脚和学院牌作标定点。B 座台阶的颜色另查彩照，东侧架空厅的实墙开窗另查庭院斜视。镜头之外的连接、内部进深和雨后光照按建筑关系推定。
+
+此次外景采用ハヤシモン的制作顺序。作者先按目标图中器物的位置搭体块，再给主体做真实凹口，按材料区分跑水痕、底部泥污与边缘损耗，最后回到特写检查标识。这次把同一套顺序用于窗洞、楼梯和门廊。手持设备加载带米制 UV 和局部遮光的模型，摄影机位使用同一份建筑几何做 Cycles 渲染。石材颗粒、竖向水痕与墙脚返潮分别控制，植物和墙面的贴图由项目生成。[作者的体块与凹口](https://x.com/hayashimon1/status/2108913493156270544) · [按表面位置处理磨损](https://x.com/hayashimon1/status/2108913494783676442) · [印刷物细化](https://x.com/hayashimon1/status/2108913496369115560)
+
 - 从固定机位对齐大体块和负空间之后再开窗。参考 Ian Hubert 的[建筑建模演示](https://www.youtube.com/watch?v=v_ikG-u_6r0)。本场景给主要窗洞建了窗台和退进深度，曲面教学翼按弧线排布可复用的立面单元。
 - Anastasia Opara 展示了植被如何适应墙面以及拱洞的边界。本场景用花池轮廓约束灌木和叶簇的分布。[作者的 X 串文](https://x.com/anastasiaopara/status/1543163341513842690)和[可读展开版](https://threadreaderapp.com/thread/1543163341513842690.html)。
 - Oskar Stålberg 说明了地形表现和玩法格可以使用不同的网格。对应到栖灵，场景中三个可选活动点单独保存，弧形建筑、铺地和楼梯可以各按现场造型连续展开。[作者的 X 串文](https://x.com/OskSta/status/1448248658865049605)和[可读展开版](https://threadreaderapp.com/thread/1448248658865049605.html)。
@@ -21,4 +25,4 @@
 
 ### 致理楼外景
 
-使用 Blender 5.1 运行 `model.py`，在 `--` 后传入 GLB 输出目录。需要含中日韩字形的字体，构建脚本会将楼名转为网格。调用 `zhili.build(output_dir, studio=True)` 还会保存包含相机和材质节点的 Blender 工程。在该工程上运行 `render_views.py` 得到三幅图片。将入口和傍晚两张转换成 `front.webp` 及 `evening.webp`，放在本目录。随后用 `export.cjs` 压缩几何并生成独立的试玩页。
+使用 Blender 5.1 运行 `model.py`，在 `--` 后传入 GLB 输出目录。需要含中日韩字形的字体，构建脚本会将楼名转为网格。调用 `zhili.build(output_dir, studio=True)` 还会保存包含相机与内嵌材质的 Blender 工程。加载该工程运行 `render_views.py -- proof` 快速核对画面，省略 `-- proof` 时输出四张成片。将 C-court、C-entry、C-shelter 和 C-evening 依次转为本目录的 `arrival.webp`、`front.webp`、`shelter.webp` 和 `evening.webp`。运行 `export.cjs` 压缩几何并生成独立试玩页。
